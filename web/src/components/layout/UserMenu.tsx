@@ -36,7 +36,7 @@ export function UserMenu() {
         </div>
         {user.role === 'admin' && (
           <span className="hidden rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold-strong md:inline">
-            Admin
+            {user.isSuperAdmin ? 'Chủ hệ thống' : 'Admin'}
           </span>
         )}
         {user.isGuest && (

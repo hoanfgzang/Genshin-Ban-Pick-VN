@@ -84,12 +84,7 @@ export function CharacterCard({ character: c, owned, mode, onClick }: CharacterC
           </span>
         )}
       </div>
-      <span
-        className={cn(
-          'truncate bg-panel-2 px-1.5 py-1 text-center text-[11px] font-medium',
-          owned ? 'text-text' : 'text-muted',
-        )}
-      >
+      <span className="truncate bg-white px-1.5 py-1 text-center text-[11px] font-semibold text-black">
         {c.name}
       </span>
     </button>

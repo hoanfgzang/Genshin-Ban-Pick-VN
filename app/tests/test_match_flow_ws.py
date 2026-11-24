@@ -700,6 +700,7 @@ def test_undo_and_request_undo_ws_flow(test_client: TestClient) -> None:
 def test_overtime_penalty_accumulation_and_scoring() -> None:
     all_chars, weapon_by_type, _ = _load_sample_catalog()
     ruleset = default_ruleset_config()
+    ruleset.use_reserve_time = False
     state = draft_engine.create_initial_match_state(
         code="OVTIME",
         ruleset_id="rs-1",
@@ -847,4 +848,136 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
         + 180,
         2,
     )
+
+
+def test_reserve_time_and_per_step_ban_pick_timers() -> None:
+    all_chars, _, _ = _load_sample_catalog()
+    ruleset = default_ruleset_config()
+    ruleset.ban_seconds = 20
+    ruleset.pick_seconds = 50
+    ruleset.draft_steps[0].seconds = 15
+    ruleset.use_reserve_time = True
+    ruleset.reserve_time_seconds = 120
+
+    assert ruleset.use_reserve_time is True
+    assert ruleset.reserve_time_seconds == 120
+
+    state = draft_engine.create_initial_match_state(
+        code="RSRV01",
+        ruleset_id="rs-rsrv",
+        ruleset_name="Reserve Time Test",
+        ruleset=ruleset,
+        host_user_id="u-blue",
+    )
+    blue_inv = {c["slug"]: {"constellation": 0, "level": 90} for c in all_chars[:16]}
+    red_inv = {c["slug"]: {"constellation": 0, "level": 90} for c in all_chars[16:32]}
+    state = draft_engine.select_side(
+        state, user_id="u-blue", uid="800000101", display_name="Blue", owned_characters=blue_inv, side="blue"
+    )
+    state = draft_engine.select_side(
+        state, user_id="u-red", uid="800000102", display_name="Red", owned_characters=red_inv, side="red"
+    )
+    state = draft_engine.set_ready(state, user_id="u-blue", ready=True)
+    state = draft_engine.set_ready(state, user_id="u-red", ready=True)
+
+    assert state.status == "drafting"
+    assert state.sides["blue"].reserve_remaining_seconds == 120.0
+    assert state.sides["red"].reserve_remaining_seconds == 120.0
+    assert state.turn_deadline_at is not None
+
+    # Bước 0 (blue ban override 15s): quá giờ 10s -> trừ thẳng vào thời gian gốc (120 -> 110), phạt 0s
+    d0 = datetime.fromisoformat(state.turn_deadline_at)
+    state = draft_engine.apply_draft_action(
+        state,
+        user_id="u-blue",
+        character_slug=all_chars[40]["slug"],
+        now=d0 + timedelta(seconds=10.4),
+    )
+    assert state.sides["blue"].reserve_remaining_seconds == 110.0
+    assert state.sides["blue"].overtime_penalty_seconds == 0.0
+
+    # Bước 1 (red ban mặc định 20s): kiểm tra thời hạn ~20s và quá giờ 130s -> hết 120s gốc, dư 10s phạt
+    d1 = datetime.fromisoformat(state.turn_deadline_at or "")
+    assert 18.0 <= (d1 - datetime.now(timezone.utc)).total_seconds() <= 21.0
+    state = draft_engine.apply_draft_action(
+        state,
+        user_id="u-red",
+        character_slug=all_chars[41]["slug"],
+        now=d1 + timedelta(seconds=130.2),
+    )
+    assert state.sides["red"].reserve_remaining_seconds == 0.0
+    assert state.sides["red"].overtime_penalty_seconds == 10.0
+
+    # Bước 2 (blue ban mặc định 20s), rồi bước 4 (blue pick mặc định 50s)
+    state = draft_engine.apply_draft_action(
+        state, user_id="u-blue", character_slug=None
+    )
+    state = draft_engine.apply_draft_action(
+        state, user_id="u-red", character_slug=None
+    )
+    assert state.ruleset.draft_steps[state.current_step_index].action == "pick"
+    d4 = datetime.fromisoformat(state.turn_deadline_at or "")
+    assert 48.0 <= (d4 - datetime.now(timezone.utc)).total_seconds() <= 51.0
+
+
+def test_draft_hover_ws_sync_and_clears_on_lock(test_client: TestClient) -> None:
+    all_chars, _, _ = _load_sample_catalog()
+    blue_chars = all_chars[:20]
+    red_chars = all_chars[20:40]
+
+    token_a, _ = _register_and_seed_inventory(
+        test_client, "877777701", "Hover Blue", blue_chars, constellation=1, level=90
+    )
+    token_b, _ = _register_and_seed_inventory(
+        test_client, "877777702", "Hover Red", red_chars, constellation=0, level=90
+    )
+
+    rs_id = test_client.get("/api/rulesets").json()[0]["id"]
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+    ):
+        ws_a.receive_json()
+        ws_b.receive_json()
+
+        def recv_both() -> dict:
+            m_a = ws_a.receive_json()
+            ws_b.receive_json()
+            return m_a
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_both()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_both()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        state = recv_both()["state"]
+        assert state["hoverCharacterSlug"] is None
+        assert state["sides"]["blue"]["reserveRemainingSeconds"] == 120.0
+
+        # Blue ban hờ nhân vật -> cả 2 nhận được hoverCharacterSlug
+        hover_slug = all_chars[45]["slug"]
+        ws_a.send_json({"action": "draft_hover", "characterSlug": hover_slug})
+        state = recv_both()["state"]
+        assert state["hoverCharacterSlug"] == hover_slug
+
+        # Red không phải lượt nên không được hover
+        ws_b.send_json({"action": "draft_hover", "characterSlug": all_chars[46]["slug"]})
+        err = ws_b.receive_json()
+        assert err["type"] == "match:error"
+        assert err["code"] == "FORBIDDEN"
+
+        # Blue khóa Ban -> hoverCharacterSlug tự reset về None
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": hover_slug})
+        state = recv_both()["state"]
+        assert state["hoverCharacterSlug"] is None
+        assert state["sides"]["blue"]["bans"] == [hover_slug]
+
 

@@ -33,6 +33,7 @@ export interface DraftStep {
   step: number
   side: MatchSide
   action: DraftActionType
+  seconds?: number | null
 }
 
 export interface CostMilestone {
@@ -62,9 +63,23 @@ export interface RuleSetConfig {
   allowDuplicatePick: boolean
   tieBreakRule?: TieBreakRule
   perTurnSeconds: number
+  banSeconds?: number
+  pickSeconds?: number
+  useReserveTime?: boolean
+  reserveTimeSeconds?: number
   weaponPhaseSeconds: number
   chamberBaseSeconds: 540
   costRules: CostRules
+}
+
+export function getStepBaseSeconds(config: RuleSetConfig, step: DraftStep): number {
+  if (typeof step.seconds === 'number' && Number.isFinite(step.seconds)) {
+    return Math.max(0, Math.trunc(step.seconds))
+  }
+  if (step.action === 'ban') {
+    return config.banSeconds ?? config.perTurnSeconds
+  }
+  return config.pickSeconds ?? config.perTurnSeconds
 }
 
 export interface RuleSet {
@@ -117,6 +132,10 @@ export function createDefaultRuleSetConfig(): RuleSetConfig {
     allowDuplicatePick: false,
     tieBreakRule: 'none',
     perTurnSeconds: 45,
+    banSeconds: 30,
+    pickSeconds: 45,
+    useReserveTime: true,
+    reserveTimeSeconds: 120,
     weaponPhaseSeconds: 90,
     chamberBaseSeconds: 540,
     costRules: {

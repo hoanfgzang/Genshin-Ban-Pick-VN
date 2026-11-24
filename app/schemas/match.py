@@ -77,6 +77,7 @@ class SideState(CamelModel):
     total_cost: float = 0.0
     cost_penalty_seconds: float = 0.0
     weapon_refinement_seconds: float = 0.0
+    reserve_remaining_seconds: float = 0.0
     overtime_penalty_seconds: float = 0.0
     weapons_locked: bool = False
     chambers: list[ChamberTimeInput] | None = None
@@ -94,6 +95,7 @@ class CompletedGameSideSummary(CamelModel):
     total_cost: float = 0.0
     cost_penalty_seconds: float = 0.0
     weapon_refinement_seconds: float = 0.0
+    reserve_remaining_seconds: float = 0.0
     overtime_penalty_seconds: float = 0.0
     chamber_total_seconds: int | None = None
     final_score: float | None = None
@@ -128,6 +130,7 @@ class MatchState(CamelModel):
     host_user_id: str
     sides: dict[SideName, SideState]
     current_step_index: int = 0
+    hover_character_slug: str | None = None
     turn_deadline_at: str | None = None
     undo_request: UndoRequest | None = None
     winner_side: WinnerSide | None = None

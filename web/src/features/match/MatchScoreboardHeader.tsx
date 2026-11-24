@@ -1,7 +1,7 @@
 import { computeCostBreakdown } from './lineup'
 import { getSeriesWinsForSide } from './series'
 import { formatCost, formatSeconds } from '@/domain/cost'
-import type { MatchSide } from '@/domain/ruleset'
+import { getStepBaseSeconds, type MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchState } from '@/services'
 
@@ -80,38 +80,85 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
     )
   }
 
+  const useReserveTime = Boolean(state.ruleset.useReserveTime)
+  const reserveDefault = state.ruleset.reserveTimeSeconds ?? 120
+  const blueSavedReserve = state.sides.blue.reserveRemainingSeconds ?? reserveDefault
+  const redSavedReserve = state.sides.red.reserveRemainingSeconds ?? reserveDefault
+
   const blueSavedOvertime = state.sides.blue.overtimePenaltySeconds ?? 0
   const redSavedOvertime = state.sides.red.overtimePenaltySeconds ?? 0
 
-  const blueLiveOvertime =
-    countdown !== null &&
-    countdown < 0 &&
-    ((state.status === 'drafting' && activeStep?.side === 'blue') ||
-      (state.status === 'weapon_phase' && !state.sides.blue.weaponsLocked))
-      ? -countdown
-      : 0
+  const calcLiveTiming = (side: MatchSide, savedReserve: number) => {
+    if (countdown === null || countdown >= 0) {
+      return {
+        turnDisplay: countdown,
+        liveReserve: savedReserve,
+        liveOvertime: 0,
+        consumingReserve: false,
+      }
+    }
+    const elapsedOver = -countdown
+    if (state.status === 'drafting' && activeStep?.side === side) {
+      if (useReserveTime) {
+        const liveReserve = Math.max(0, savedReserve - elapsedOver)
+        const liveOvertime = Math.max(0, elapsedOver - savedReserve)
+        return {
+          turnDisplay: liveReserve > 0 ? 0 : -liveOvertime,
+          liveReserve,
+          liveOvertime,
+          consumingReserve: liveReserve > 0,
+        }
+      }
+      return {
+        turnDisplay: countdown,
+        liveReserve: savedReserve,
+        liveOvertime: elapsedOver,
+        consumingReserve: false,
+      }
+    }
+    if (state.status === 'weapon_phase' && !state.sides[side].weaponsLocked) {
+      return {
+        turnDisplay: countdown,
+        liveReserve: savedReserve,
+        liveOvertime: elapsedOver,
+        consumingReserve: false,
+      }
+    }
+    return {
+      turnDisplay: countdown,
+      liveReserve: savedReserve,
+      liveOvertime: 0,
+      consumingReserve: false,
+    }
+  }
 
-  const redLiveOvertime =
-    countdown !== null &&
-    countdown < 0 &&
-    ((state.status === 'drafting' && activeStep?.side === 'red') ||
-      (state.status === 'weapon_phase' && !state.sides.red.weaponsLocked))
-      ? -countdown
-      : 0
+  const blueTiming = calcLiveTiming('blue', blueSavedReserve)
+  const redTiming = calcLiveTiming('red', redSavedReserve)
 
-  const blueTotalOvertime = blueSavedOvertime + blueLiveOvertime
-  const redTotalOvertime = redSavedOvertime + redLiveOvertime
+  const blueTotalOvertime = blueSavedOvertime + blueTiming.liveOvertime
+  const redTotalOvertime = redSavedOvertime + redTiming.liveOvertime
   const isBo3 = state.format === 'bo3'
   const winsToWin = state.winsToWin ?? 2
   const blueSeriesWins = getSeriesWinsForSide(state, 'blue')
   const redSeriesWins = getSeriesWinsForSide(state, 'red')
 
+  const getWaitingSideTurnSeconds = (side: MatchSide): number => {
+    const nextSideStep = state.ruleset.draftSteps
+      .slice(state.currentStepIndex)
+      .find((s) => s.side === side)
+    if (nextSideStep) return getStepBaseSeconds(state.ruleset, nextSideStep)
+    return state.ruleset.pickSeconds ?? state.ruleset.perTurnSeconds
+  }
+
+  const blueWaitingSec = getWaitingSideTurnSeconds('blue')
+  const redWaitingSec = getWaitingSideTurnSeconds('red')
+
   const blueClock =
     state.status === 'drafting'
       ? activeStep?.side === 'blue'
-        ? formatClock(countdown)
-        : state.ruleset.perTurnSeconds > 0
-          ? formatClock(state.ruleset.perTurnSeconds)
+        ? formatClock(blueTiming.turnDisplay)
+        : blueWaitingSec > 0
+          ? formatClock(blueWaitingSec)
           : '--:--'
       : state.status === 'weapon_phase'
         ? state.sides.blue.weaponsLocked
@@ -124,9 +171,9 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
   const redClock =
     state.status === 'drafting'
       ? activeStep?.side === 'red'
-        ? formatClock(countdown)
-        : state.ruleset.perTurnSeconds > 0
-          ? formatClock(state.ruleset.perTurnSeconds)
+        ? formatClock(redTiming.turnDisplay)
+        : redWaitingSec > 0
+          ? formatClock(redWaitingSec)
           : '--:--'
       : state.status === 'weapon_phase'
         ? state.sides.red.weaponsLocked
@@ -205,21 +252,38 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
 
       {/* Trung tâm - Timer & Tên pha */}
       <div className="flex items-center justify-center gap-4 border-y border-line/50 py-2 md:border-y-0 md:px-4 md:py-0">
-        <div className="min-w-16 text-center">
+        <div className="min-w-20 text-center">
           <div
             className={cn(
               'font-mono text-xl font-extrabold sm:text-2xl',
-              blueLiveOvertime > 0
+              blueTiming.liveOvertime > 0
                 ? 'text-danger animate-pulse'
-                : state.status === 'weapon_phase' && state.sides.blue.weaponsLocked
-                  ? 'text-sm font-bold text-success'
-                  : activeStep?.side === 'blue'
-                    ? 'text-hydro'
-                    : 'text-text',
+                : blueTiming.consumingReserve
+                  ? 'text-gold-strong'
+                  : state.status === 'weapon_phase' && state.sides.blue.weaponsLocked
+                    ? 'text-sm font-bold text-success'
+                    : activeStep?.side === 'blue'
+                      ? 'text-hydro'
+                      : 'text-text',
             )}
           >
             {blueClock}
           </div>
+          {useReserveTime && (state.status === 'drafting' || state.status === 'weapon_phase') && (
+            <div
+              className={cn(
+                'mt-0.5 font-mono text-[10px] font-bold',
+                blueTiming.consumingReserve
+                  ? 'text-gold-strong animate-pulse'
+                  : blueTiming.liveReserve <= 0
+                    ? 'text-danger'
+                    : 'text-muted',
+              )}
+              title="Thời gian gốc còn lại"
+            >
+              Gốc {formatClock(blueTiming.liveReserve)}
+            </div>
+          )}
           <div className="text-[11px] font-semibold text-muted">
             Cost {formatCost(state.sides.blue.totalCost)}
           </div>
@@ -241,21 +305,38 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
           )}
         </div>
 
-        <div className="min-w-16 text-center">
+        <div className="min-w-20 text-center">
           <div
             className={cn(
               'font-mono text-xl font-extrabold sm:text-2xl',
-              redLiveOvertime > 0
+              redTiming.liveOvertime > 0
                 ? 'text-danger animate-pulse'
-                : state.status === 'weapon_phase' && state.sides.red.weaponsLocked
-                  ? 'text-sm font-bold text-success'
-                  : activeStep?.side === 'red'
-                    ? 'text-danger'
-                    : 'text-text',
+                : redTiming.consumingReserve
+                  ? 'text-gold-strong'
+                  : state.status === 'weapon_phase' && state.sides.red.weaponsLocked
+                    ? 'text-sm font-bold text-success'
+                    : activeStep?.side === 'red'
+                      ? 'text-danger'
+                      : 'text-text',
             )}
           >
             {redClock}
           </div>
+          {useReserveTime && (state.status === 'drafting' || state.status === 'weapon_phase') && (
+            <div
+              className={cn(
+                'mt-0.5 font-mono text-[10px] font-bold',
+                redTiming.consumingReserve
+                  ? 'text-gold-strong animate-pulse'
+                  : redTiming.liveReserve <= 0
+                    ? 'text-danger'
+                    : 'text-muted',
+              )}
+              title="Thời gian gốc còn lại"
+            >
+              Gốc {formatClock(redTiming.liveReserve)}
+            </div>
+          )}
           <div className="text-[11px] font-semibold text-muted">
             Cost {formatCost(state.sides.red.totalCost)}
           </div>

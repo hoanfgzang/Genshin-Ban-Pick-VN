@@ -2,6 +2,7 @@ import type { Inventory } from '@/domain/inventory'
 import type { MatchSide, RuleSet, RuleSetConfig } from '@/domain/ruleset'
 
 export type UserRole = 'player' | 'admin' | 'guest'
+export type ManagedRole = 'player' | 'admin'
 
 export interface User {
   id: string
@@ -9,7 +10,19 @@ export interface User {
   displayName: string
   email: string | null
   role: UserRole
+  isSuperAdmin?: boolean
   isGuest: boolean
+  createdAt: string
+}
+
+export interface AdminUserItem {
+  id: string
+  uid: string
+  displayName: string
+  email: string | null
+  role: ManagedRole
+  isSeedAdmin: boolean
+  ownedCount: number
   createdAt: string
 }
 
@@ -100,6 +113,7 @@ export interface SideState {
   totalCost: number
   costPenaltySeconds: number
   weaponRefinementSeconds: number
+  reserveRemainingSeconds?: number
   overtimePenaltySeconds: number
   weaponsLocked: boolean
   chambers: ChamberTimeInput[] | null
@@ -117,6 +131,7 @@ export interface CompletedGameSideSummary {
   totalCost: number
   costPenaltySeconds: number
   weaponRefinementSeconds: number
+  reserveRemainingSeconds?: number
   overtimePenaltySeconds: number
   chamberTotalSeconds: number | null
   finalScore: number | null
@@ -151,6 +166,7 @@ export interface MatchState {
   hostUserId: string
   sides: Record<MatchSide, SideState>
   currentStepIndex: number
+  hoverCharacterSlug?: string | null
   turnDeadlineAt: string | null
   undoRequest?: UndoRequest | null
   winnerSide: WinnerSide | null
@@ -223,4 +239,13 @@ export interface MatchService {
   get(code: string): Promise<MatchState>
   listMyMatches(): Promise<MatchSummary[]>
   getWebSocketUrl(code: string): string
+}
+
+export interface AdminUserService {
+  list(
+    params?: { q?: string; role?: ManagedRole | 'all' },
+    adminSecret?: string,
+  ): Promise<AdminUserItem[]>
+  updateRole(userId: string, role: ManagedRole, adminSecret?: string): Promise<AdminUserItem>
+  updateRoleByUid(uid: string, role: ManagedRole, adminSecret?: string): Promise<AdminUserItem>
 }

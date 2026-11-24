@@ -1,16 +1,5 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Chip } from '@/components/ui/Chip'
-import { ElementIcon } from '@/components/ui/ElementIcon'
-import {
-  ELEMENT_LABEL,
-  ELEMENTS,
-  type Element,
-  type Rarity,
-  type WeaponType,
-  WEAPON_LABEL,
-  WEAPONS,
-} from '@/domain/character'
 import { getCharacter } from '@/domain/characters'
 import { calcCharacterCost, formatCost } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
@@ -23,6 +12,8 @@ interface Props {
   state: MatchState
   mySide: MatchSide | null
   isAdmin: boolean
+  selectedSlug: string | null
+  onSelectSlug: (slug: string | null) => void
   onDraftAction: (characterSlug: string | null) => void
   onSelectPickSlot: (side: MatchSide, pick: MatchPickSlot) => void
   onUndoStep: () => void
@@ -33,31 +24,22 @@ export function DraftStage({
   state,
   mySide,
   isAdmin,
+  selectedSlug,
+  onSelectSlug,
   onDraftAction,
   onSelectPickSlot,
   onUndoStep,
   onRequestUndo,
 }: Props) {
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
-  const [showFilters, setShowFilters] = useState(false)
   const [showQuickWeapons, setShowQuickWeapons] = useState(false)
-  const [showUnownedForBan, setShowUnownedForBan] = useState(false)
-  const [query, setQuery] = useState('')
-  const [element, setElement] = useState<Element | null>(null)
-  const [weapon, setWeapon] = useState<WeaponType | null>(null)
-  const [rarity, setRarity] = useState<Rarity | null>(null)
 
   const currentStep = state.ruleset.draftSteps[state.currentStepIndex] ?? null
   const isMyTurn = Boolean(currentStep && mySide === currentStep.side)
   const selectedChar = selectedSlug ? getCharacter(selectedSlug) : null
 
-  const activeFilterCount =
-    (query.trim() ? 1 : 0) + (element ? 1 : 0) + (weapon ? 1 : 0) + (rarity ? 1 : 0)
-
   const submitSlug = (slug: string | null) => {
     if (!isMyTurn) return
     onDraftAction(slug)
-    setSelectedSlug(null)
   }
 
   const ownedInActiveSide =
@@ -82,7 +64,7 @@ export function DraftStage({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Thanh thao tác trung tâm giống InMatch_UI.png: Trái (trạng thái) · Giữa (Weapons / Select / Filter) · Phải (Skip) */}
+      {/* Thanh thao tác trung tâm: Trái (trạng thái) · Giữa (Vũ khí / Xác nhận) · Phải (Lùi / Bỏ qua) */}
       <div className="panel flex flex-wrap items-center justify-between gap-3 border-line/80 bg-bg/70 px-4 py-2.5">
         <div className="min-w-48 text-sm">
           {currentStep ? (
@@ -108,6 +90,10 @@ export function DraftStage({
                 ) : (
                   <span className="text-gold-strong">· Lượt của bạn!</span>
                 )
+              ) : selectedChar ? (
+                <span className="text-text">
+                  · Đang nhắm <strong className="text-gold-strong">{selectedChar.name}</strong>
+                </span>
               ) : (
                 <span className="text-muted">· Đang chờ người chơi…</span>
               )}
@@ -137,14 +123,6 @@ export function DraftStage({
           >
             {currentStep?.action === 'ban' ? 'Xác nhận BAN' : 'Xác nhận PICK'}
           </Button>
-
-          <Button
-            size="sm"
-            variant={showFilters || activeFilterCount > 0 ? 'secondary' : 'ghost'}
-            onClick={() => setShowFilters((v) => !v)}
-          >
-            Bộ lọc{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -152,10 +130,7 @@ export function DraftStage({
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => {
-                setSelectedSlug(null)
-                onUndoStep()
-              }}
+              onClick={onUndoStep}
             >
               {isAdmin && !isMyTurn ? 'Admin: Lùi lượt' : 'Lùi lượt trước'}
             </Button>
@@ -177,67 +152,6 @@ export function DraftStage({
           )}
         </div>
       </div>
-
-      {/* Thanh bộ lọc gọn cho cả 2 kho */}
-      {showFilters && (
-        <div className="panel flex flex-col gap-2 border-line/70 bg-bg/65 p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tìm tên nhân vật ở cả 2 kho…"
-              className="h-9 min-w-52 flex-1 rounded-lg border border-line bg-bg/70 px-3 text-sm text-text focus:border-gold focus:outline-none"
-            />
-            {([5, 4] as Rarity[]).map((r) => (
-              <Chip key={r} active={rarity === r} onClick={() => setRarity((cur) => (cur === r ? null : r))}>
-                {r}★
-              </Chip>
-            ))}
-            {currentStep?.action === 'ban' && (
-              <Chip active={showUnownedForBan} onClick={() => setShowUnownedForBan((v) => !v)}>
-                Hiện thêm NV ngoài kho đối thủ
-              </Chip>
-            )}
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery('')
-                  setElement(null)
-                  setWeapon(null)
-                  setRarity(null)
-                }}
-                className="cursor-pointer px-2 text-xs font-semibold text-gold hover:underline"
-              >
-                Xóa bộ lọc
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {ELEMENTS.map((el) => (
-              <Chip
-                key={el}
-                active={element === el}
-                onClick={() => setElement((cur) => (cur === el ? null : el))}
-              >
-                <ElementIcon element={el} className="size-3.5" />
-                {ELEMENT_LABEL[el]}
-              </Chip>
-            ))}
-            <span className="mx-1 h-4 w-px bg-line" />
-            {WEAPONS.map((wt) => (
-              <Chip
-                key={wt}
-                active={weapon === wt}
-                onClick={() => setWeapon((cur) => (cur === wt ? null : wt))}
-              >
-                {WEAPON_LABEL[wt]}
-              </Chip>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Bảng gán nhanh vũ khí trong lúc đang chờ lượt Draft */}
       {showQuickWeapons && weaponEditableSides.length > 0 && (
@@ -286,19 +200,14 @@ export function DraftStage({
         </div>
       )}
 
-      {/* 2 kho nhân vật đặt song song */}
+      {/* 2 kho nhân vật đặt song song kèm tìm kiếm, filter hệ và sort */}
       <DualRosterGrid
         state={state}
         mode="interactive"
         selectedSlug={selectedSlug}
-        query={query}
-        element={element}
-        weapon={weapon}
-        rarity={rarity}
-        showUnownedForBan={showUnownedForBan}
         onSelectCharacter={(slug) => {
           if (!isMyTurn) return
-          setSelectedSlug((cur) => (cur === slug ? null : slug))
+          onSelectSlug(selectedSlug === slug ? null : slug)
         }}
         onDoubleClickCharacter={(slug) => {
           if (!isMyTurn) return

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultDraftSteps, type DraftStep } from '@/domain/ruleset'
+import { createDefaultDraftSteps, createDefaultRuleSetConfig, getStepBaseSeconds, type DraftStep } from '@/domain/ruleset'
 import type { MatchPickSlot, SideState } from '@/services'
 import {
   buildDraftBoardRows,
   computeCostBreakdown,
   getMaxConsecutivePicks,
+  groupConsecutiveCells,
   normalizeLineup,
   splitIntoTeams,
   swapLineupPositions,
@@ -215,5 +216,35 @@ describe('features/match/lineup', () => {
     )
     expect(board1.blue.pickRows.map((r) => r.length)).toEqual([4, 4])
     expect(board1.red.pickRows.map((r) => r.length)).toEqual([4, 4])
+  })
+
+  it('groupConsecutiveCells gom các lượt liên tiếp cùng bên & hành động, tách lượt không liên tiếp', () => {
+    const steps = createDefaultDraftSteps()
+    const rows = buildDraftBoardRows(
+      steps,
+      { blue: emptySide(), red: emptySide() },
+      0,
+      'drafting',
+    )
+
+    // Blue hàng 1 (đã đảo ngược): [12, 9, 8, 5] -> [12], [9, 8], [5]
+    const blueGroups = groupConsecutiveCells(rows.blue.pickRows[0])
+    expect(blueGroups.map((g) => g.map((c) => c.step))).toEqual([[12], [9, 8], [5]])
+
+    // Red hàng 1: [6, 7, 10, 11] -> [6, 7], [10, 11]
+    const redGroups = groupConsecutiveCells(rows.red.pickRows[0])
+    expect(redGroups.map((g) => g.map((c) => c.step))).toEqual([
+      [6, 7],
+      [10, 11],
+    ])
+  })
+
+  it('getStepBaseSeconds trả thời gian riêng của bước, hoặc mặc định Ban/Pick', () => {
+    const cfg = createDefaultRuleSetConfig()
+    cfg.banSeconds = 25
+    cfg.pickSeconds = 55
+    expect(getStepBaseSeconds(cfg, { step: 1, side: 'blue', action: 'ban' })).toBe(25)
+    expect(getStepBaseSeconds(cfg, { step: 2, side: 'blue', action: 'pick' })).toBe(55)
+    expect(getStepBaseSeconds(cfg, { step: 3, side: 'red', action: 'ban', seconds: 15 })).toBe(15)
   })
 })

@@ -69,7 +69,19 @@ async def match_websocket(websocket: WebSocket, code: str) -> None:
                 continue
 
             try:
-                await room_manager.handle_action(code, user, data)
+                async with factory() as db:
+                    res = await db.execute(select(User).where(User.id == user.id))
+                    live_user = res.scalar_one_or_none()
+                if not live_user:
+                    await websocket.send_json(
+                        {
+                            "type": "match:error",
+                            "code": "UNAUTHORIZED",
+                            "message": "Tài khoản không còn tồn tại.",
+                        }
+                    )
+                    continue
+                await room_manager.handle_action(code, live_user, data)
             except AppError as err:
                 await websocket.send_json(
                     {

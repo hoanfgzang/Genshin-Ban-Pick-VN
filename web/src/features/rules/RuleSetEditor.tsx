@@ -137,18 +137,35 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex flex-col gap-1 text-xs">
-              <span className="font-medium text-text">Thời gian mỗi lượt Ban/Pick (giây)</span>
+              <span className="font-medium text-text">Thời gian mỗi lượt Ban (giây)</span>
               <input
                 type="number"
                 min={0}
                 max={600}
-                value={config.perTurnSeconds}
-                onChange={(e) =>
-                  setConfig({ ...config, perTurnSeconds: Math.max(0, Number(e.target.value) || 0) })
-                }
+                value={config.banSeconds ?? config.perTurnSeconds}
+                onChange={(e) => {
+                  const val = Math.min(600, Math.max(0, Number(e.target.value) || 0))
+                  setConfig({ ...config, banSeconds: val })
+                }}
                 className="h-9 rounded-lg border border-line bg-bg/60 px-3 text-sm text-text"
               />
-              <span className="text-[11px] text-muted">0 = không giới hạn thời gian lượt</span>
+              <span className="text-[11px] text-muted">0 = không giới hạn thời gian Ban</span>
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-medium text-text">Thời gian mỗi lượt Pick (giây)</span>
+              <input
+                type="number"
+                min={0}
+                max={600}
+                value={config.pickSeconds ?? config.perTurnSeconds}
+                onChange={(e) => {
+                  const val = Math.min(600, Math.max(0, Number(e.target.value) || 0))
+                  setConfig({ ...config, pickSeconds: val, perTurnSeconds: val })
+                }}
+                className="h-9 rounded-lg border border-line bg-bg/60 px-3 text-sm text-text"
+              />
+              <span className="text-[11px] text-muted">0 = không giới hạn thời gian Pick</span>
             </label>
 
             <label className="flex flex-col gap-1 text-xs">
@@ -166,17 +183,16 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
               <span className="text-[11px] text-muted">Khoảng trống sau khi Ban/Pick đủ</span>
             </label>
 
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs select-none">
-              <input
-                type="checkbox"
-                checked={config.allowDuplicatePick}
-                onChange={(e) => setConfig({ ...config, allowDuplicatePick: e.target.checked })}
-                className="size-4 accent-[var(--color-gold)]"
-              />
-              <span>Cho phép 2 bên Pick trùng nhân vật</span>
-            </label>
-
             <div className="flex flex-col justify-center gap-2 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs">
+              <label className="flex cursor-pointer items-center gap-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={config.allowDuplicatePick}
+                  onChange={(e) => setConfig({ ...config, allowDuplicatePick: e.target.checked })}
+                  className="size-4 accent-[var(--color-gold)]"
+                />
+                <span>Cho phép 2 bên Pick trùng NV</span>
+              </label>
               <label className="flex cursor-pointer items-center gap-2 select-none">
                 <input
                   type="checkbox"
@@ -196,6 +212,48 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
                 <span>Đặt làm bộ luật mặc định</span>
               </label>
             </div>
+          </div>
+
+          <div className="grid gap-4 rounded-lg border border-line bg-bg/40 p-3.5 md:grid-cols-2">
+            <div className="flex flex-col justify-center gap-1.5 text-xs">
+              <label className="flex cursor-pointer items-center gap-2 font-semibold text-text select-none">
+                <input
+                  type="checkbox"
+                  checked={config.useReserveTime ?? false}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      useReserveTime: e.target.checked,
+                      reserveTimeSeconds: config.reserveTimeSeconds ?? 120,
+                    })
+                  }
+                  className="size-4 accent-[var(--color-gold)]"
+                />
+                <span>Sử dụng Thời gian gốc (Reserve Time)</span>
+              </label>
+              <p className="text-[11px] text-muted">
+                Khi hết thời gian lượt Ban hoặc Pick, thời gian tiêu hao thêm sẽ trừ thẳng vào thời gian gốc của người chơi trước khi tính phạt quá giờ (mặc định 120s).
+              </p>
+            </div>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-medium text-text">Thời gian gốc cấp mỗi người chơi (giây)</span>
+              <input
+                type="number"
+                min={0}
+                max={3600}
+                disabled={!(config.useReserveTime ?? false)}
+                value={config.reserveTimeSeconds ?? 120}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    reserveTimeSeconds: Math.min(3600, Math.max(0, Number(e.target.value) || 0)),
+                  })
+                }
+                className="h-9 max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text disabled:opacity-45"
+              />
+              <span className="text-[11px] text-muted">Mặc định: 120 giây (2:00) cho mỗi bên</span>
+            </label>
           </div>
 
           <div className="rounded-lg border border-line bg-bg/40 p-3.5">
@@ -226,9 +284,11 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
           </div>
 
           <div className="rounded-xl border border-line bg-bg/30 p-4">
-            <h3 className="mb-3 text-sm font-bold text-text">Tùy chỉnh thứ tự từng lượt Ban / Pick</h3>
+            <h3 className="mb-3 text-sm font-bold text-text">Tùy chỉnh thứ tự & thời gian từng lượt Ban / Pick</h3>
             <DraftStepsEditor
               steps={config.draftSteps}
+              banSeconds={config.banSeconds ?? config.perTurnSeconds}
+              pickSeconds={config.pickSeconds ?? config.perTurnSeconds}
               onChange={(draftSteps) => setConfig({ ...config, draftSteps })}
             />
           </div>

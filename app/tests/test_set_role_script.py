@@ -155,3 +155,84 @@ def test_set_role_errors(
     assert main(["809876543", "--db", empty_db_url]) == 1
     err = capsys.readouterr().err
     assert "Lỗi cơ sở dữ liệu" in err
+
+
+def test_set_role_remote_api_mode(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db_file = tmp_path / "test_remote_role.db"
+    db_url = f"sqlite+aiosqlite:///{db_file.as_posix()}"
+    test_engine, test_session_factory = create_engine_and_session(db_url)
+    test_app = create_app(db_engine=test_engine, session_factory=test_session_factory)
+
+    async def override_get_db():
+        async with test_session_factory() as session:
+            yield session
+
+    test_app.dependency_overrides[get_db] = override_get_db
+    monkeypatch.setenv("ADMIN_SECRET_KEY", "cli-remote-secret")
+    get_settings.cache_clear()
+
+    try:
+        with TestClient(test_app) as client:
+            reg_res = client.post(
+                "/api/auth/register",
+                json={
+                    "uid": "809999111",
+                    "displayName": "Remote Player",
+                    "email": "remote@example.com",
+                    "password": "Password123",
+                },
+            )
+            assert reg_res.status_code == 200
+            headers = {"Authorization": f"Bearer {reg_res.json()['token']}"}
+
+            # Thiếu secret (và không đặt ADMIN_SECRET_KEY trong env) -> trả mã 2
+            monkeypatch.delenv("ADMIN_SECRET_KEY", raising=False)
+            assert main(["809999111", "--api-url", "http://testserver"], http_client=client) == 2
+            monkeypatch.setenv("ADMIN_SECRET_KEY", "cli-remote-secret")
+
+            # Nâng quyền từ xa theo UID
+            capsys.readouterr()
+            rc = main(
+                ["809999111", "--api-url", "http://testserver", "--secret", "cli-remote-secret"],
+                http_client=client,
+            )
+            out = capsys.readouterr().out
+            assert rc == 0
+            assert "-> admin" in out
+            assert client.get("/api/auth/me", headers=headers).json()["role"] == "admin"
+
+            # Liệt kê danh sách từ xa
+            rc = main(
+                ["--list", "--role", "admin", "--api-url", "http://testserver", "--secret", "cli-remote-secret"],
+                http_client=client,
+            )
+            out = capsys.readouterr().out
+            assert rc == 0
+            assert "809999111" in out
+
+            # Hạ quyền từ xa theo email
+            rc = main(
+                [
+                    "--email",
+                    "Remote@Example.com",
+                    "--role",
+                    "player",
+                    "--api-url",
+                    "http://testserver",
+                    "--secret",
+                    "cli-remote-secret",
+                ],
+                http_client=client,
+            )
+            out = capsys.readouterr().out
+            assert rc == 0
+            assert "-> player" in out
+            assert client.get("/api/auth/me", headers=headers).json()["role"] == "player"
+    finally:
+        monkeypatch.delenv("ADMIN_SECRET_KEY", raising=False)
+        get_settings.cache_clear()
+        asyncio.run(test_engine.dispose())

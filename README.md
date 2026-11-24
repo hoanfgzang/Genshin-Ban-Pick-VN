@@ -31,9 +31,15 @@ py -m venv app/.venv
 .\app\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-Tài khoản **Admin mặc định** được tự động khởi tạo khi chạy lần đầu (cấu hình qua biến môi trường trong `app/.env`, tham khảo `app/.env.example`):
-- **UID**: `100000000`
-- **Mật khẩu**: `admin12345`
+Tài khoản **Admin gốc (Chủ hệ thống)** được tự động khởi tạo khi chạy lần đầu (cấu hình qua biến môi trường trong `app/.env`, tham khảo `app/.env.example`):
+- **UID**: `100000000` (hoặc đặt `SEED_ADMIN_UID` theo UID của bạn khi deploy lên server)
+- **Mật khẩu**: `admin12345` (hãy đổi `SEED_ADMIN_PASSWORD` khi chạy thật)
+- **Phân quyền tài khoản khác**:
+  - Trên web: đăng nhập Chủ hệ thống và vào mục **Quản lý tài khoản** (`/admin/users`), hoặc mở khóa từ xa bằng `ADMIN_SECRET_KEY`.
+  - Qua CLI từ máy cá nhân lên server:
+    ```powershell
+    .\app\.venv\Scripts\python.exe -m app.scripts.set_role <UID> --api-url https://your-server.com --secret <ADMIN_SECRET_KEY>
+    ```
 
 Chạy kiểm thử Backend:
 ```powershell

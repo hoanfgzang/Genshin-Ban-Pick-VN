@@ -14,6 +14,7 @@ class DraftStep(CamelModel):
     step: int = Field(ge=1)
     side: Literal["blue", "red"]
     action: Literal["ban", "pick"]
+    seconds: int | None = Field(default=None, ge=0, le=600)
 
 
 class CostMilestone(CamelModel):
@@ -151,9 +152,28 @@ class RuleSetConfig(CamelModel):
     allow_duplicate_pick: bool = False
     tie_break_rule: TieBreakRule = "none"
     per_turn_seconds: int = Field(default=45, ge=0, le=600)
+    ban_seconds: int = Field(default=45, ge=0, le=600)
+    pick_seconds: int = Field(default=45, ge=0, le=600)
+    use_reserve_time: bool = False
+    reserve_time_seconds: int = Field(default=120, ge=0, le=3600)
     weapon_phase_seconds: int = Field(default=90, ge=0, le=900)
     chamber_base_seconds: Literal[540] = 540
     cost_rules: CostRules = Field(default_factory=CostRules)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_timer_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        d = dict(data)
+        per_turn = d.get("perTurnSeconds", d.get("per_turn_seconds", 45))
+        if "ban_seconds" not in d and "banSeconds" not in d:
+            d["banSeconds"] = per_turn
+        if "pick_seconds" not in d and "pickSeconds" not in d:
+            d["pickSeconds"] = per_turn
+        if "reserve_time_seconds" not in d and "reserveTimeSeconds" not in d:
+            d["reserveTimeSeconds"] = 120
+        return d
 
     @field_validator("draft_steps")
     @classmethod
@@ -164,7 +184,10 @@ class RuleSetConfig(CamelModel):
         red_picks = sum(1 for s in steps if s.side == "red" and s.action == "pick")
         if blue_picks == 0 or red_picks == 0:
             raise ValueError("Mỗi bên phải có ít nhất 1 lượt pick.")
-        return [DraftStep(step=idx + 1, side=s.side, action=s.action) for idx, s in enumerate(steps)]
+        return [
+            DraftStep(step=idx + 1, side=s.side, action=s.action, seconds=s.seconds)
+            for idx, s in enumerate(steps)
+        ]
 
 
 def default_ruleset_config() -> RuleSetConfig:
@@ -173,6 +196,10 @@ def default_ruleset_config() -> RuleSetConfig:
         allow_duplicate_pick=False,
         tie_break_rule="none",
         per_turn_seconds=45,
+        ban_seconds=30,
+        pick_seconds=45,
+        use_reserve_time=True,
+        reserve_time_seconds=120,
         weapon_phase_seconds=90,
         chamber_base_seconds=540,
         cost_rules=CostRules(

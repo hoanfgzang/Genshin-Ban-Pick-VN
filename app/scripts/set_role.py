@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from dataclasses import dataclass
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
@@ -55,6 +58,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--db",
         default=None,
         help="Chuỗi kết nối DATABASE_URL tùy chọn (mặc định lấy từ cấu hình app).",
+    )
+    parser.add_argument(
+        "--api-url",
+        default=None,
+        help="URL máy chủ Backend để phân quyền từ xa qua API (vd: https://your-domain.com).",
+    )
+    parser.add_argument(
+        "--secret",
+        default=None,
+        help="Mã khóa ADMIN_SECRET_KEY khi gọi --api-url (mặc định đọc biến môi trường ADMIN_SECRET_KEY).",
     )
     return parser
 
@@ -108,7 +121,34 @@ async def update_user_role(
         await db_engine.dispose()
 
 
-def _format_users_table(users: Sequence[User]) -> str:
+@dataclass
+class _RemoteUserRow:
+    id: str
+    uid: str
+    role: str
+    display_name: str
+    email: str | None
+
+
+def _build_http_client(base_url: str) -> httpx.Client:
+    return httpx.Client(base_url=base_url.rstrip("/"), timeout=15.0)
+
+
+def _extract_api_error(resp: httpx.Response) -> str:
+    try:
+        data = resp.json()
+        if isinstance(data, dict):
+            if isinstance(data.get("message"), str) and data["message"]:
+                return data["message"]
+            detail = data.get("detail")
+            if isinstance(detail, str) and detail:
+                return detail
+    except Exception:
+        pass
+    return f"HTTP {resp.status_code}"
+
+
+def _format_users_table(users: Sequence[User | _RemoteUserRow]) -> str:
     rows = [
         (u.uid, u.role, u.display_name, u.email or "-")
         for u in users
@@ -130,7 +170,107 @@ def _format_users_table(users: Sequence[User]) -> str:
     return "\n".join(lines)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def _run_remote_api(
+    *,
+    api_url: str,
+    secret: str,
+    is_list: bool,
+    uid: str | None,
+    email: str | None,
+    role_arg: Role | None,
+    http_client: httpx.Client | None = None,
+) -> int:
+    headers = {"X-Admin-Secret": secret}
+    client = http_client or _build_http_client(api_url)
+    should_close = http_client is None
+    try:
+        if is_list:
+            params: dict[str, str] = {}
+            if role_arg is not None:
+                params["role"] = role_arg
+            resp = client.get("/api/admin/users", params=params, headers=headers)
+            if resp.status_code >= 400:
+                print(f"Lỗi API: {_extract_api_error(resp)}", file=sys.stderr)
+                return 1
+            items = resp.json()
+            if not items:
+                print("Không có tài khoản nào.")
+                return 0
+            rows = [
+                _RemoteUserRow(
+                    id=str(item["id"]),
+                    uid=str(item["uid"]),
+                    role=str(item["role"]),
+                    display_name=str(item["displayName"]),
+                    email=item.get("email"),
+                )
+                for item in items
+            ]
+            print(_format_users_table(rows))
+            return 0
+
+        target_role: Role = role_arg or "admin"
+        if uid is not None:
+            resp = client.post(
+                "/api/admin/users/by-uid",
+                json={"uid": uid, "role": target_role},
+                headers=headers,
+            )
+            if resp.status_code >= 400:
+                print(f"Lỗi API: {_extract_api_error(resp)}", file=sys.stderr)
+                return 1
+            item = resp.json()
+        else:
+            assert email is not None
+            norm_email = email.strip().lower()
+            list_resp = client.get(
+                "/api/admin/users",
+                params={"q": norm_email},
+                headers=headers,
+            )
+            if list_resp.status_code >= 400:
+                print(f"Lỗi API: {_extract_api_error(list_resp)}", file=sys.stderr)
+                return 1
+            matched = next(
+                (
+                    u
+                    for u in list_resp.json()
+                    if (u.get("email") or "").strip().lower() == norm_email
+                ),
+                None,
+            )
+            if not matched:
+                print(f"Không tìm thấy tài khoản có email '{email}'.", file=sys.stderr)
+                return 1
+            resp = client.patch(
+                f"/api/admin/users/{matched['id']}/role",
+                json={"role": target_role},
+                headers=headers,
+            )
+            if resp.status_code >= 400:
+                print(f"Lỗi API: {_extract_api_error(resp)}", file=sys.stderr)
+                return 1
+            item = resp.json()
+
+        print(
+            f"Đã cập nhật quyền cho '{item['displayName']}' (UID: {item['uid']}): "
+            f"-> {item['role']}."
+        )
+        print("Người dùng chỉ cần tải lại trang (F5) để áp dụng quyền mới.")
+        return 0
+    except httpx.HTTPError as exc:
+        print(f"Không thể kết nối tới máy chủ {api_url}: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        if should_close:
+            client.close()
+
+
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    http_client: httpx.Client | None = None,
+) -> int:
     _configure_stdio_utf8()
     args = build_parser().parse_args(argv)
 
@@ -138,11 +278,37 @@ def main(argv: Sequence[str] | None = None) -> int:
     email = args.email.strip() if args.email is not None else None
     uid = uid or None
     email = email or None
+    api_url = args.api_url.strip() if args.api_url is not None else None
+    api_url = api_url or None
+
+    if args.list and (uid or email):
+        print("Lỗi: Không thể truyền UID hoặc --email cùng với --list.", file=sys.stderr)
+        return 2
+
+    if not args.list and bool(uid) == bool(email):
+        print("Lỗi: Vui lòng cung cấp đúng 1 trong 2 tham số: <uid> hoặc --email.", file=sys.stderr)
+        return 2
+
+    if api_url:
+        raw_secret = args.secret if args.secret is not None else os.environ.get("ADMIN_SECRET_KEY", "")
+        secret = raw_secret.strip()
+        if not secret:
+            print(
+                "Lỗi: Khi dùng --api-url cần truyền --secret hoặc đặt biến môi trường ADMIN_SECRET_KEY.",
+                file=sys.stderr,
+            )
+            return 2
+        return _run_remote_api(
+            api_url=api_url,
+            secret=secret,
+            is_list=args.list,
+            uid=uid,
+            email=email,
+            role_arg=args.role,
+            http_client=http_client,
+        )
 
     if args.list:
-        if uid or email:
-            print("Lỗi: Không thể truyền UID hoặc --email cùng với --list.", file=sys.stderr)
-            return 2
         try:
             users = asyncio.run(list_users(args.db, args.role))
         except OperationalError as exc:
@@ -156,10 +322,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         print(_format_users_table(users))
         return 0
-
-    if bool(uid) == bool(email):
-        print("Lỗi: Vui lòng cung cấp đúng 1 trong 2 tham số: <uid> hoặc --email.", file=sys.stderr)
-        return 2
 
     target_role: Role = args.role or "admin"
     try:

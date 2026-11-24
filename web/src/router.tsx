@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
+import { AdminUsersPage } from '@/pages/AdminUsersPage'
 import { HomePage } from '@/pages/HomePage'
 import { LobbyPage } from '@/pages/LobbyPage'
 import { LoginPage } from '@/pages/LoginPage'
@@ -19,6 +20,7 @@ export const routes = [
       { path: 'rules', element: <RulesPage /> },
       { path: 'lobby', element: <LobbyPage /> },
       { path: 'match/:code', element: <MatchPage /> },
+      { path: 'admin/users', element: <AdminUsersPage /> },
       {
         element: <ProtectedRoute />,
         children: [{ path: 'profile', element: <ProfilePage /> }],

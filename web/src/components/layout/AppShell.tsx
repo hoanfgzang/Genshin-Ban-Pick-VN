@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useMatch } from 'react-router'
 import { Toaster } from '@/components/ui/Toaster'
 import { BRAND } from '@/config/brand'
+import { useAuthStore } from '@/features/auth/authStore'
 import { cn } from '@/lib/cn'
 import { UserMenu } from './UserMenu'
 
@@ -18,6 +19,10 @@ const NAV: NavItem[] = [
 
 export function AppShell() {
   const isMatchPage = Boolean(useMatch('/match/:code'))
+  const user = useAuthStore((s) => s.user)
+  const navItems = user?.isSuperAdmin
+    ? [...NAV, { to: '/admin/users', label: 'Quản lý tài khoản' }]
+    : NAV
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -34,7 +39,7 @@ export function AppShell() {
             className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Điều hướng chính"
           >
-            {NAV.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}

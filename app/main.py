@@ -14,7 +14,7 @@ from .core.database import Base, async_session_maker, engine
 from .core.errors import AppError
 from .core.security import hash_password
 from .models import Match, RuleSet, User, UserCharacter  # noqa: F401
-from .routers import auth, catalog, inventory, matches, rulesets, ws_match
+from .routers import admin_users, auth, catalog, inventory, matches, rulesets, ws_match
 from .schemas.ruleset import default_ruleset_config
 from .services.room_manager import room_manager
 
@@ -33,6 +33,9 @@ async def seed_initial_data(session_factory: async_sessionmaker[AsyncSession]) -
                 role="admin",
             )
             db.add(admin)
+            await db.flush()
+        elif admin.role != "admin":
+            admin.role = "admin"
             await db.flush()
 
         rs_res = await db.execute(select(RuleSet).limit(1))
@@ -113,6 +116,7 @@ def create_app(
     application.include_router(catalog.router)
     application.include_router(inventory.router)
     application.include_router(rulesets.router)
+    application.include_router(admin_users.router)
     application.include_router(matches.router)
     application.include_router(ws_match.router)
 

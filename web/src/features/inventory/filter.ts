@@ -1,8 +1,10 @@
-import type { Character, Element, Rarity, WeaponType } from '@/domain/character'
+import { ELEMENTS, type Character, type Element, type Rarity, type WeaponType } from '@/domain/character'
+import { calcCharacterCost } from '@/domain/cost'
 import type { Inventory } from '@/domain/inventory'
+import { createDefaultRuleSetConfig } from '@/domain/ruleset'
 
 export type OwnershipFilter = 'all' | 'owned' | 'missing'
-export type SortKey = 'release' | 'name' | 'rarity' | 'constellation' | 'level'
+export type SortKey = 'release' | 'name' | 'rarity' | 'constellation' | 'level' | 'element' | 'cost'
 
 export interface InventoryFilter {
   q: string
@@ -54,6 +56,11 @@ export function filterCharacters(
   const ownedFirst = (a: Character, b: Character) =>
     Number(!!owned[b.slug]) - Number(!!owned[a.slug])
 
+  const defaultCostRules = createDefaultRuleSetConfig().costRules
+  const elementOrder = (el: Element | null) => (el ? ELEMENTS.indexOf(el) : ELEMENTS.length)
+  const charCost = (c: Character) =>
+    calcCharacterCost(c.slug, owned[c.slug]?.constellation ?? 0, defaultCostRules)
+
   const sorters: Record<SortKey, (a: Character, b: Character) => number> = {
     release: byRelease,
     name: (a, b) => a.name.localeCompare(b.name, 'vi'),
@@ -66,6 +73,13 @@ export function filterCharacters(
       ownedFirst(a, b) ||
       (owned[b.slug]?.level ?? 0) - (owned[a.slug]?.level ?? 0) ||
       b.rarity - a.rarity,
+    element: (a, b) =>
+      elementOrder(a.element) - elementOrder(b.element) || a.name.localeCompare(b.name, 'vi'),
+    cost: (a, b) =>
+      ownedFirst(a, b) ||
+      charCost(b) - charCost(a) ||
+      b.rarity - a.rarity ||
+      a.name.localeCompare(b.name, 'vi'),
   }
   return result.sort(sorters[f.sort])
 }
@@ -91,7 +105,7 @@ export function filterFromParams(
     weapons: list(params.get('w'), allowed.weapons),
     rarities: list(params.get('r'), [5, 4] as const),
     ownership: own === 'owned' || own === 'missing' ? own : 'all',
-    sort: (['release', 'name', 'rarity', 'constellation', 'level'] as const).includes(
+    sort: (['release', 'name', 'rarity', 'constellation', 'level', 'element', 'cost'] as const).includes(
       sort as SortKey,
     )
       ? (sort as SortKey)

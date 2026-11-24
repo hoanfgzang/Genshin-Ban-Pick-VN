@@ -107,7 +107,7 @@ export function PreviousGamesPicksPanel({ state }: Props) {
                           />
                         )}
                       </div>
-                      <div className="truncate bg-panel-2 px-1 py-0.5 text-center text-[10px] font-semibold text-text">
+                      <div className="truncate bg-white px-1 py-0.5 text-center text-[10px] font-semibold text-black">
                         {ch?.name ?? pick.characterSlug}
                       </div>
                       <div className="bg-black/75 py-0.5 text-center font-mono text-[9px] font-bold text-muted">

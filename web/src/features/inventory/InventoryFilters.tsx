@@ -30,10 +30,12 @@ const OWN_OPTIONS: { value: OwnershipFilter; label: string }[] = [
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'rarity', label: 'Độ hiếm' },
-  { value: 'release', label: 'Mới nhất' },
   { value: 'name', label: 'Tên A–Z' },
+  { value: 'element', label: 'Hệ' },
+  { value: 'cost', label: 'Cost' },
   { value: 'constellation', label: 'Cung mệnh' },
   { value: 'level', label: 'Level' },
+  { value: 'release', label: 'Mới nhất' },
 ]
 
 export function InventoryFilters({ filter, onChange }: Props) {

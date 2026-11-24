@@ -34,12 +34,15 @@ def _set_auth_cookie(response: Response, token: str, remember: bool) -> None:
 
 
 def _to_user_response(user: User) -> UserResponse:
+    settings = get_settings()
+    is_admin = user.role == "admin"
     return UserResponse(
         id=user.id,
         uid=user.uid,
         display_name=user.display_name,
         email=user.email,
-        role="admin" if user.role == "admin" else "player",
+        role="admin" if is_admin else "player",
+        is_super_admin=is_admin and user.uid == settings.SEED_ADMIN_UID,
         is_guest=False,
         created_at=user.created_at,
     )

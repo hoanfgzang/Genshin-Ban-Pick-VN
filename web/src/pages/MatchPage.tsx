@@ -39,6 +39,9 @@ export function MatchPage() {
   const [weaponTarget, setWeaponTarget] = useState<{ side: MatchSide; pick: MatchPickSlot } | null>(
     null,
   )
+  const [draftHover, setDraftHover] = useState<{ stepKey: string; slug: string | null } | null>(
+    null,
+  )
 
   if (loading) return <FullPageSpinner label="Đang kết nối phòng đấu…" />
 
@@ -102,6 +105,23 @@ export function MatchPage() {
   const isBo3 = state.format === 'bo3'
   const currentGame = state.currentGame ?? 1
   const priorGames = getPriorGames(state)
+  const currentStepKey = state.status === 'drafting' ? `${currentGame}-${state.currentStepIndex}` : ''
+  const effectiveHoverSlug =
+    state.status === 'drafting'
+      ? draftHover?.stepKey === currentStepKey
+        ? draftHover.slug
+        : (state.hoverCharacterSlug ?? null)
+      : null
+
+  const handleDraftHover = (slug: string | null) => {
+    setDraftHover({ stepKey: currentStepKey, slug })
+    sendAction({ action: 'draft_hover', characterSlug: slug })
+  }
+
+  const handleDraftAction = (slug: string | null) => {
+    setDraftHover(null)
+    sendAction({ action: 'draft_pick_or_ban', characterSlug: slug })
+  }
 
   return (
     <div
@@ -179,6 +199,7 @@ export function MatchPage() {
 
           <DraftSlotsBoard
             state={state}
+            hoverCharacterSlug={effectiveHoverSlug}
             canEditWeaponsForSide={canEditWeaponsForSide}
             onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
           />
@@ -199,11 +220,14 @@ export function MatchPage() {
               state={state}
               mySide={mySide}
               isAdmin={isAdmin}
-              onDraftAction={(characterSlug) =>
-                sendAction({ action: 'draft_pick_or_ban', characterSlug })
-              }
+              selectedSlug={effectiveHoverSlug}
+              onSelectSlug={handleDraftHover}
+              onDraftAction={handleDraftAction}
               onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
-              onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
+              onUndoStep={() => {
+                setDraftHover(null)
+                sendAction({ action: 'undo_draft_step' })
+              }}
               onRequestUndo={() => sendAction({ action: 'request_undo' })}
             />
           ) : (

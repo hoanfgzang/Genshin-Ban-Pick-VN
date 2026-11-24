@@ -174,6 +174,14 @@ class RoomManager:
                         "tone": "info",
                         "message": f"{user.display_name} đã chọn {side_text} cho Ván {state.current_game + 1}.",
                     }
+                elif action == "draft_hover":
+                    raw_slug = payload.get("characterSlug")
+                    slug = raw_slug if isinstance(raw_slug, str) and raw_slug else None
+                    next_state = draft_engine.set_draft_hover(
+                        state,
+                        user_id=user.id,
+                        character_slug=slug,
+                    )
                 elif action == "draft_pick_or_ban":
                     next_state = draft_engine.apply_draft_action(
                         state,

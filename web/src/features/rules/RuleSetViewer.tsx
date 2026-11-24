@@ -12,7 +12,7 @@ import {
   formatCost,
   formatSeconds,
 } from '@/domain/cost'
-import { TIE_BREAK_OPTIONS, type RuleSet } from '@/domain/ruleset'
+import { getStepBaseSeconds, TIE_BREAK_OPTIONS, type RuleSet } from '@/domain/ruleset'
 import { REFINEMENTS, type WeaponRarity } from '@/domain/weapon'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
@@ -113,12 +113,17 @@ export function RuleSetViewer({ ruleset }: Props) {
               <p className="mt-1.5 max-w-3xl text-sm text-muted">{ruleset.description}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
             <StatBox label="Đội Xanh (Trái)" value={`${blueBans} Ban · ${bluePicks} Pick`} cls="text-hydro" />
             <StatBox label="Đội Đỏ (Phải)" value={`${redBans} Ban · ${redPicks} Pick`} cls="text-danger" />
             <StatBox
-              label="Mỗi lượt / Vũ khí"
-              value={`${config.perTurnSeconds || '∞'}s / ${config.weaponPhaseSeconds || '∞'}s`}
+              label="Ban / Pick / Vũ khí"
+              value={`${(config.banSeconds ?? config.perTurnSeconds) || '∞'}s / ${(config.pickSeconds ?? config.perTurnSeconds) || '∞'}s / ${config.weaponPhaseSeconds || '∞'}s`}
+            />
+            <StatBox
+              label="Thời gian gốc"
+              value={config.useReserveTime ? `${config.reserveTimeSeconds ?? 120}s / người` : 'Không dùng'}
+              cls={config.useReserveTime ? 'text-gold-strong' : 'text-muted'}
             />
             <StatBox label="Mốc 3 ải cố định" value="09:00 / ải" cls="text-gold-strong" />
           </div>
@@ -135,21 +140,25 @@ export function RuleSetViewer({ ruleset }: Props) {
             Thứ tự Ban / Pick ({config.draftSteps.length} lượt — Xanh Dương bên trái đi trước)
           </h3>
           <div className="flex flex-wrap gap-1.5">
-            {config.draftSteps.map((s) => (
-              <span
-                key={s.step}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold',
-                  s.side === 'blue'
-                    ? 'border-hydro/40 bg-hydro/10 text-hydro'
-                    : 'border-danger/40 bg-danger/10 text-danger',
-                )}
-              >
-                <span className="opacity-70">#{s.step}</span>
-                <span>{s.side === 'blue' ? 'Xanh' : 'Đỏ'}</span>
-                <span className="rounded bg-black/30 px-1 text-[10px] uppercase">{s.action}</span>
-              </span>
-            ))}
+            {config.draftSteps.map((s) => {
+              const stepSec = getStepBaseSeconds(config, s)
+              return (
+                <span
+                  key={s.step}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold',
+                    s.side === 'blue'
+                      ? 'border-hydro/40 bg-hydro/10 text-hydro'
+                      : 'border-danger/40 bg-danger/10 text-danger',
+                  )}
+                >
+                  <span className="opacity-70">#{s.step}</span>
+                  <span>{s.side === 'blue' ? 'Xanh' : 'Đỏ'}</span>
+                  <span className="rounded bg-black/30 px-1 text-[10px] uppercase">{s.action}</span>
+                  <span className="font-mono text-[10px] opacity-80">{stepSec > 0 ? `${stepSec}s` : '∞'}</span>
+                </span>
+              )
+            })}
           </div>
         </div>
       </section>

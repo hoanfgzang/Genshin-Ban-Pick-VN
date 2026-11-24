@@ -9,6 +9,8 @@ import { cn } from '@/lib/cn'
 
 interface Props {
   steps: DraftStep[]
+  banSeconds: number
+  pickSeconds: number
   onChange: (next: DraftStep[]) => void
 }
 
@@ -16,7 +18,7 @@ function renumber(steps: DraftStep[]): DraftStep[] {
   return steps.map((s, idx) => ({ ...s, step: idx + 1 }))
 }
 
-export function DraftStepsEditor({ steps, onChange }: Props) {
+export function DraftStepsEditor({ steps, banSeconds, pickSeconds, onChange }: Props) {
   const blueBans = steps.filter((s) => s.side === 'blue' && s.action === 'ban').length
   const bluePicks = steps.filter((s) => s.side === 'blue' && s.action === 'pick').length
   const redBans = steps.filter((s) => s.side === 'red' && s.action === 'ban').length
@@ -46,7 +48,14 @@ export function DraftStepsEditor({ steps, onChange }: Props) {
   }
 
   const addStep = (side: MatchSide, action: DraftActionType) => {
-    onChange(renumber([...steps, { step: steps.length + 1, side, action }]))
+    onChange(renumber([...steps, { step: steps.length + 1, side, action, seconds: null }]))
+  }
+
+  const updateSeconds = (idx: number, raw: string) => {
+    const trimmed = raw.trim()
+    const nextSeconds =
+      trimmed === '' ? null : Math.min(600, Math.max(0, Math.trunc(Number(trimmed) || 0)))
+    onChange(renumber(steps.map((s, i) => (i === idx ? { ...s, seconds: nextSeconds } : s))))
   }
 
   return (
@@ -110,6 +119,17 @@ export function DraftStepsEditor({ steps, onChange }: Props) {
               </button>
             </div>
             <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={0}
+                max={600}
+                value={s.seconds ?? ''}
+                placeholder={`${s.action === 'ban' ? banSeconds : pickSeconds}s`}
+                onChange={(e) => updateSeconds(idx, e.target.value)}
+                title="Thời gian riêng cho lượt này (để trống = dùng mặc định Ban/Pick)"
+                aria-label={`Thời gian lượt ${s.step} (giây)`}
+                className="h-6 w-14 rounded border border-line bg-bg/70 px-1 text-center font-mono text-[11px] text-text placeholder:text-muted/60 focus:border-gold focus:outline-none"
+              />
               <button
                 type="button"
                 onClick={() => move(idx, -1)}

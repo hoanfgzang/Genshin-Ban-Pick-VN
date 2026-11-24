@@ -90,6 +90,12 @@ def _required_picks_for_side(ruleset: RuleSetConfig, side: SideName) -> int:
     return sum(1 for s in ruleset.draft_steps if s.side == side and s.action == "pick")
 
 
+def get_step_seconds(ruleset: RuleSetConfig, step: DraftStep) -> int:
+    if step.seconds is not None:
+        return step.seconds
+    return ruleset.ban_seconds if step.action == "ban" else ruleset.pick_seconds
+
+
 def _compute_deadline(seconds: int, extra_cost_seconds: float = 0.0) -> str | None:
     if seconds <= 0:
         return None
@@ -102,7 +108,7 @@ def _step_deadline_for_index(state: MatchState, step_index: int) -> str | None:
         return None
     step = state.ruleset.draft_steps[step_index]
     bonus = state.sides[step.side].total_cost * state.ruleset.cost_rules.draft_bonus_seconds_per_cost
-    return _compute_deadline(state.ruleset.per_turn_seconds, bonus)
+    return _compute_deadline(get_step_seconds(state.ruleset, step), bonus)
 
 
 def _calc_overtime_seconds(deadline_iso: str | None, now: datetime | None = None) -> int:
@@ -121,6 +127,30 @@ def _calc_overtime_seconds(deadline_iso: str | None, now: datetime | None = None
     if elapsed < 1.0:
         return 0
     return int(math.floor(elapsed))
+
+
+def _consume_draft_turn_overtime(
+    side_state: SideState,
+    ruleset: RuleSetConfig,
+    deadline_iso: str | None,
+    now: datetime | None = None,
+) -> None:
+    overtime = _calc_overtime_seconds(deadline_iso, now)
+    if overtime <= 0:
+        return
+    if ruleset.use_reserve_time:
+        available = max(0.0, side_state.reserve_remaining_seconds)
+        used = min(available, float(overtime))
+        side_state.reserve_remaining_seconds = round(available - used, 2)
+        overflow = round(float(overtime) - used, 2)
+        if overflow > 0:
+            side_state.overtime_penalty_seconds = round(
+                side_state.overtime_penalty_seconds + overflow, 2
+            )
+    else:
+        side_state.overtime_penalty_seconds = round(
+            side_state.overtime_penalty_seconds + overtime, 2
+        )
 
 
 def _compute_final_score(side: SideState) -> float:
@@ -230,6 +260,7 @@ def _build_side_summary(side_name: SideName, side_state: SideState) -> Completed
         total_cost=side_state.total_cost,
         cost_penalty_seconds=side_state.cost_penalty_seconds,
         weapon_refinement_seconds=side_state.weapon_refinement_seconds,
+        reserve_remaining_seconds=side_state.reserve_remaining_seconds,
         overtime_penalty_seconds=side_state.overtime_penalty_seconds,
         chamber_total_seconds=side_state.chamber_total_seconds,
         final_score=side_state.final_score,
@@ -381,16 +412,17 @@ def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
                 b_uid = next_state.sides["blue"].player.user_id
                 r_uid = next_state.sides["red"].player.user_id
                 next_state.series_scores = {b_uid: 0, r_uid: 0}
+                reserve_init = (
+                    float(next_state.ruleset.reserve_time_seconds)
+                    if next_state.ruleset.use_reserve_time
+                    else 0.0
+                )
+                next_state.sides["blue"].reserve_remaining_seconds = reserve_init
+                next_state.sides["red"].reserve_remaining_seconds = reserve_init
                 next_state.status = "drafting"
                 next_state.current_step_index = 0
-                first_step = next_state.ruleset.draft_steps[0]
-                bonus = (
-                    next_state.sides[first_step.side].total_cost
-                    * next_state.ruleset.cost_rules.draft_bonus_seconds_per_cost
-                )
-                next_state.turn_deadline_at = _compute_deadline(
-                    next_state.ruleset.per_turn_seconds, bonus
-                )
+                next_state.hover_character_slug = None
+                next_state.turn_deadline_at = _step_deadline_for_index(next_state, 0)
         return next_state
 
     if state.status == "between_games":
@@ -439,10 +471,16 @@ def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
             blue_prev = by_uid[next_setup.blue_user_id]
             red_prev = by_uid[next_setup.red_user_id]
 
+            reserve_init = (
+                float(next_state.ruleset.reserve_time_seconds)
+                if next_state.ruleset.use_reserve_time
+                else 0.0
+            )
             next_state.sides = {
                 "blue": SideState(
                     player=blue_prev.player.model_copy(deep=True) if blue_prev.player else None,
                     ready=True,
+                    reserve_remaining_seconds=reserve_init,
                     owned_characters={
                         k: v.model_copy(deep=True) for k, v in blue_prev.owned_characters.items()
                     },
@@ -450,6 +488,7 @@ def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
                 "red": SideState(
                     player=red_prev.player.model_copy(deep=True) if red_prev.player else None,
                     ready=True,
+                    reserve_remaining_seconds=reserve_init,
                     owned_characters={
                         k: v.model_copy(deep=True) for k, v in red_prev.owned_characters.items()
                     },
@@ -459,6 +498,7 @@ def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
             next_state.next_game_setup = None
             next_state.status = "drafting"
             next_state.current_step_index = 0
+            next_state.hover_character_slug = None
             next_state.undo_request = None
             next_state.last_game_win_reason = None
             next_state.turn_deadline_at = _step_deadline_for_index(next_state, 0)
@@ -517,10 +557,9 @@ def apply_draft_action(
     next_state = state.model_copy(deep=True)
     side_state = next_state.sides[step.side]
 
-    overtime = _calc_overtime_seconds(state.turn_deadline_at, now)
-    if overtime > 0:
-        side_state.overtime_penalty_seconds = round(side_state.overtime_penalty_seconds + overtime, 2)
+    _consume_draft_turn_overtime(side_state, next_state.ruleset, state.turn_deadline_at, now)
     next_state.undo_request = None
+    next_state.hover_character_slug = None
 
     banned = _all_banned_slugs(next_state)
     all_picked = _all_picked_slugs(next_state)
@@ -673,16 +712,65 @@ def undo_draft_step(
                 "Chỉ người đang tới lượt hoặc Admin mới có thể lùi trực tiếp. Hãy dùng nút Xin lùi 1 hành động."
             )
         next_state = state.model_copy(deep=True)
-        overtime = _calc_overtime_seconds(state.turn_deadline_at, now)
-        if overtime > 0:
-            side_state = next_state.sides[current_step.side]
-            side_state.overtime_penalty_seconds = round(
-                side_state.overtime_penalty_seconds + overtime, 2
-            )
+        _consume_draft_turn_overtime(
+            next_state.sides[current_step.side],
+            next_state.ruleset,
+            state.turn_deadline_at,
+            now,
+        )
 
     _revert_last_completed_step(next_state)
     next_state.undo_request = None
+    next_state.hover_character_slug = None
     next_state.turn_deadline_at = _step_deadline_for_index(next_state, next_state.current_step_index)
+    return next_state
+
+
+def set_draft_hover(
+    state: MatchState,
+    *,
+    user_id: str,
+    character_slug: str | None,
+) -> MatchState:
+    if state.status != "drafting":
+        raise bad_request("INVALID_PHASE", "Không phải giai đoạn Ban/Pick.")
+
+    step = get_current_step(state)
+    if not step:
+        raise bad_request("DRAFT_COMPLETE", "Đã hoàn thành tất cả lượt Ban/Pick.")
+
+    actor_side = _find_user_side(state, user_id)
+    if actor_side != step.side:
+        raise forbidden("Chưa tới lượt của bạn.")
+
+    if character_slug is not None:
+        if not get_character(character_slug):
+            raise bad_request("UNKNOWN_CHARACTER", "Nhân vật không tồn tại.")
+        banned = _all_banned_slugs(state)
+        all_picked = _all_picked_slugs(state)
+        own_picked = _all_picked_slugs(state, step.side)
+        if step.action == "ban":
+            if character_slug in banned or character_slug in all_picked:
+                raise bad_request("ALREADY_USED", "Nhân vật này đã bị Ban hoặc đã được Pick.")
+        else:
+            side_state = state.sides[step.side]
+            if character_slug in banned:
+                raise bad_request("CHARACTER_BANNED", "Nhân vật này đã bị Ban.")
+            if character_slug in own_picked:
+                raise bad_request("ALREADY_PICKED", "Bạn đã Pick nhân vật này rồi.")
+            if not state.ruleset.allow_duplicate_pick and character_slug in all_picked:
+                raise bad_request("ALREADY_PICKED", "Nhân vật này đã được đối phương Pick.")
+            acting_user_id = side_state.player.user_id if side_state.player else user_id
+            if character_slug in _previously_picked_slugs_for_user(state, acting_user_id):
+                raise bad_request(
+                    "PREVIOUSLY_PICKED",
+                    "Bạn đã Pick nhân vật này ở ván trước và không thể chọn lại trong chế độ BO3.",
+                )
+            if character_slug not in side_state.owned_characters:
+                raise bad_request("NOT_OWNED", "Bạn không sở hữu nhân vật này trong kho tài khoản.")
+
+    next_state = state.model_copy(deep=True)
+    next_state.hover_character_slug = character_slug
     return next_state
 
 
@@ -767,6 +855,7 @@ def respond_undo_request(
     for _ in range(completed_count - req.target_step_index):
         _revert_last_completed_step(next_state)
 
+    next_state.hover_character_slug = None
     next_state.turn_deadline_at = _step_deadline_for_index(next_state, next_state.current_step_index)
     return next_state
 

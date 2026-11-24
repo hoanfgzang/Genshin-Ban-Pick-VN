@@ -74,6 +74,7 @@ class UserResponse(CamelModel):
     display_name: str
     email: str | None
     role: Literal["player", "admin"]
+    is_super_admin: bool = False
     is_guest: bool = False
     created_at: datetime
 

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     SEED_ADMIN_UID: str = "100000000"
     SEED_ADMIN_PASSWORD: str = "admin12345"
     SEED_ADMIN_NAME: str = "Admin"
+    ADMIN_SECRET_KEY: str = ""
 
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 

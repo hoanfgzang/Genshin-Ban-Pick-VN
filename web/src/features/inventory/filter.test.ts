@@ -107,6 +107,14 @@ describe('features/inventory/filter', () => {
     expect(
       filterCharacters(SAMPLE, inv, { ...DEFAULT_FILTER, sort: 'name' }).map((c) => c.slug),
     ).toEqual(['arlecchino', 'bennett', 'furina', 'traveler-boy'])
+
+    expect(
+      filterCharacters(SAMPLE, inv, { ...DEFAULT_FILTER, sort: 'element' }).map((c) => c.slug),
+    ).toEqual(['arlecchino', 'bennett', 'furina', 'traveler-boy'])
+
+    expect(
+      filterCharacters(SAMPLE, inv, { ...DEFAULT_FILTER, sort: 'cost' }).map((c) => c.slug),
+    ).toEqual(['furina', 'bennett', 'arlecchino', 'traveler-boy'])
   })
 
   it('đồng bộ filter với URLSearchParams và bỏ qua giá trị không hợp lệ', () => {

@@ -98,33 +98,31 @@ export function TeamSlotCard({
           {char?.element && <ElementIcon element={char.element} className="size-3.5" />}
         </div>
 
-        {/* Tên & cost nhân vật */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-1.5 pt-5 pb-1 text-center">
-          <div className="truncate text-[11px] font-bold text-text drop-shadow">
-            {char?.name ?? pick.characterSlug}
-          </div>
+        {/* Lv | C{n} & cost nổi bật trên đáy ảnh chân dung */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-1.5 pt-4 pb-1">
+          <span
+            className={cn(
+              'rounded px-1 py-0.5 font-mono text-[10px] font-black leading-none',
+              pick.level === 100
+                ? 'bg-gradient-to-r from-gold-strong to-geo text-bg'
+                : pick.level === 95
+                  ? 'bg-hydro text-bg'
+                  : 'bg-black/75 text-white',
+            )}
+          >
+            {pick.level}|C{pick.constellation}
+          </span>
           {pick.characterCost > 0 && (
-            <div className="text-[10px] font-semibold text-gold-strong">
-              +{formatCost(pick.characterCost)} cost
-            </div>
+            <span className="rounded bg-black/80 px-1 py-0.5 text-[10px] font-bold leading-none text-gold-strong">
+              +{formatCost(pick.characterCost)}
+            </span>
           )}
         </div>
       </div>
 
-      {/* Thanh đáy Lv | C{n} nổi bật giống Banpick_UI.png */}
-      <div
-        className={cn(
-          'flex items-center justify-center gap-1 px-1 py-1 font-mono text-[11px] font-black leading-none',
-          pick.level === 100
-            ? 'bg-gradient-to-r from-gold-strong to-geo text-bg'
-            : pick.level === 95
-              ? 'bg-hydro text-bg'
-              : 'bg-text text-bg',
-        )}
-      >
-        <span>{pick.level}</span>
-        <span className="opacity-45">|</span>
-        <span>C{pick.constellation}</span>
+      {/* Thanh đáy hiển thị tên nhân vật: chữ đen nền trắng */}
+      <div className="truncate bg-white px-1.5 py-1 text-center text-[11px] font-bold leading-tight text-black">
+        {char?.name ?? pick.characterSlug}
       </div>
     </>
   )

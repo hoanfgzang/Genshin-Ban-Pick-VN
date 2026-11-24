@@ -3,16 +3,18 @@ import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
-import { buildDraftBoardRows, type DraftBoardCell } from './lineup'
+import { buildDraftBoardRows, groupConsecutiveCells, type DraftBoardCell } from './lineup'
 
 interface Props {
   state: MatchState
+  hoverCharacterSlug?: string | null
   canEditWeaponsForSide: (side: MatchSide) => boolean
   onSelectPickSlot?: (side: MatchSide, pick: MatchPickSlot) => void
 }
 
 export function DraftSlotsBoard({
   state,
+  hoverCharacterSlug = null,
   canEditWeaponsForSide,
   onSelectPickSlot,
 }: Props) {
@@ -37,26 +39,47 @@ export function DraftSlotsBoard({
     )
   }
 
-  const renderCell = (cell: DraftBoardCell) => {
-    const char = cell.characterSlug ? getCharacter(cell.characterSlug) : null
+  const renderCell = (cell: DraftBoardCell, positionInGroup: 'single' | 'first' | 'middle' | 'last') => {
+    const isActive = cell.status === 'active'
+    const displaySlug =
+      cell.status === 'done'
+        ? cell.characterSlug
+        : isActive
+          ? hoverCharacterSlug
+          : null
+    const char = displaySlug ? getCharacter(displaySlug) : null
     const isBlue = cell.side === 'blue'
     const isBan = cell.action === 'ban'
     const canClickPick =
+      cell.status === 'done' &&
       cell.action === 'pick' &&
       !!cell.pickSlot &&
       canEditWeaponsForSide(cell.side) &&
       !!onSelectPickSlot
 
-    const constellation = isBan
-      ? lookupBanConstellation(cell.side, cell.characterSlug)
-      : cell.constellation
+    const constellation = (() => {
+      if (!displaySlug) return null
+      if (isBan) return lookupBanConstellation(cell.side, displaySlug)
+      if (cell.status === 'done') return cell.constellation
+      return state.sides[cell.side].ownedCharacters[displaySlug]?.constellation ?? null
+    })()
+
+    const roundingCls =
+      positionInGroup === 'single'
+        ? 'rounded-md'
+        : positionInGroup === 'first'
+          ? 'rounded-l-md rounded-r-none'
+          : positionInGroup === 'last'
+            ? '-ml-px rounded-r-md rounded-l-none'
+            : '-ml-px rounded-none'
 
     const inner = (
       <div
         className={cn(
-          'relative flex aspect-[4/5] w-10 shrink-0 flex-col overflow-hidden rounded-md border transition sm:w-12 md:w-10 lg:w-12 xl:w-14 2xl:w-16',
-          cell.status === 'active'
-            ? 'border-gold-strong bg-gold/15 ring-2 ring-gold-strong/80 shadow-[0_0_16px_rgba(244,223,168,0.35)]'
+          'relative flex aspect-[3/4] w-[var(--slot-w)] shrink-0 flex-col overflow-hidden border transition',
+          roundingCls,
+          isActive
+            ? 'z-10 border-gold-strong bg-gold/15 ring-2 ring-gold-strong shadow-[0_0_16px_rgba(244,223,168,0.4)]'
             : cell.status === 'upcoming'
               ? isBlue
                 ? 'border-hydro/35 bg-hydro/10'
@@ -70,36 +93,20 @@ export function DraftSlotsBoard({
         )}
         title={
           char
-            ? `${isBan ? 'BAN' : 'PICK'}: ${char.name}${constellation !== null ? ` (C${constellation})` : ''}`
+            ? `${isBan ? 'BAN' : 'PICK'}${isActive ? ' (Đang chọn)' : ''}: ${char.name}${constellation !== null ? ` (C${constellation})` : ''}`
             : cell.status === 'done' && isBan
               ? 'Bỏ qua lượt Ban'
               : `Bước ${cell.step} (${cell.action.toUpperCase()})`
         }
       >
-        {cell.status !== 'done' ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
-            <span
-              className={cn(
-                'text-lg font-black leading-none',
-                cell.status === 'active' ? 'text-gold-strong' : 'text-text/45',
-              )}
-            >
-              {cell.step}
-            </span>
-            <span
-              className={cn(
-                'text-[9px] font-bold uppercase tracking-wider',
-                cell.status === 'active'
-                  ? 'text-gold-strong'
-                  : isBan
-                    ? 'text-danger/70'
-                    : 'text-hydro/70',
-              )}
-            >
-              {cell.action}
-            </span>
-          </div>
-        ) : char ? (
+        {isActive && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] ring-2 ring-gold-strong animate-pulse"
+          />
+        )}
+
+        {char ? (
           <>
             <div
               className={cn(
@@ -112,12 +119,23 @@ export function DraftSlotsBoard({
                 alt={char.name}
                 className={cn(
                   'size-full object-cover',
-                  isBan && 'opacity-70 grayscale contrast-125',
+                  isBan && 'opacity-75 grayscale contrast-125',
+                  isActive && 'opacity-90',
                 )}
               />
               {isBan && (
                 <span className="absolute top-0.5 left-0.5 rounded bg-danger px-1 py-0.2 text-[8px] font-black uppercase text-white">
                   BAN
+                </span>
+              )}
+              {isActive && (
+                <span className="absolute top-0.5 right-0.5 rounded bg-gold-strong px-1 py-0.2 text-[8px] font-black uppercase text-black">
+                  Chọn
+                </span>
+              )}
+              {constellation !== null && (
+                <span className="absolute right-0.5 bottom-0.5 rounded bg-black/80 px-1 py-0.2 font-mono text-[9px] font-extrabold leading-none text-gold-strong">
+                  C{constellation}
                 </span>
               )}
               {cell.pickSlot && (
@@ -130,10 +148,33 @@ export function DraftSlotsBoard({
                 />
               )}
             </div>
-            <div className="bg-black/85 py-0.5 text-center text-[10px] font-extrabold leading-tight text-text">
-              {constellation !== null ? `C${constellation}` : '—'}
+            <div className="truncate bg-white px-0.5 py-0.5 text-center text-[9px] font-bold leading-tight text-black">
+              {char.name}
             </div>
           </>
+        ) : cell.status !== 'done' ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
+            <span
+              className={cn(
+                'text-lg font-black leading-none',
+                isActive ? 'text-gold-strong' : 'text-text/45',
+              )}
+            >
+              {cell.step}
+            </span>
+            <span
+              className={cn(
+                'text-[9px] font-bold uppercase tracking-wider',
+                isActive
+                  ? 'text-gold-strong'
+                  : isBan
+                    ? 'text-danger/70'
+                    : 'text-hydro/70',
+              )}
+            >
+              {cell.action}
+            </span>
+          </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center bg-bg/70 px-1 text-center">
             <span className="text-[9px] font-bold uppercase text-muted">Bỏ qua</span>
@@ -160,22 +201,39 @@ export function DraftSlotsBoard({
   }
 
   const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start') =>
-    rows.map((row, rIdx) => (
-      <div
-        key={rIdx}
-        className={cn(
-          'flex flex-wrap justify-center gap-1 xl:gap-1.5',
-          align === 'end' ? 'md:justify-end' : 'md:justify-start',
-        )}
-      >
-        {row.map(renderCell)}
-      </div>
-    ))
+    rows.map((row, rIdx) => {
+      const groups = groupConsecutiveCells(row)
+      return (
+        <div
+          key={rIdx}
+          className={cn(
+            'flex flex-wrap items-center justify-center gap-[calc(var(--slot-w)/4)]',
+            align === 'end' ? 'md:justify-end' : 'md:justify-start',
+          )}
+        >
+          {groups.map((group, gIdx) => (
+            <div key={gIdx} className="flex items-center gap-0">
+              {group.map((cell, cIdx) => {
+                const pos =
+                  group.length === 1
+                    ? 'single'
+                    : cIdx === 0
+                      ? 'first'
+                      : cIdx === group.length - 1
+                        ? 'last'
+                        : 'middle'
+                return renderCell(cell, pos)
+              })}
+            </div>
+          ))}
+        </div>
+      )
+    })
 
   return (
     <section
       aria-label="Bảng thứ tự Ban và Pick"
-      className="panel grid grid-cols-1 items-center gap-3 border-line/70 bg-bg/55 px-3 py-2.5 md:grid-cols-[1fr_auto_1fr]"
+      className="panel grid grid-cols-1 items-center gap-3 border-line/70 bg-bg/55 px-3 py-2.5 [--slot-w:2.5rem] sm:[--slot-w:3rem] md:grid-cols-[1fr_auto_1fr] md:[--slot-w:2.5rem] lg:[--slot-w:3rem] xl:[--slot-w:3.5rem] 2xl:[--slot-w:4rem]"
     >
       {/* Blue: Khối Pick ở ngoài (trái), cách xa khối Ban ở gần tâm */}
       <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-end md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16">
