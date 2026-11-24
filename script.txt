@@ -1,0 +1,63 @@
+(() => {
+  const toSlug = (name) =>
+    name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const rawEntries = [];
+
+  document.querySelectorAll('.main-container .role-medium').forEach((card) => {
+    const name = card.querySelector('.name')?.textContent.trim();
+    if (!name) return;
+
+    const levelText = card.querySelector('.level')?.textContent.trim() || '';
+    const rawLevel = parseInt(levelText.replace(/\D+/g, ''), 10) || 1;
+    const level = rawLevel >= 100 ? 100 : rawLevel >= 95 ? 95 : 90;
+
+    const fateText = card.querySelector('.fate-level')?.textContent.trim() || '0';
+    const rawConstellation = parseInt(fateText, 10) || 0;
+    const constellation = Math.max(0, Math.min(6, rawConstellation));
+
+    const slug = toSlug(name);
+
+    // Xử lý riêng nếu HoYoLAB hiển thị là "Traveler", "Aether" hoặc "Lumine"
+    if (slug === 'traveler') {
+      rawEntries.push(['traveler-boy', { slug: 'traveler-boy', constellation, level }]);
+      rawEntries.push(['traveler-girl', { slug: 'traveler-girl', constellation, level }]);
+    } else if (slug === 'aether') {
+      rawEntries.push(['traveler-boy', { slug: 'traveler-boy', constellation, level }]);
+    } else if (slug === 'lumine') {
+      rawEntries.push(['traveler-girl', { slug: 'traveler-girl', constellation, level }]);
+    } else {
+      rawEntries.push([slug, { slug, constellation, level }]);
+    }
+  });
+
+  // Sắp xếp theo thứ tự bảng chữ cái (a -> z) giống file mẫu
+  rawEntries.sort(([a], [b]) => a.localeCompare(b));
+
+  const characters = Object.fromEntries(rawEntries);
+
+  const result = {
+    version: 1,
+    characters,
+    updatedAt: new Date().toISOString().replace('Z', '000')
+  };
+
+  const jsonString = JSON.stringify(result, null, 2);
+
+  // Tự động copy vào Clipboard
+  if (typeof copy === 'function') {
+    copy(jsonString);
+    console.log(`✅ Đã lấy ${Object.keys(characters).length} nhân vật và COPY JSON vào Clipboard!`);
+  } else {
+    navigator.clipboard?.writeText(jsonString);
+    console.log(`✅ Đã lấy ${Object.keys(characters).length} nhân vật!`);
+  }
+
+  console.log(jsonString);
+  return result;
+})();

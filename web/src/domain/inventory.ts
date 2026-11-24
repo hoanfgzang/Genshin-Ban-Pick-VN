@@ -36,6 +36,18 @@ export const inventorySchema = z.object({
   updatedAt: z.string(),
 })
 
+const importOwnedCharacterSchema = z.object({
+  slug: z.string().min(1),
+  constellation: z.union(CONSTELLATIONS.map((n) => z.literal(n))),
+  level: z.number().int().min(1).max(100),
+})
+
+const importInventorySchema = z.object({
+  version: z.literal(1),
+  characters: z.record(z.string(), importOwnedCharacterSchema),
+  updatedAt: z.string(),
+})
+
 // ---------- Helpers thuần (immutable) ----------
 
 const now = () => new Date().toISOString()
@@ -82,6 +94,13 @@ export function isConstellation(n: number): n is Constellation {
 
 export function isLevel(n: number): n is Level {
   return (LEVELS as readonly number[]).includes(n)
+}
+
+/** Quy đổi level thực tế (1–100) về 3 mốc hỗ trợ (90, 95, 100). */
+export function normalizeLevel(n: number): Level {
+  if (n >= 100) return 100
+  if (n >= 95) return 95
+  return 90
 }
 
 /** Đặt cung mệnh (tự đánh dấu sở hữu nếu chưa có). */
@@ -133,7 +152,7 @@ export function exportInventory(inv: Inventory): string {
 }
 
 export type ParseResult =
-  | { ok: true; inventory: Inventory; unknownSlugs: string[] }
+  | { ok: true; inventory: Inventory; unknownSlugs: string[]; normalizedLevels: number }
   | { ok: false; error: string }
 
 /**
@@ -146,21 +165,29 @@ export function parseInventory(text: string, knownSlugs?: ReadonlySet<string>): 
   } catch {
     return { ok: false, error: 'File không phải JSON hợp lệ.' }
   }
-  const result = inventorySchema.safeParse(data)
+  const result = importInventorySchema.safeParse(data)
   if (!result.success) {
     return { ok: false, error: 'Cấu trúc dữ liệu kho không hợp lệ.' }
   }
-  const inv = result.data as Inventory
+  const inv = result.data
   const unknownSlugs: string[] = []
   const characters: Record<string, OwnedCharacter> = {}
+  let normalizedLevels = 0
   for (const c of Object.values(inv.characters)) {
     if (knownSlugs && !knownSlugs.has(c.slug)) {
       unknownSlugs.push(c.slug)
       continue
     }
-    characters[c.slug] = { ...c }
+    const level = normalizeLevel(c.level)
+    if (level !== c.level) normalizedLevels++
+    characters[c.slug] = { slug: c.slug, constellation: c.constellation, level }
   }
-  return { ok: true, inventory: { ...inv, characters }, unknownSlugs }
+  return {
+    ok: true,
+    inventory: { version: inv.version, updatedAt: inv.updatedAt, characters },
+    unknownSlugs,
+    normalizedLevels,
+  }
 }
 
 // ---------- Thống kê ----------

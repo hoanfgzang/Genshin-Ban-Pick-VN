@@ -7,12 +7,12 @@
 - **Tài khoản & Phân quyền**:
   - Đăng ký & đăng nhập bằng **UID Genshin (9–10 chữ số) + mật khẩu** (email tùy chọn hoặc cấu hình bắt buộc qua `REQUIRE_EMAIL`).
   - **Chế độ Khách**: lưu kho nhân vật cục bộ trên trình duyệt, xem Bộ luật/bảng Cost và theo dõi trực tiếp trận đấu.
-  - **Admin**: đầy đủ quyền của Player + tạo/chỉnh sửa/xóa Bộ luật, thứ tự từng lượt Ban/Pick, bảng Cost nhân vật (`4★/5★`, `C0–C6`), bảng Cost vũ khí (`3★–5★`, `R1–R5`) và các mốc cộng giây.
+  - **Admin**: đầy đủ quyền của Player + tạo/chỉnh sửa/xóa Bộ luật, thứ tự từng lượt Ban/Pick, bảng Cost nhân vật (`4★/5★`, `C0–C6`), Cost vũ khí & thời gian cộng thêm khi tinh luyện (`4★–5★`, `R1–R5`) và các mốc cộng giây.
 - **Kho nhân vật cá nhân (`/profile`)**:
   - Lưu nhân vật sở hữu kèm cung mệnh (`C0–C6`) và level (`90/95/100`). Vũ khí **không** cần lưu vào kho tài khoản.
 - **Hệ thống Bộ luật & Cost (`/rules`)**:
   - Mặc định 1 bộ luật chuẩn (**mỗi bên 3 Ban + 8 Pick**, đội Xanh Dương bên trái Ban trước & Pick trước).
-  - Cost mặc định: nhân vật 5★ `C0 = 1 cost` (`+1` mỗi cung mệnh), vũ khí 5★ `R1 = 1 cost`, nhân vật 4★ có thể gán Cost riêng (hỗ trợ số lẻ như `0.5`).
+  - Cost mặc định: nhân vật 5★ `C0 = 1 cost` (`+1` mỗi cung mệnh), vũ khí 5★ `1 cost` (tinh luyện `R2–R5` cộng thẳng `+5s/bậc` vào điểm tổng), nhân vật 4★ có thể gán Cost riêng (hỗ trợ số lẻ như `0.5`).
   - Cost sử dụng quy đổi thành **giây cộng thêm (điểm)** theo mốc do Admin cài đặt.
 - **Phòng đấu 1v1 Realtime (`/lobby`, `/match/:code`)**:
   - Tạo phòng theo bộ luật, mời đối thủ qua link/mã 6 ký tự, chọn bên **Xanh Dương (Trái)** hoặc **Đỏ (Phải)**.

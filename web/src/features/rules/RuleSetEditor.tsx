@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/toast'
 import { createDefaultRuleSetConfig, type RuleSet, type RuleSetConfig } from '@/domain/ruleset'
+import { WEAPON_BY_SLUG } from '@/domain/weapons'
 import { errorMessage } from '@/features/auth/authStore'
 import { rulesetService } from '@/services'
 import { CharacterCostOverrides } from './CharacterCostOverrides'
@@ -34,12 +35,30 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
     }
     setSaving(true)
     try {
+      const prunedCostOverrides = Object.fromEntries(
+        Object.entries(config.costRules.weaponCostOverrides).filter(([slug]) =>
+          WEAPON_BY_SLUG.has(slug),
+        ),
+      )
+      const prunedRefOverrides = Object.fromEntries(
+        Object.entries(config.costRules.weaponRefinementOverrides).filter(([slug]) =>
+          WEAPON_BY_SLUG.has(slug),
+        ),
+      )
+      const cleanedConfig: RuleSetConfig = {
+        ...config,
+        costRules: {
+          ...config.costRules,
+          weaponCostOverrides: prunedCostOverrides,
+          weaponRefinementOverrides: prunedRefOverrides,
+        },
+      }
       const payload = {
         name: name.trim(),
         description: description.trim(),
         isActive,
         isDefault,
-        config,
+        config: cleanedConfig,
       }
       const saved = initial
         ? await rulesetService.update(initial.id, payload)
@@ -80,7 +99,7 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
             ['general', '1. Thông tin & Thứ tự Ban/Pick'],
             ['milestones', '2. Cost mặc định & Mốc giây'],
             ['characters', '3. Cost Nhân vật (4★ & 5★)'],
-            ['weapons', '4. Cost Vũ khí (R1–R5)'],
+            ['weapons', '4. Vũ khí (Cost & Tinh luyện)'],
           ].map(([val, label]) => (
             <Tabs.Trigger
               key={val}

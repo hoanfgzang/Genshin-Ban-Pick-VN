@@ -17,33 +17,72 @@ export function WeaponCostOverrides({ costRules, onChange }: Props) {
   const [rarity, setRarity] = useState<WeaponRarity | null>(null)
   const [onlyOverridden, setOnlyOverridden] = useState(false)
 
+  const overriddenCount = useMemo(
+    () =>
+      WEAPONS_LIST.filter(
+        (w) =>
+          w.slug in costRules.weaponCostOverrides ||
+          w.slug in costRules.weaponRefinementOverrides,
+      ).length,
+    [costRules.weaponCostOverrides, costRules.weaponRefinementOverrides],
+  )
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return WEAPONS_LIST.filter((w) => {
       if (q && !w.name.toLowerCase().includes(q) && !w.slug.includes(q)) return false
       if (weaponType && w.weaponType !== weaponType) return false
       if (rarity && w.rarity !== rarity) return false
-      if (onlyOverridden && !(w.slug in costRules.weaponOverrides)) return false
+      if (
+        onlyOverridden &&
+        !(w.slug in costRules.weaponCostOverrides) &&
+        !(w.slug in costRules.weaponRefinementOverrides)
+      ) {
+        return false
+      }
       return true
     })
-  }, [query, weaponType, rarity, onlyOverridden, costRules.weaponOverrides])
+  }, [
+    query,
+    weaponType,
+    rarity,
+    onlyOverridden,
+    costRules.weaponCostOverrides,
+    costRules.weaponRefinementOverrides,
+  ])
 
-  const updateCell = (slug: string, baseDefaults: number[], rIdx: number, val: number) => {
-    const current = costRules.weaponOverrides[slug] ?? [...baseDefaults]
+  const updateBaseCost = (slug: string, val: number) => {
+    onChange({
+      ...costRules,
+      weaponCostOverrides: {
+        ...costRules.weaponCostOverrides,
+        [slug]: val,
+      },
+    })
+  }
+
+  const updateRefinementCell = (slug: string, baseDefaults: number[], rIdx: number, val: number) => {
+    const current = costRules.weaponRefinementOverrides[slug] ?? [...baseDefaults]
     const updated = current.map((old, i) => (i === rIdx ? val : old))
     onChange({
       ...costRules,
-      weaponOverrides: {
-        ...costRules.weaponOverrides,
+      weaponRefinementOverrides: {
+        ...costRules.weaponRefinementOverrides,
         [slug]: updated,
       },
     })
   }
 
   const clearOverride = (slug: string) => {
-    const next = { ...costRules.weaponOverrides }
-    delete next[slug]
-    onChange({ ...costRules, weaponOverrides: next })
+    const nextCost = { ...costRules.weaponCostOverrides }
+    const nextRef = { ...costRules.weaponRefinementOverrides }
+    delete nextCost[slug]
+    delete nextRef[slug]
+    onChange({
+      ...costRules,
+      weaponCostOverrides: nextCost,
+      weaponRefinementOverrides: nextRef,
+    })
   }
 
   return (
@@ -56,7 +95,7 @@ export function WeaponCostOverrides({ costRules, onChange }: Props) {
           placeholder="Tìm vũ khí…"
           className="h-9 w-full max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
         />
-        {([5, 4, 3] as const).map((r) => (
+        {([5, 4] as const).map((r) => (
           <Chip key={r} active={rarity === r} onClick={() => setRarity((cur) => (cur === r ? null : r))}>
             {r}★
           </Chip>
@@ -71,18 +110,23 @@ export function WeaponCostOverrides({ costRules, onChange }: Props) {
           </Chip>
         ))}
         <Chip active={onlyOverridden} onClick={() => setOnlyOverridden((v) => !v)}>
-          Đã tùy chỉnh ({Object.keys(costRules.weaponOverrides).length})
+          Đã tùy chỉnh ({overriddenCount})
         </Chip>
       </div>
+
+      <p className="text-xs text-muted">
+        Chỉnh riêng Cost cơ bản hoặc thời gian cộng thêm (giây) cho từng mức tinh luyện R1–R5 của mỗi vũ khí.
+      </p>
 
       <div className="max-h-[26rem] overflow-auto rounded-lg border border-line">
         <table className="w-full text-left text-xs">
           <thead className="sticky top-0 bg-panel-2 text-muted">
             <tr>
               <th className="px-3 py-2">Vũ khí</th>
+              <th className="px-1.5 py-2 text-center">Cost</th>
               {REFINEMENTS.map((r) => (
                 <th key={r} className="px-1.5 py-2 text-center">
-                  R{r}
+                  R{r} (s)
                 </th>
               ))}
               <th className="px-2 py-2 text-right">Thao tác</th>
@@ -90,14 +134,17 @@ export function WeaponCostOverrides({ costRules, onChange }: Props) {
           </thead>
           <tbody className="divide-y divide-line/50">
             {filtered.map((w) => {
-              const defaults =
+              const defaultCost =
+                w.rarity === 5 ? costRules.defaultWeapon5Cost : costRules.defaultWeapon4Cost
+              const defaultRef =
                 w.rarity === 5
-                  ? costRules.defaultWeapon5Costs
-                  : w.rarity === 4
-                    ? costRules.defaultWeapon4Costs
-                    : costRules.defaultWeapon3Costs
-              const isOverridden = w.slug in costRules.weaponOverrides
-              const values = costRules.weaponOverrides[w.slug] ?? defaults
+                  ? costRules.defaultWeapon5RefinementSeconds
+                  : costRules.defaultWeapon4RefinementSeconds
+              const hasCostOverride = w.slug in costRules.weaponCostOverrides
+              const hasRefOverride = w.slug in costRules.weaponRefinementOverrides
+              const isOverridden = hasCostOverride || hasRefOverride
+              const costValue = costRules.weaponCostOverrides[w.slug] ?? defaultCost
+              const refValues = costRules.weaponRefinementOverrides[w.slug] ?? defaultRef
 
               return (
                 <tr key={w.slug} className={isOverridden ? 'bg-gold/5' : undefined}>
@@ -110,15 +157,32 @@ export function WeaponCostOverrides({ costRules, onChange }: Props) {
                       </span>
                     </div>
                   </td>
+                  <td className="px-1 py-1.5 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      value={costValue}
+                      onChange={(e) =>
+                        updateBaseCost(w.slug, Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className="h-7 w-14 rounded border border-gold/40 bg-bg/70 px-1 text-center font-mono text-xs text-gold-strong focus:border-gold focus:outline-none"
+                    />
+                  </td>
                   {REFINEMENTS.map((r, rIdx) => (
                     <td key={r} className="px-1 py-1.5 text-center">
                       <input
                         type="number"
                         min={0}
                         step="0.5"
-                        value={values[rIdx] ?? 0}
+                        value={refValues[rIdx] ?? 0}
                         onChange={(e) =>
-                          updateCell(w.slug, defaults, rIdx, Math.max(0, Number(e.target.value) || 0))
+                          updateRefinementCell(
+                            w.slug,
+                            defaultRef,
+                            rIdx,
+                            Math.max(0, Number(e.target.value) || 0),
+                          )
                         }
                         className="h-7 w-14 rounded border border-line bg-bg/70 px-1 text-center font-mono text-xs text-text focus:border-gold focus:outline-none"
                       />

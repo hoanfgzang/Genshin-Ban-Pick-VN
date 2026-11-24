@@ -8,6 +8,7 @@ import {
   calcCharacterCost,
   calcCostPenaltySeconds,
   calcWeaponCost,
+  calcWeaponRefinementSeconds,
   formatCost,
   formatSeconds,
 } from '@/domain/cost'
@@ -53,16 +54,39 @@ export function RuleSetViewer({ ruleset }: Props) {
     })
   }, [charQuery, charRarity, onlyCharOverrides, costRules.characterOverrides])
 
+  const overriddenWeaponCount = useMemo(
+    () =>
+      WEAPONS_LIST.filter(
+        (w) =>
+          w.slug in costRules.weaponCostOverrides ||
+          w.slug in costRules.weaponRefinementOverrides,
+      ).length,
+    [costRules.weaponCostOverrides, costRules.weaponRefinementOverrides],
+  )
+
   const filteredWeapons = useMemo(() => {
     const q = weaponQuery.trim().toLowerCase()
     return WEAPONS_LIST.filter((w) => {
       if (q && !w.name.toLowerCase().includes(q) && !w.slug.includes(q)) return false
       if (weaponTypeFilter && w.weaponType !== weaponTypeFilter) return false
       if (weaponRarityFilter && w.rarity !== weaponRarityFilter) return false
-      if (onlyWeaponOverrides && !(w.slug in costRules.weaponOverrides)) return false
+      if (
+        onlyWeaponOverrides &&
+        !(w.slug in costRules.weaponCostOverrides) &&
+        !(w.slug in costRules.weaponRefinementOverrides)
+      ) {
+        return false
+      }
       return true
     })
-  }, [weaponQuery, weaponTypeFilter, weaponRarityFilter, onlyWeaponOverrides, costRules.weaponOverrides])
+  }, [
+    weaponQuery,
+    weaponTypeFilter,
+    weaponRarityFilter,
+    onlyWeaponOverrides,
+    costRules.weaponCostOverrides,
+    costRules.weaponRefinementOverrides,
+  ])
 
   return (
     <div className="flex flex-col gap-5">
@@ -123,9 +147,13 @@ export function RuleSetViewer({ ruleset }: Props) {
 
       <section className="panel grid gap-5 p-5 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <h3 className="mb-2 text-base font-bold text-text">Quy tắc quy đổi Cost sang Điểm (Giây cộng thêm)</h3>
+          <h3 className="mb-2 text-base font-bold text-text">
+            Quy tắc quy đổi Cost & Tinh luyện vũ khí sang Điểm (Giây)
+          </h3>
           <p className="mb-3 text-xs text-muted">
-            Điểm từ Cost được cộng thẳng vào tổng điểm (giây) của người chơi cùng với kết quả{' '}
+            Tổng điểm (giây) của đội = <strong className="text-text">Điểm quy đổi từ Cost</strong> +{' '}
+            <strong className="text-text">Thời gian cộng thêm khi tinh luyện vũ khí</strong> +{' '}
+            <strong className="text-text">Phạt quá giờ (nếu vượt đồng hồ đếm ngược)</strong> +{' '}
             <strong className="text-text">09:00 − thời gian hoàn thành</strong> của 3 ải. Ai ít điểm nhất người đó thắng.
           </p>
           {costRules.milestones.length > 0 ? (
@@ -158,6 +186,24 @@ export function RuleSetViewer({ ruleset }: Props) {
               Áp dụng hệ số đồng nhất: <strong className="text-gold-strong">+{formatSeconds(costRules.baseSecondsPerCost)}</strong> cho mỗi 1 Cost.
             </div>
           )}
+          <div className="mt-3 grid gap-2 rounded-lg border border-line/80 bg-bg/40 p-3 text-xs sm:grid-cols-2">
+            <div>
+              <span className="text-muted">Cost vũ khí mặc định: </span>
+              <strong className="text-text">5★ = {formatCost(costRules.defaultWeapon5Cost)}</strong>
+              <span className="text-muted"> · </span>
+              <strong className="text-text">4★ = {formatCost(costRules.defaultWeapon4Cost)}</strong>
+            </div>
+            <div>
+              <span className="text-muted">Tinh luyện R1–R5: </span>
+              <strong className="text-pyro">
+                5★ ({costRules.defaultWeapon5RefinementSeconds.map((s) => `+${formatSeconds(s)}`).join(' / ')})
+              </strong>
+              <span className="text-muted"> · </span>
+              <strong className="text-text">
+                4★ ({costRules.defaultWeapon4RefinementSeconds.map((s) => `+${formatSeconds(s)}`).join(' / ')})
+              </strong>
+            </div>
+          </div>
           {costRules.draftBonusSecondsPerCost > 0 && (
             <p className="mt-2 text-xs text-hydro">
               Đồng hồ suy nghĩ Ban/Pick được cộng thêm +{formatSeconds(costRules.draftBonusSecondsPerCost)} cho mỗi 1 Cost đang dùng.
@@ -286,7 +332,7 @@ export function RuleSetViewer({ ruleset }: Props) {
                 placeholder="Tìm vũ khí…"
                 className="h-9 w-full max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
               />
-              {([5, 4, 3] as const).map((r) => (
+              {([5, 4] as const).map((r) => (
                 <Chip
                   key={r}
                   active={weaponRarityFilter === r}
@@ -305,7 +351,7 @@ export function RuleSetViewer({ ruleset }: Props) {
                 </Chip>
               ))}
               <Chip active={onlyWeaponOverrides} onClick={() => setOnlyWeaponOverrides((v) => !v)}>
-                Đã chỉnh riêng ({Object.keys(costRules.weaponOverrides).length})
+                Đã chỉnh riêng ({overriddenWeaponCount})
               </Chip>
             </div>
 
@@ -314,16 +360,20 @@ export function RuleSetViewer({ ruleset }: Props) {
                 <thead className="sticky top-0 bg-panel-2 text-xs text-muted">
                   <tr>
                     <th className="px-3 py-2">Vũ khí</th>
+                    <th className="px-2 py-2 text-center">Cost</th>
                     {REFINEMENTS.map((r) => (
                       <th key={r} className="px-2 py-2 text-center">
-                        R{r}
+                        R{r} (s)
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/50">
                   {filteredWeapons.map((w) => {
-                    const isOverridden = w.slug in costRules.weaponOverrides
+                    const isOverridden =
+                      w.slug in costRules.weaponCostOverrides ||
+                      w.slug in costRules.weaponRefinementOverrides
+                    const baseCost = calcWeaponCost(w.slug, costRules)
                     return (
                       <tr key={w.slug} className={isOverridden ? 'bg-gold/5' : undefined}>
                         <td className="px-3 py-2">
@@ -340,17 +390,25 @@ export function RuleSetViewer({ ruleset }: Props) {
                             )}
                           </div>
                         </td>
+                        <td
+                          className={cn(
+                            'px-2 py-2 text-center font-mono',
+                            baseCost > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
+                          )}
+                        >
+                          {formatCost(baseCost)}
+                        </td>
                         {REFINEMENTS.map((r) => {
-                          const val = calcWeaponCost(w.slug, r, costRules)
+                          const val = calcWeaponRefinementSeconds(w.slug, r, costRules)
                           return (
                             <td
                               key={r}
                               className={cn(
                                 'px-2 py-2 text-center font-mono',
-                                val > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
+                                val > 0 ? 'font-semibold text-pyro' : 'text-muted/60',
                               )}
                             >
-                              {formatCost(val)}
+                              {val > 0 ? `+${formatSeconds(val)}` : '0s'}
                             </td>
                           )
                         })}

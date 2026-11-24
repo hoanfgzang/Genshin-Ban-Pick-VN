@@ -1,6 +1,6 @@
 import type { WeaponType } from './character'
 
-export type WeaponRarity = 3 | 4 | 5
+export type WeaponRarity = 4 | 5
 
 export const REFINEMENTS = [1, 2, 3, 4, 5] as const
 export type Refinement = (typeof REFINEMENTS)[number]

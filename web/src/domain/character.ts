@@ -17,6 +17,7 @@ export interface Character {
   region: string | null
   release: string | null
   icon: string
+  card?: string | null
 }
 
 export const ELEMENT_LABEL: Record<Element, string> = {

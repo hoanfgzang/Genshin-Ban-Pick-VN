@@ -43,8 +43,8 @@ async def seed_initial_data(session_factory: async_sessionmaker[AsyncSession]) -
                     name="Luật Chuẩn Giải Đấu (3 Ban · 8 Pick)",
                     description=(
                         "Bộ luật mặc định: mỗi bên 3 lượt Ban và 8 lượt Pick (đội Xanh Dương bên trái Ban trước & Pick trước). "
-                        "Nhân vật 5★ C0 = 1 cost (+1 mỗi cung mệnh), vũ khí 5★ R1 = 1 cost. "
-                        "Điểm cuối trận = Điểm cộng từ Cost + tổng (09:00 - thời gian hoàn thành) của 3 ải; ít điểm hơn thắng."
+                        "Nhân vật 5★ C0 = 1 cost (+1 mỗi cung mệnh), vũ khí 5★ = 1 cost (tinh luyện R2–R5 cộng thẳng +5s/bậc vào tổng điểm). "
+                        "Điểm cuối trận = Điểm cộng từ Cost + thời gian tinh luyện vũ khí + tổng (09:00 - thời gian hoàn thành) của 3 ải; ít điểm hơn thắng."
                     ),
                     is_active=True,
                     is_default=True,

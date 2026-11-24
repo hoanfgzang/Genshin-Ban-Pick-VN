@@ -3,7 +3,12 @@ import { Chip } from '@/components/ui/Chip'
 import { Dialog } from '@/components/ui/Dialog'
 import { Segmented } from '@/components/ui/Segmented'
 import { WEAPON_LABEL, type Character } from '@/domain/character'
-import { calcWeaponCost, formatCost } from '@/domain/cost'
+import {
+  calcWeaponCost,
+  calcWeaponRefinementSeconds,
+  formatCost,
+  formatSeconds,
+} from '@/domain/cost'
 import type { CostRules } from '@/domain/ruleset'
 import { REFINEMENTS, type Refinement, type WeaponRarity } from '@/domain/weapon'
 import { getWeaponsForType } from '@/domain/weapons'
@@ -67,7 +72,7 @@ export function WeaponPickerModal({
             />
           </div>
           <div className="flex items-center gap-1.5">
-            {([5, 4, 3] as const).map((r) => (
+            {([5, 4] as const).map((r) => (
               <Chip
                 key={r}
                 active={rarity === r}
@@ -89,7 +94,8 @@ export function WeaponPickerModal({
 
         <div className="grid max-h-96 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
           {candidates.map((w) => {
-            const cost = calcWeaponCost(w.slug, refinement, costRules)
+            const cost = calcWeaponCost(w.slug, costRules)
+            const refSec = calcWeaponRefinementSeconds(w.slug, refinement, costRules)
             const isSelected = initialWeaponSlug === w.slug
             return (
               <button
@@ -107,24 +113,27 @@ export function WeaponPickerModal({
                 <div
                   className={cn(
                     'flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-gradient-to-br p-0.5',
-                    w.rarity === 5
-                      ? 'from-r5-from to-r5-to'
-                      : w.rarity === 4
-                        ? 'from-r4-from to-r4-to'
-                        : 'from-slate-700 to-slate-500',
+                    w.rarity === 5 ? 'from-r5-from to-r5-to' : 'from-r4-from to-r4-to',
                   )}
                 >
                   <img src={w.icon} alt="" className="size-full object-contain" loading="lazy" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-xs font-semibold text-text">{w.name}</div>
-                  <div className="mt-0.5 flex items-center justify-between text-[11px]">
+                  <div className="mt-0.5 flex flex-wrap items-center justify-between gap-1 text-[11px]">
                     <span className="text-muted">
                       {w.rarity}★ · R{refinement}
                     </span>
-                    <span className={cost > 0 ? 'font-bold text-gold-strong' : 'text-muted'}>
-                      +{formatCost(cost)} cost
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className={cost > 0 ? 'font-bold text-gold-strong' : 'text-muted'}>
+                        +{formatCost(cost)} cost
+                      </span>
+                      {refSec > 0 && (
+                        <span className="rounded bg-pyro/20 px-1 font-bold text-pyro">
+                          +{formatSeconds(refSec)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </button>

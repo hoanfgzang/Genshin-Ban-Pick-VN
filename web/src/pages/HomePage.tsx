@@ -22,7 +22,7 @@ const FEATURES = [
     status: 'Sẵn sàng',
     ready: true,
     to: '/rules',
-    desc: 'Tra cứu Cost nhân vật (4★/5★ theo C0–C6), Cost vũ khí (R1–R5), thứ tự lượt Ban/Pick và bảng mốc quy đổi giây do Admin điều chỉnh.',
+    desc: 'Tra cứu Cost nhân vật (4★/5★ theo C0–C6), Cost vũ khí & thời gian tinh luyện (R1–R5), thứ tự lượt Ban/Pick và bảng mốc quy đổi giây do Admin điều chỉnh.',
   },
   {
     title: 'Ban/Pick Realtime & Tính điểm',

@@ -3,10 +3,8 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { buttonClass } from '@/components/ui/buttonStyles'
 import { toast } from '@/components/ui/toast'
-import { getCharacter } from '@/domain/characters'
 import { calcChamberDiff, formatCost, formatSeconds } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
-import { getWeapon } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
 import type { ChamberTimeInput, MatchState } from '@/services'
 
@@ -31,6 +29,11 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
   const diffs = chambers.map((c) => calcChamberDiff(c.minutes, c.seconds))
   const allValid = diffs.every((d) => d !== null)
   const totalChamberDiff = diffs.reduce<number>((sum, d) => sum + (d ?? 0), 0)
+  const myRefSec = mySide ? (state.sides[mySide].weaponRefinementSeconds ?? 0) : 0
+  const myOvertime = mySide ? (state.sides[mySide].overtimePenaltySeconds ?? 0) : 0
+  const myProjectedTotal = mySide
+    ? state.sides[mySide].costPenaltySeconds + myRefSec + myOvertime + totalChamberDiff
+    : 0
 
   const handleTimeChange = (idx: number, field: 'minutes' | 'seconds', raw: string) => {
     const val = Math.max(0, Number(raw) || 0)
@@ -54,10 +57,12 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
     onSubmitScores(chambers)
   }
 
-  const renderRosterCard = (side: MatchSide) => {
+  const renderScoreCard = (side: MatchSide) => {
     const s = state.sides[side]
     const isBlue = side === 'blue'
     const isWinner = state.status === 'finished' && state.winnerSide === side
+    const refSec = s.weaponRefinementSeconds ?? 0
+    const overtimeSec = s.overtimePenaltySeconds ?? 0
 
     return (
       <section
@@ -85,6 +90,18 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
           <div className="text-right">
             <div className="text-[11px] text-muted">
               Cost: {formatCost(s.totalCost)} (+{formatSeconds(s.costPenaltySeconds)})
+              {refSec > 0 && (
+                <>
+                  {' · '}
+                  <span className="font-semibold text-pyro">Tinh luyện: +{formatSeconds(refSec)}</span>
+                </>
+              )}
+              {overtimeSec > 0 && (
+                <>
+                  {' · '}
+                  <span className="font-semibold text-danger">Phạt giờ: +{formatSeconds(overtimeSec)}</span>
+                </>
+              )}
             </div>
             {s.scoreSubmitted && s.finalScore !== null ? (
               <div className="text-xl font-extrabold text-gold-strong">
@@ -96,39 +113,11 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
           </div>
         </div>
 
-        <div className="grid gap-1.5 sm:grid-cols-2">
-          {s.picks.map((p) => {
-            const c = getCharacter(p.characterSlug)
-            const w = p.weaponSlug ? getWeapon(p.weaponSlug) : null
-            return (
-              <div
-                key={p.slot}
-                className="flex items-center justify-between gap-2 rounded-lg border border-line/70 bg-bg/50 p-1.5 text-xs"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  {c && <img src={c.icon} alt={c.name} className="size-8 rounded object-cover" />}
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-text">{c?.name ?? p.characterSlug}</div>
-                    <div className="text-[10px] text-gold-strong">
-                      C{p.constellation} · Lv.{p.level}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-right">
-                  {w && <img src={w.icon} alt={w.name} className="size-7 rounded bg-bg/60 object-contain" />}
-                  <div className="text-[10px] text-muted">
-                    <div>{w ? `R${p.refinement}` : '—'}</div>
-                    <div className="font-semibold text-text">+{formatCost(p.totalSlotCost)}</div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {s.scoreSubmitted && s.chambers && s.chamberDiffs && (
+        {s.scoreSubmitted && s.chambers && s.chamberDiffs ? (
           <div className="rounded-lg border border-line bg-bg/60 p-3 text-xs">
-            <div className="mb-1.5 font-semibold text-muted">Chi tiết điểm 3 ải (09:00 − thời gian nhập)</div>
+            <div className="mb-1.5 font-semibold text-muted">
+              Chi tiết điểm 3 ải (09:00 − thời gian nhập)
+            </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {s.chambers.map((ch, idx) => (
                 <div key={idx} className="rounded bg-panel-2 p-2">
@@ -141,19 +130,27 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
               ))}
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-2 font-semibold">
-              <span>Điểm Cost ({formatSeconds(s.costPenaltySeconds)}) + 3 ải ({s.chamberTotalSeconds}s)</span>
+              <span>
+                Điểm Cost ({formatSeconds(s.costPenaltySeconds)})
+                {refSec > 0 ? ` + Tinh luyện (${formatSeconds(refSec)})` : ''}
+                {overtimeSec > 0 ? ` + Phạt giờ (${formatSeconds(overtimeSec)})` : ''} + 3 ải ({s.chamberTotalSeconds}s)
+              </span>
               <span className="text-sm text-gold-strong">= {formatSeconds(s.finalScore ?? 0)}</span>
             </div>
           </div>
+        ) : (
+          <p className="py-4 text-center text-xs text-muted">
+            Đang chờ người chơi nhập thời gian hoàn thành 3 ải…
+          </p>
         )}
       </section>
     )
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       {state.status === 'finished' && (
-        <section className="panel border-gold/50 bg-gradient-to-r from-gold/15 via-panel to-gold/15 p-6 text-center">
+        <section className="panel border-gold/50 bg-gradient-to-r from-gold/15 via-panel to-gold/15 p-5 text-center">
           <div className="text-xs font-bold uppercase tracking-widest text-gold">Kết quả chung cuộc</div>
           <h2 className="mt-1 text-2xl font-extrabold text-gold-strong sm:text-3xl">
             {state.winnerSide === 'blue'
@@ -190,7 +187,9 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
                   <div className="mb-2 flex items-center justify-between text-sm font-bold">
                     <span>Ải {idx + 1}</span>
                     <span className="text-gold-strong">
-                      {diff !== null ? `9:00 − ${String(ch.minutes).padStart(2, '0')}:${String(ch.seconds).padStart(2, '0')} = +${diff}s` : 'Không hợp lệ'}
+                      {diff !== null
+                        ? `9:00 − ${String(ch.minutes).padStart(2, '0')}:${String(ch.seconds).padStart(2, '0')} = +${diff}s`
+                        : 'Không hợp lệ'}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -226,8 +225,10 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
             <div className="text-sm">
               Tổng điểm dự kiến:{' '}
               <strong className="text-gold-strong">
-                +{formatSeconds(state.sides[mySide].costPenaltySeconds)} (Cost) + {totalChamberDiff}s (3 ải) ={' '}
-                {formatSeconds(state.sides[mySide].costPenaltySeconds + totalChamberDiff)}
+                +{formatSeconds(state.sides[mySide].costPenaltySeconds)} (Cost)
+                {myRefSec > 0 ? ` + ${formatSeconds(myRefSec)} (Tinh luyện)` : ''}
+                {myOvertime > 0 ? ` + ${formatSeconds(myOvertime)} (Phạt giờ)` : ''} + {totalChamberDiff}s (3 ải) ={' '}
+                {formatSeconds(myProjectedTotal)}
               </strong>
             </div>
             <Button variant="primary" disabled={!allValid} onClick={handleSubmit}>
@@ -237,9 +238,9 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        {renderRosterCard('blue')}
-        {renderRosterCard('red')}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {renderScoreCard('blue')}
+        {renderScoreCard('red')}
       </div>
     </div>
   )

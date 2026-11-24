@@ -26,12 +26,25 @@ export function calcCharacterCost(
 
 export function calcWeaponCost(
   slug: string | null | undefined,
+  costRules: CostRules,
+): number {
+  if (!slug) return 0
+  if (slug in costRules.weaponCostOverrides) {
+    return round2(costRules.weaponCostOverrides[slug] ?? 0)
+  }
+  const weapon = getWeapon(slug)
+  const rarity = weapon?.rarity ?? 4
+  return round2(rarity >= 5 ? costRules.defaultWeapon5Cost : costRules.defaultWeapon4Cost)
+}
+
+export function calcWeaponRefinementSeconds(
+  slug: string | null | undefined,
   refinement: number,
   costRules: CostRules,
 ): number {
   if (!slug) return 0
   const idx = Math.max(0, Math.min(4, Math.trunc(refinement) - 1))
-  const override = costRules.weaponOverrides[slug]
+  const override = costRules.weaponRefinementOverrides[slug]
   if (override && override.length === 5) {
     return round2(override[idx] ?? 0)
   }
@@ -39,10 +52,8 @@ export function calcWeaponCost(
   const rarity = weapon?.rarity ?? 4
   const table =
     rarity >= 5
-      ? costRules.defaultWeapon5Costs
-      : rarity === 4
-        ? costRules.defaultWeapon4Costs
-        : costRules.defaultWeapon3Costs
+      ? costRules.defaultWeapon5RefinementSeconds
+      : costRules.defaultWeapon4RefinementSeconds
   return round2(table[idx] ?? 0)
 }
 

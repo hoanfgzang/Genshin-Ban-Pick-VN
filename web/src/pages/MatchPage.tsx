@@ -7,10 +7,13 @@ import { toast } from '@/components/ui/toast'
 import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
 import { useAuthStore } from '@/features/auth/authStore'
-import { DraftCenterPool } from '@/features/match/DraftCenterPool'
+import { DraftSlotsBoard } from '@/features/match/DraftSlotsBoard'
+import { DraftStage } from '@/features/match/DraftStage'
 import { MatchLobbyPhase } from '@/features/match/MatchLobbyPhase'
+import { MatchScoreboardHeader } from '@/features/match/MatchScoreboardHeader'
 import { MatchScoringPhase } from '@/features/match/MatchScoringPhase'
-import { TeamPanel } from '@/features/match/TeamPanel'
+import { PostDraftTeamsStage } from '@/features/match/PostDraftTeamsStage'
+import { UndoRequestBanner } from '@/features/match/UndoRequestBanner'
 import { useCountdownSeconds, useMatchSocket } from '@/features/match/useMatchSocket'
 import { WeaponPickerModal } from '@/features/match/WeaponPickerModal'
 import { cn } from '@/lib/cn'
@@ -19,7 +22,7 @@ import type { MatchPickSlot } from '@/services'
 const STATUS_LABEL: Record<string, string> = {
   lobby: 'Phòng chờ chọn bên',
   drafting: 'Đang Ban / Pick',
-  weapon_phase: 'Khoảng trống điền Vũ khí',
+  weapon_phase: 'Đội hình & Vũ khí',
   scoring: 'Nhập thời gian 3 ải',
   finished: 'Đã kết thúc',
 }
@@ -29,7 +32,9 @@ export function MatchPage() {
   const user = useAuthStore((s) => s.user)
   const { state, loading, connected, notFound, sendAction } = useMatchSocket(code)
   const countdown = useCountdownSeconds(state?.turnDeadlineAt ?? null)
-  const [weaponSlot, setWeaponSlot] = useState<MatchPickSlot | null>(null)
+  const [weaponTarget, setWeaponTarget] = useState<{ side: MatchSide; pick: MatchPickSlot } | null>(
+    null,
+  )
 
   if (loading) return <FullPageSpinner label="Đang kết nối phòng đấu…" />
 
@@ -45,6 +50,7 @@ export function MatchPage() {
     )
   }
 
+  const isAdmin = Boolean(user && !user.isGuest && user.role === 'admin')
   let mySide: MatchSide | null = null
   if (user && !user.isGuest) {
     if (state.sides.blue.player?.userId === user.id) mySide = 'blue'
@@ -60,18 +66,49 @@ export function MatchPage() {
     }
   }
 
-  const activeDraftStep =
-    state.status === 'drafting' ? state.ruleset.draftSteps[state.currentStepIndex] ?? null : null
-  const weaponModalCharacter = weaponSlot ? getCharacter(weaponSlot.characterSlug) ?? null : null
+  const canEditWeaponsForSide = (side: MatchSide): boolean => {
+    if (isAdmin) {
+      return (
+        state.status === 'drafting' ||
+        state.status === 'weapon_phase' ||
+        state.status === 'scoring'
+      )
+    }
+    return (
+      (state.status === 'drafting' || state.status === 'weapon_phase') &&
+      mySide === side &&
+      !state.sides[side].weaponsLocked
+    )
+  }
+
+  const canReorderSide = (side: MatchSide): boolean => {
+    if (isAdmin) {
+      return (
+        state.status === 'weapon_phase' ||
+        state.status === 'scoring' ||
+        state.status === 'finished'
+      )
+    }
+    return (state.status === 'weapon_phase' || state.status === 'scoring') && mySide === side
+  }
+
+  const weaponModalCharacter = weaponTarget
+    ? getCharacter(weaponTarget.pick.characterSlug) ?? null
+    : null
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header phòng đấu */}
-      <header className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <div
+      className={cn(
+        'flex flex-col gap-3',
+        state.status !== 'lobby' && 'match-arena-bg rounded-2xl border border-line/50 p-2.5 sm:p-4',
+      )}
+    >
+      {/* Thanh phòng gọn */}
+      <header className="panel flex flex-wrap items-center justify-between gap-3 border-line/70 bg-bg/75 px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">Phòng</span>
-            <span className="rounded-md bg-gold/15 px-2.5 py-1 font-mono text-base font-extrabold tracking-widest text-gold-strong">
+            <span className="rounded-md bg-gold/15 px-2.5 py-0.5 font-mono text-base font-extrabold tracking-widest text-gold-strong">
               {state.code}
             </span>
           </div>
@@ -83,7 +120,12 @@ export function MatchPage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isAdmin && (
+            <span className="rounded-full border border-gold/50 bg-gold/15 px-2.5 py-0.5 text-[11px] font-bold text-gold-strong">
+              Admin
+            </span>
+          )}
           <span className="rounded-full bg-panel-2 px-3 py-1 text-xs font-semibold text-gold-strong">
             {STATUS_LABEL[state.status] ?? state.status}
           </span>
@@ -110,91 +152,87 @@ export function MatchPage() {
         />
       )}
 
-      {(state.status === 'drafting' || state.status === 'weapon_phase') && (
+      {state.status !== 'lobby' && (
         <>
-          {/* Thanh tiến trình các bước Ban/Pick */}
-          <div className="panel flex items-center gap-1.5 overflow-x-auto px-3 py-2">
-            {state.ruleset.draftSteps.map((s, idx) => {
-              const isDone = state.status === 'weapon_phase' || idx < state.currentStepIndex
-              const isCurrent = state.status === 'drafting' && idx === state.currentStepIndex
-              return (
-                <div
-                  key={s.step}
-                  className={cn(
-                    'flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[11px] font-semibold transition',
-                    isCurrent
-                      ? 'bg-gold text-bg ring-2 ring-gold-strong'
-                      : isDone
-                        ? 'bg-panel-2/60 text-muted opacity-60'
-                        : s.side === 'blue'
-                          ? 'border border-hydro/40 bg-hydro/10 text-hydro'
-                          : 'border border-danger/40 bg-danger/10 text-danger',
-                  )}
-                >
-                  <span>{s.side === 'blue' ? 'X' : 'Đ'}</span>
-                  <span className="uppercase">{s.action}</span>
-                </div>
-              )
-            })}
-          </div>
+          <MatchScoreboardHeader state={state} countdown={countdown} />
 
-          <div className="grid items-start gap-4 xl:grid-cols-[340px_1fr_340px]">
-            <TeamPanel
-              side="blue"
-              sideState={state.sides.blue}
-              ruleset={state.ruleset}
-              isActiveTurn={activeDraftStep?.side === 'blue'}
-              canEditWeapons={mySide === 'blue' && !state.sides.blue.weaponsLocked}
-              onSelectWeaponSlot={(pick) => setWeaponSlot(pick)}
-            />
+          <DraftSlotsBoard
+            state={state}
+            canEditWeaponsForSide={canEditWeaponsForSide}
+            onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
+          />
 
-            <DraftCenterPool
+          {(state.status === 'drafting' || state.status === 'weapon_phase') && (
+            <UndoRequestBanner
               state={state}
               mySide={mySide}
-              countdown={countdown}
+              isAdmin={isAdmin}
+              onRespond={(accept) => sendAction({ action: 'respond_undo', accept })}
+              onCancel={() => sendAction({ action: 'cancel_undo_request' })}
+            />
+          )}
+
+          {state.status === 'drafting' ? (
+            <DraftStage
+              state={state}
+              mySide={mySide}
+              isAdmin={isAdmin}
               onDraftAction={(characterSlug) =>
                 sendAction({ action: 'draft_pick_or_ban', characterSlug })
               }
+              onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
+              onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
+              onRequestUndo={() => sendAction({ action: 'request_undo' })}
+            />
+          ) : (
+            <PostDraftTeamsStage
+              state={state}
+              mySide={mySide}
+              isAdmin={isAdmin}
+              canReorderSide={canReorderSide}
+              canEditWeaponsForSide={canEditWeaponsForSide}
+              onReorderLineup={(side, order) =>
+                sendAction({ action: 'reorder_lineup', side, order })
+              }
+              onSelectWeaponSlot={(side, pick) => setWeaponTarget({ side, pick })}
               onLockWeapons={() => sendAction({ action: 'lock_weapons' })}
+              onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
+              onRequestUndo={() => sendAction({ action: 'request_undo' })}
             />
+          )}
 
-            <TeamPanel
-              side="red"
-              sideState={state.sides.red}
-              ruleset={state.ruleset}
-              isActiveTurn={activeDraftStep?.side === 'red'}
-              canEditWeapons={mySide === 'red' && !state.sides.red.weaponsLocked}
-              onSelectWeaponSlot={(pick) => setWeaponSlot(pick)}
+          {(state.status === 'scoring' || state.status === 'finished') && (
+            <MatchScoringPhase
+              state={state}
+              mySide={mySide}
+              onSubmitScores={(chambers) => sendAction({ action: 'submit_scores', chambers })}
             />
-          </div>
+          )}
         </>
       )}
 
-      {(state.status === 'scoring' || state.status === 'finished') && (
-        <MatchScoringPhase
-          state={state}
-          mySide={mySide}
-          onSubmitScores={(chambers) => sendAction({ action: 'submit_scores', chambers })}
-        />
-      )}
-
       <WeaponPickerModal
-        key={weaponSlot ? `${weaponSlot.slot}-${weaponSlot.weaponSlug ?? 'none'}` : 'closed'}
-        open={!!weaponSlot}
+        key={
+          weaponTarget
+            ? `${weaponTarget.side}-${weaponTarget.pick.slot}-${weaponTarget.pick.weaponSlug ?? 'none'}`
+            : 'closed'
+        }
+        open={Boolean(weaponTarget)}
         character={weaponModalCharacter}
         costRules={state.ruleset.costRules}
-        initialWeaponSlug={weaponSlot?.weaponSlug ?? null}
-        initialRefinement={weaponSlot?.refinement ?? 1}
+        initialWeaponSlug={weaponTarget?.pick.weaponSlug ?? null}
+        initialRefinement={weaponTarget?.pick.refinement ?? 1}
         onSelect={(weaponSlug, refinement) => {
-          if (!weaponSlot) return
+          if (!weaponTarget) return
           sendAction({
             action: 'set_weapon',
-            slot: weaponSlot.slot,
+            side: weaponTarget.side,
+            slot: weaponTarget.pick.slot,
             weaponSlug,
             refinement,
           })
         }}
-        onClose={() => setWeaponSlot(null)}
+        onClose={() => setWeaponTarget(null)}
       />
     </div>
   )

@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Outlet, useMatch } from 'react-router'
 import { Toaster } from '@/components/ui/Toaster'
 import { BRAND } from '@/config/brand'
 import { cn } from '@/lib/cn'
@@ -17,6 +17,8 @@ const NAV: NavItem[] = [
 ]
 
 export function AppShell() {
+  const isMatchPage = Boolean(useMatch('/match/:code'))
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-line/70 bg-bg/80 backdrop-blur">
@@ -53,7 +55,12 @@ export function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main
+        className={cn(
+          'mx-auto w-full flex-1',
+          isMatchPage ? 'max-w-[1760px] px-2.5 py-3 sm:px-5' : 'max-w-7xl px-4 py-6',
+        )}
+      >
         <Outlet />
       </main>
 

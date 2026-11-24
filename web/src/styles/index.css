@@ -51,4 +51,17 @@
   .panel {
     @apply rounded-xl border border-line bg-panel/90 shadow-lg shadow-black/30 backdrop-blur;
   }
+
+  .match-arena-bg {
+    background-image:
+      radial-gradient(600px 420px at 8% 12%, rgb(76 194 241 / 0.14), transparent 70%),
+      radial-gradient(600px 420px at 92% 12%, rgb(239 107 107 / 0.14), transparent 70%),
+      repeating-linear-gradient(
+        90deg,
+        rgb(255 255 255 / 0.015) 0px,
+        rgb(255 255 255 / 0.015) 72px,
+        transparent 72px,
+        transparent 144px
+      );
+  }
 }

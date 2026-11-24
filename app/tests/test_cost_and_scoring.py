@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import pytest
 
+from app.data_loader import get_weapons
 from app.schemas.ruleset import CostMilestone, CostRules
 from app.services.cost_engine import (
     calc_chamber_scores,
     calc_character_cost,
     calc_cost_penalty_seconds,
     calc_weapon_cost,
+    calc_weapon_refinement_seconds,
 )
 
 
@@ -27,11 +29,57 @@ def test_default_character_and_weapon_costs() -> None:
     assert calc_character_cost("bennett", 5, rules_with_override) == 0.5
     assert calc_character_cost("bennett", 6, rules_with_override) == 1.0
 
-    # Vũ khí 5★ mặc định R1 = 1 cost; 4★ và 3★ = 0 cost
-    assert calc_weapon_cost("amos-bow", 1, rules) == 1.0
-    assert calc_weapon_cost("amos-bow", 5, rules) == 3.0
-    assert calc_weapon_cost("favonius-warbow", 5, rules) == 0.0
-    assert calc_weapon_cost("cool-steel", 5, rules) == 0.0
+    # Vũ khí 5★ mặc định 1 cost (không đổi theo tinh luyện); 4★ = 0 cost
+    assert calc_weapon_cost("amos-bow", rules) == 1.0
+    assert calc_weapon_cost("favonius-warbow", rules) == 0.0
+
+    # Tinh luyện vũ khí 5★ mặc định R1..R5 = 0, +5, +10, +15, +20 giây; 4★ = 0s
+    assert [calc_weapon_refinement_seconds("amos-bow", r, rules) for r in range(1, 6)] == [
+        0.0,
+        5.0,
+        10.0,
+        15.0,
+        20.0,
+    ]
+    assert [calc_weapon_refinement_seconds("favonius-warbow", r, rules) for r in range(1, 6)] == [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ]
+
+    # Tùy chỉnh riêng Cost cơ bản và thời gian tinh luyện từng vũ khí
+    weapon_rules = CostRules(
+        weapon_cost_overrides={"favonius-warbow": 0.5, "amos-bow": 2.0},
+        weapon_refinement_overrides={"amos-bow": [0.0, 10.0, 20.0, 30.0, 40.0]},
+    )
+    assert calc_weapon_cost("favonius-warbow", weapon_rules) == 0.5
+    assert calc_weapon_cost("amos-bow", weapon_rules) == 2.0
+    assert calc_weapon_refinement_seconds("amos-bow", 3, weapon_rules) == 20.0
+
+
+def test_legacy_cost_rules_migration_and_catalog() -> None:
+    legacy = CostRules.model_validate(
+        {
+            "defaultWeapon5Costs": [2.0, 2.5, 3.0, 3.5, 4.0],
+            "defaultWeapon4Costs": [0.5, 1.0, 1.5, 2.0, 2.5],
+            "defaultWeapon3Costs": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "weaponOverrides": {"amos-bow": [1.5, 2.0, 2.5, 3.0, 3.5]},
+        }
+    )
+    assert legacy.default_weapon_5_cost == 2.0
+    assert legacy.default_weapon_4_cost == 0.5
+    assert legacy.weapon_cost_overrides == {"amos-bow": 1.5}
+    assert legacy.default_weapon_5_refinement_seconds == [0.0, 5.0, 10.0, 15.0, 20.0]
+
+    weapons = get_weapons()
+    assert len(weapons) > 0
+    assert all(w["rarity"] in (4, 5) for w in weapons)
+    assert all(int(w["id"]) < 300000 for w in weapons)
+    slugs = {w["slug"] for w in weapons}
+    assert "serpent-devourer-sublimation" not in slugs
+    assert "cool-steel" not in slugs
 
 
 def test_milestone_penalty_seconds() -> None:

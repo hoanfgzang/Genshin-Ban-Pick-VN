@@ -44,6 +44,7 @@ class MatchPickSlot(CamelModel):
     weapon_slug: str | None = None
     refinement: int = 1
     weapon_cost: float = 0.0
+    weapon_refinement_seconds: float = 0.0
     total_slot_cost: float
 
 
@@ -53,14 +54,27 @@ class SideOwnedChar(CamelModel):
     level: int
 
 
+class UndoRequest(CamelModel):
+    requester_side: SideName
+    target_step_index: int
+    target_step_number: int
+    target_action: Literal["ban", "pick"]
+    target_character_slug: str | None = None
+    steps_to_revert: int
+    created_at: str
+
+
 class SideState(CamelModel):
     player: MatchPlayerInfo | None = None
     ready: bool = False
     owned_characters: dict[str, SideOwnedChar] = Field(default_factory=dict)
     bans: list[str | None] = Field(default_factory=list)
     picks: list[MatchPickSlot] = Field(default_factory=list)
+    lineup: list[int] = Field(default_factory=list)
     total_cost: float = 0.0
     cost_penalty_seconds: float = 0.0
+    weapon_refinement_seconds: float = 0.0
+    overtime_penalty_seconds: float = 0.0
     weapons_locked: bool = False
     chambers: list[ChamberTimeInput] | None = None
     chamber_diffs: list[int] | None = None
@@ -79,6 +93,7 @@ class MatchState(CamelModel):
     sides: dict[SideName, SideState]
     current_step_index: int = 0
     turn_deadline_at: str | None = None
+    undo_request: UndoRequest | None = None
     winner_side: WinnerSide | None = None
     created_at: str
     finished_at: str | None = None

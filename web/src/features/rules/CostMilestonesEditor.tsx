@@ -84,17 +84,59 @@ export function CostMilestonesEditor({ costRules, onChange }: Props) {
           values={costRules.defaultChar4Costs}
           onChange={(v) => updateField('defaultChar4Costs', v)}
         />
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-lg border border-line/70 bg-bg/40 p-3">
+        <div>
+          <div className="text-xs font-semibold text-text">
+            Cost cơ bản mặc định Vũ khí (không tăng theo tinh luyện)
+          </div>
+          <p className="text-[11px] text-muted">
+            Cost vũ khí chỉ tính 1 lần vào tổng Cost đội hình bất kể tinh luyện R1–R5.
+          </p>
+        </div>
+        <div className="grid max-w-md grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            <span>Vũ khí 5★</span>
+            <input
+              type="number"
+              min={0}
+              step="0.5"
+              value={costRules.defaultWeapon5Cost}
+              onChange={(e) =>
+                updateField('defaultWeapon5Cost', Math.max(0, Number(e.target.value) || 0))
+              }
+              className="h-8 w-full rounded border border-line bg-panel px-2 text-center font-mono text-xs text-text focus:border-gold focus:outline-none"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted">
+            <span>Vũ khí 4★</span>
+            <input
+              type="number"
+              min={0}
+              step="0.5"
+              value={costRules.defaultWeapon4Cost}
+              onChange={(e) =>
+                updateField('defaultWeapon4Cost', Math.max(0, Number(e.target.value) || 0))
+              }
+              className="h-8 w-full rounded border border-line bg-panel px-2 text-center font-mono text-xs text-text focus:border-gold focus:outline-none"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
         <CostArrayRow
-          label="Cost mặc định Vũ khí 5★ (R1–R5)"
-          headers={['R1', 'R2', 'R3', 'R4', 'R5']}
-          values={costRules.defaultWeapon5Costs}
-          onChange={(v) => updateField('defaultWeapon5Costs', v)}
+          label="Thời gian cộng thêm tinh luyện Vũ khí 5★ (giây · R1–R5)"
+          headers={['R1 (s)', 'R2 (s)', 'R3 (s)', 'R4 (s)', 'R5 (s)']}
+          values={costRules.defaultWeapon5RefinementSeconds}
+          onChange={(v) => updateField('defaultWeapon5RefinementSeconds', v)}
         />
         <CostArrayRow
-          label="Cost mặc định Vũ khí 4★ (R1–R5)"
-          headers={['R1', 'R2', 'R3', 'R4', 'R5']}
-          values={costRules.defaultWeapon4Costs}
-          onChange={(v) => updateField('defaultWeapon4Costs', v)}
+          label="Thời gian cộng thêm tinh luyện Vũ khí 4★ (giây · R1–R5)"
+          headers={['R1 (s)', 'R2 (s)', 'R3 (s)', 'R4 (s)', 'R5 (s)']}
+          values={costRules.defaultWeapon4RefinementSeconds}
+          onChange={(v) => updateField('defaultWeapon4RefinementSeconds', v)}
         />
       </div>
 

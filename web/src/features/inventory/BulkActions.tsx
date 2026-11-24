@@ -40,7 +40,12 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
   const fileRef = useRef<HTMLInputElement>(null)
   const [levelOpen, setLevelOpen] = useState(false)
   const [level, setLevelValue] = useState<Level>(90)
-  const [pending, setPending] = useState<{ inv: Inventory; diff: InventoryDiff; unknown: string[] } | null>(null)
+  const [pending, setPending] = useState<{
+    inv: Inventory
+    diff: InventoryDiff
+    unknown: string[]
+    normalizedLevels: number
+  } | null>(null)
 
   const count = visibleSlugs.length
   const ownedVisible = visibleSlugs.filter((s) => inventory.characters[s]).length
@@ -90,6 +95,7 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
       inv: result.inventory,
       diff: diffInventory(inventory, result.inventory),
       unknown: result.unknownSlugs,
+      normalizedLevels: result.normalizedLevels,
     })
   }
 
@@ -184,6 +190,11 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
             <li className="text-danger">− Bị xóa: {pending.diff.removed}</li>
             {pending.unknown.length > 0 && (
               <li className="text-muted">Bỏ qua {pending.unknown.length} nhân vật không xác định.</li>
+            )}
+            {pending.normalizedLevels > 0 && (
+              <li className="text-muted">
+                Quy đổi level về mốc 90/95/100 cho {pending.normalizedLevels} nhân vật.
+              </li>
             )}
           </ul>
         )}

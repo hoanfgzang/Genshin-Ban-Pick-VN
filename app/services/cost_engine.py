@@ -20,22 +20,35 @@ def calc_character_cost(slug: str, constellation: int, cost_rules: CostRules) ->
     return round(float(table[c]), 2)
 
 
-def calc_weapon_cost(slug: str | None, refinement: int, cost_rules: CostRules) -> float:
+def calc_weapon_cost(slug: str | None, cost_rules: CostRules) -> float:
+    if not slug:
+        return 0.0
+    if slug in cost_rules.weapon_cost_overrides:
+        return round(float(cost_rules.weapon_cost_overrides[slug]), 2)
+
+    weapon = get_weapon(slug)
+    rarity = weapon["rarity"] if weapon else 4
+    val = cost_rules.default_weapon_5_cost if rarity >= 5 else cost_rules.default_weapon_4_cost
+    return round(float(val), 2)
+
+
+def calc_weapon_refinement_seconds(
+    slug: str | None, refinement: int, cost_rules: CostRules
+) -> float:
     if not slug:
         return 0.0
     idx = max(0, min(4, int(refinement) - 1))
-    override = cost_rules.weapon_overrides.get(slug)
+    override = cost_rules.weapon_refinement_overrides.get(slug)
     if override and len(override) == 5:
         return round(float(override[idx]), 2)
 
     weapon = get_weapon(slug)
     rarity = weapon["rarity"] if weapon else 4
-    if rarity >= 5:
-        table = cost_rules.default_weapon_5_costs
-    elif rarity == 4:
-        table = cost_rules.default_weapon_4_costs
-    else:
-        table = cost_rules.default_weapon_3_costs
+    table = (
+        cost_rules.default_weapon_5_refinement_seconds
+        if rarity >= 5
+        else cost_rules.default_weapon_4_refinement_seconds
+    )
     return round(float(table[idx]), 2)
 
 

@@ -6,6 +6,7 @@ import {
   emptyInventory,
   exportInventory,
   isOwned,
+  normalizeLevel,
   parseInventory,
   setConstellation,
   setLevel,
@@ -104,24 +105,64 @@ describe('domain/inventory', () => {
     expect(parsed.ok).toBe(true)
     if (parsed.ok) {
       expect(parsed.unknownSlugs).toEqual([])
+      expect(parsed.normalizedLevels).toBe(0)
       expect(parsed.inventory.characters).toEqual(inv.characters)
     }
   })
 
-  it('parseInventory lọc bỏ slug lạ và từ chối dữ liệu sai định dạng', () => {
+  it('normalizeLevel quy đổi level về 3 mốc 90, 95, 100', () => {
+    expect(normalizeLevel(1)).toBe(90)
+    expect(normalizeLevel(80)).toBe(90)
+    expect(normalizeLevel(85)).toBe(90)
+    expect(normalizeLevel(90)).toBe(90)
+    expect(normalizeLevel(94)).toBe(90)
+    expect(normalizeLevel(95)).toBe(95)
+    expect(normalizeLevel(99)).toBe(95)
+    expect(normalizeLevel(100)).toBe(100)
+  })
+
+  it('parseInventory lọc bỏ slug lạ, quy đổi level và từ chối dữ liệu sai định dạng', () => {
     const validWithUnknown = JSON.stringify({
       version: 1,
       updatedAt: '2026-11-23T00:00:00.000Z',
       characters: {
         furina: { slug: 'furina', constellation: 2, level: 95 },
-        ghost: { slug: 'ghost', constellation: 0, level: 90 },
+        ghost: { slug: 'ghost', constellation: 0, level: 80 },
       },
     })
     const okRes = parseInventory(validWithUnknown, new Set(['furina']))
     expect(okRes.ok).toBe(true)
     if (okRes.ok) {
       expect(okRes.unknownSlugs).toEqual(['ghost'])
+      expect(okRes.normalizedLevels).toBe(0)
       expect(Object.keys(okRes.inventory.characters)).toEqual(['furina'])
+    }
+
+    const withRawLevels = JSON.stringify({
+      version: 1,
+      updatedAt: '2026-11-23T00:00:00.000Z',
+      characters: {
+        sucrose: { slug: 'sucrose', constellation: 6, level: 80 },
+        gorou: { slug: 'gorou', constellation: 6, level: 85 },
+        bennett: { slug: 'bennett', constellation: 6, level: 94 },
+        yelan: { slug: 'yelan', constellation: 2, level: 96 },
+        furina: { slug: 'furina', constellation: 6, level: 100 },
+        ghost: { slug: 'ghost', constellation: 0, level: 70 },
+      },
+    })
+    const normRes = parseInventory(
+      withRawLevels,
+      new Set(['sucrose', 'gorou', 'bennett', 'yelan', 'furina']),
+    )
+    expect(normRes.ok).toBe(true)
+    if (normRes.ok) {
+      expect(normRes.unknownSlugs).toEqual(['ghost'])
+      expect(normRes.normalizedLevels).toBe(4)
+      expect(normRes.inventory.characters.sucrose.level).toBe(90)
+      expect(normRes.inventory.characters.gorou.level).toBe(90)
+      expect(normRes.inventory.characters.bennett.level).toBe(90)
+      expect(normRes.inventory.characters.yelan.level).toBe(95)
+      expect(normRes.inventory.characters.furina.level).toBe(100)
     }
 
     expect(parseInventory('{not json').ok).toBe(false)
@@ -137,15 +178,17 @@ describe('domain/inventory', () => {
         }),
       ).ok,
     ).toBe(false)
-    expect(
-      parseInventory(
-        JSON.stringify({
-          version: 1,
-          updatedAt: '',
-          characters: { furina: { slug: 'furina', constellation: 0, level: 80 } },
-        }),
-      ).ok,
-    ).toBe(false)
+    for (const invalidLevel of [0, -1, 101, 80.5]) {
+      expect(
+        parseInventory(
+          JSON.stringify({
+            version: 1,
+            updatedAt: '',
+            characters: { furina: { slug: 'furina', constellation: 0, level: invalidLevel } },
+          }),
+        ).ok,
+      ).toBe(false)
+    }
   })
 
   it('diffInventory đếm chính xác added, removed, changed', () => {

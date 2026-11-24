@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
@@ -32,41 +32,87 @@ def _validate_float_list(vals: list[float], expected_len: int, label: str) -> li
         raise ValueError(f"{label} phải có đúng {expected_len} phần tử.")
     for x in vals:
         if x < 0:
-            raise ValueError(f"Giá trị cost trong {label} không được âm.")
+            raise ValueError(f"Giá trị trong {label} không được âm.")
     return [round(float(x), 2) for x in vals]
 
 
 class CostRules(CamelModel):
     default_char_5_costs: list[float] = Field(default_factory=lambda: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
     default_char_4_costs: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    default_weapon_5_costs: list[float] = Field(default_factory=lambda: [1.0, 1.5, 2.0, 2.5, 3.0])
-    default_weapon_4_costs: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
-    default_weapon_3_costs: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
+    default_weapon_5_cost: float = Field(default=1.0, ge=0)
+    default_weapon_4_cost: float = Field(default=0.0, ge=0)
+    default_weapon_5_refinement_seconds: list[float] = Field(default_factory=lambda: [0.0, 5.0, 10.0, 15.0, 20.0])
+    default_weapon_4_refinement_seconds: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     character_overrides: dict[str, list[float]] = Field(default_factory=dict)
-    weapon_overrides: dict[str, list[float]] = Field(default_factory=dict)
+    weapon_cost_overrides: dict[str, float] = Field(default_factory=dict)
+    weapon_refinement_overrides: dict[str, list[float]] = Field(default_factory=dict)
     base_seconds_per_cost: float = Field(default=5.0, ge=0)
     milestones: list[CostMilestone] = Field(default_factory=list)
     draft_bonus_seconds_per_cost: float = Field(default=0.0, ge=0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_weapon_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        d = dict(data)
+        if "default_weapon_5_cost" not in d and "defaultWeapon5Cost" not in d:
+            legacy5 = d.get("defaultWeapon5Costs") if "defaultWeapon5Costs" in d else d.get("default_weapon_5_costs")
+            if isinstance(legacy5, list) and len(legacy5) > 0:
+                d["defaultWeapon5Cost"] = float(legacy5[0])
+        if "default_weapon_4_cost" not in d and "defaultWeapon4Cost" not in d:
+            legacy4 = d.get("defaultWeapon4Costs") if "defaultWeapon4Costs" in d else d.get("default_weapon_4_costs")
+            if isinstance(legacy4, list) and len(legacy4) > 0:
+                d["defaultWeapon4Cost"] = float(legacy4[0])
+        if "weapon_cost_overrides" not in d and "weaponCostOverrides" not in d:
+            legacy_ov = d.get("weaponOverrides") if "weaponOverrides" in d else d.get("weapon_overrides")
+            if isinstance(legacy_ov, dict):
+                d["weaponCostOverrides"] = {
+                    k: round(float(v[0]), 2)
+                    for k, v in legacy_ov.items()
+                    if isinstance(v, list) and len(v) > 0
+                }
+        return d
 
     @field_validator("default_char_5_costs", "default_char_4_costs")
     @classmethod
     def check_char_costs(cls, v: list[float]) -> list[float]:
         return _validate_float_list(v, 7, "C0–C6")
 
-    @field_validator("default_weapon_5_costs", "default_weapon_4_costs", "default_weapon_3_costs")
+    @field_validator("default_weapon_5_cost", "default_weapon_4_cost")
     @classmethod
-    def check_weapon_costs(cls, v: list[float]) -> list[float]:
-        return _validate_float_list(v, 5, "R1–R5")
+    def check_weapon_base_cost(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("Giá trị cost vũ khí không được âm.")
+        return round(float(v), 2)
+
+    @field_validator("default_weapon_5_refinement_seconds", "default_weapon_4_refinement_seconds")
+    @classmethod
+    def check_weapon_refinement_seconds(cls, v: list[float]) -> list[float]:
+        return _validate_float_list(v, 5, "R1–R5 (giây)")
 
     @field_validator("character_overrides")
     @classmethod
     def check_char_overrides(cls, v: dict[str, list[float]]) -> dict[str, list[float]]:
         return {k: _validate_float_list(vals, 7, f"characterOverrides[{k}]") for k, vals in v.items()}
 
-    @field_validator("weapon_overrides")
+    @field_validator("weapon_cost_overrides")
     @classmethod
-    def check_weapon_overrides(cls, v: dict[str, list[float]]) -> dict[str, list[float]]:
-        return {k: _validate_float_list(vals, 5, f"weaponOverrides[{k}]") for k, vals in v.items()}
+    def check_weapon_cost_overrides(cls, v: dict[str, float]) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for k, val in v.items():
+            if val < 0:
+                raise ValueError(f"Giá trị trong weaponCostOverrides[{k}] không được âm.")
+            out[k] = round(float(val), 2)
+        return out
+
+    @field_validator("weapon_refinement_overrides")
+    @classmethod
+    def check_weapon_refinement_overrides(cls, v: dict[str, list[float]]) -> dict[str, list[float]]:
+        return {
+            k: _validate_float_list(vals, 5, f"weaponRefinementOverrides[{k}]")
+            for k, vals in v.items()
+        }
 
 
 def default_draft_steps() -> list[DraftStep]:

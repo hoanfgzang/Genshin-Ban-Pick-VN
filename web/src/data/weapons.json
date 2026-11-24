@@ -72,14 +72,6 @@
     "icon": "/weapons/skyward-harp.png"
   },
   {
-    "id": "350002",
-    "slug": "starpiercer-sublimation",
-    "name": "Starpiercer - Sublimation",
-    "rarity": 5,
-    "weaponType": "bow",
-    "icon": "/weapons/starpiercer-sublimation.png"
-  },
-  {
     "id": "15515",
     "slug": "the-daybreak-chronicles",
     "name": "The Daybreak Chronicles",
@@ -102,14 +94,6 @@
     "rarity": 5,
     "weaponType": "bow",
     "icon": "/weapons/thundering-pulse.png"
-  },
-  {
-    "id": "350004",
-    "slug": "yayu-sublimation",
-    "name": "Yayu - Sublimation",
-    "rarity": 5,
-    "weaponType": "bow",
-    "icon": "/weapons/yayu-sublimation.png"
   },
   {
     "id": "14511",
@@ -144,28 +128,12 @@
     "icon": "/weapons/crane-s-echoing-call.png"
   },
   {
-    "id": "340004",
-    "slug": "dawnstar-of-shahar-sublimation",
-    "name": "Dawnstar of Shahar - Sublimation",
-    "rarity": 5,
-    "weaponType": "catalyst",
-    "icon": "/weapons/dawnstar-of-shahar-sublimation.png"
-  },
-  {
     "id": "14506",
     "slug": "everlasting-moonglow",
     "name": "Everlasting Moonglow",
     "rarity": 5,
     "weaponType": "catalyst",
     "icon": "/weapons/everlasting-moonglow.png"
-  },
-  {
-    "id": "340002",
-    "slug": "hallowed-fetters-sublimation",
-    "name": "Hallowed Fetters - Sublimation",
-    "rarity": 5,
-    "weaponType": "catalyst",
-    "icon": "/weapons/hallowed-fetters-sublimation.png"
   },
   {
     "id": "14524",
@@ -312,14 +280,6 @@
     "icon": "/weapons/a-thousand-blazing-suns.png"
   },
   {
-    "id": "320002",
-    "slug": "ardent-storm-sublimation",
-    "name": "Ardent Storm - Sublimation",
-    "rarity": 5,
-    "weaponType": "claymore",
-    "icon": "/weapons/ardent-storm-sublimation.png"
-  },
-  {
     "id": "12511",
     "slug": "beacon-of-the-reed-sea",
     "name": "Beacon of the Reed Sea",
@@ -350,14 +310,6 @@
     "rarity": 5,
     "weaponType": "claymore",
     "icon": "/weapons/redhorn-stonethresher.png"
-  },
-  {
-    "id": "320004",
-    "slug": "silver-radiance-of-gradlon-sublimation",
-    "name": "Silver Radiance of Gradlon - Sublimation",
-    "rarity": 5,
-    "weaponType": "claymore",
-    "icon": "/weapons/silver-radiance-of-gradlon-sublimation.png"
   },
   {
     "id": "12501",
@@ -464,14 +416,6 @@
     "icon": "/weapons/primordial-jade-winged-spear.png"
   },
   {
-    "id": "330002",
-    "slug": "shattered-moon-sublimation",
-    "name": "Shattered Moon - Sublimation",
-    "rarity": 5,
-    "weaponType": "polearm",
-    "icon": "/weapons/shattered-moon-sublimation.png"
-  },
-  {
     "id": "13502",
     "slug": "skyward-spine",
     "name": "Skyward Spine",
@@ -494,14 +438,6 @@
     "rarity": 5,
     "weaponType": "polearm",
     "icon": "/weapons/staff-of-the-scarlet-sands.png"
-  },
-  {
-    "id": "330004",
-    "slug": "starlight-of-fylkir-sublimation",
-    "name": "Starlight of Fylkir - Sublimation",
-    "rarity": 5,
-    "weaponType": "polearm",
-    "icon": "/weapons/starlight-of-fylkir-sublimation.png"
   },
   {
     "id": "13514",
@@ -576,14 +512,6 @@
     "icon": "/weapons/freedom-sworn.png"
   },
   {
-    "id": "310004",
-    "slug": "golden-bough-of-nemorensis-sublimation",
-    "name": "Golden Bough of Nemorensis - Sublimation",
-    "rarity": 5,
-    "weaponType": "sword",
-    "icon": "/weapons/golden-bough-of-nemorensis-sublimation.png"
-  },
-  {
     "id": "11510",
     "slug": "haran-geppaku-futsu",
     "name": "Haran Geppaku Futsu",
@@ -638,14 +566,6 @@
     "rarity": 5,
     "weaponType": "sword",
     "icon": "/weapons/primordial-jade-cutter.png"
-  },
-  {
-    "id": "310002",
-    "slug": "serpent-devourer-sublimation",
-    "name": "Serpent Devourer - Sublimation",
-    "rarity": 5,
-    "weaponType": "sword",
-    "icon": "/weapons/serpent-devourer-sublimation.png"
   },
   {
     "id": "11502",
@@ -912,14 +832,6 @@
     "icon": "/weapons/song-of-stillness.png"
   },
   {
-    "id": "350001",
-    "slug": "starpiercer",
-    "name": "Starpiercer",
-    "rarity": 4,
-    "weaponType": "bow",
-    "icon": "/weapons/starpiercer.png"
-  },
-  {
     "id": "15402",
     "slug": "the-stringless",
     "name": "The Stringless",
@@ -942,14 +854,6 @@
     "rarity": 4,
     "weaponType": "bow",
     "icon": "/weapons/windblume-ode.png"
-  },
-  {
-    "id": "350003",
-    "slug": "yayu",
-    "name": "Yayu",
-    "rarity": 4,
-    "weaponType": "bow",
-    "icon": "/weapons/yayu.png"
   },
   {
     "id": "14427",
@@ -998,14 +902,6 @@
     "rarity": 4,
     "weaponType": "catalyst",
     "icon": "/weapons/dawning-frost.png"
-  },
-  {
-    "id": "340003",
-    "slug": "dawnstar-of-shahar",
-    "name": "Dawnstar of Shahar",
-    "rarity": 4,
-    "weaponType": "catalyst",
-    "icon": "/weapons/dawnstar-of-shahar.png"
   },
   {
     "id": "14413",
@@ -1080,14 +976,6 @@
     "icon": "/weapons/hakushin-ring.png"
   },
   {
-    "id": "340001",
-    "slug": "hallowed-fetters",
-    "name": "Hallowed Fetters",
-    "rarity": 4,
-    "weaponType": "catalyst",
-    "icon": "/weapons/hallowed-fetters.png"
-  },
-  {
     "id": "14407",
     "slug": "mappa-mare",
     "name": "Mappa Mare",
@@ -1102,14 +990,6 @@
     "rarity": 4,
     "weaponType": "catalyst",
     "icon": "/weapons/oathsworn-eye.png"
-  },
-  {
-    "id": "380001",
-    "slug": "phantasmal-gift-star-omen",
-    "name": "Phantasmal Gift: Star Omen",
-    "rarity": 4,
-    "weaponType": "catalyst",
-    "icon": "/weapons/phantasmal-gift-star-omen.png"
   },
   {
     "id": "14406",
@@ -1214,14 +1094,6 @@
     "rarity": 4,
     "weaponType": "claymore",
     "icon": "/weapons/akuoumaru.png"
-  },
-  {
-    "id": "320001",
-    "slug": "ardent-storm",
-    "name": "Ardent Storm",
-    "rarity": 4,
-    "weaponType": "claymore",
-    "icon": "/weapons/ardent-storm.png"
   },
   {
     "id": "12408",
@@ -1384,28 +1256,12 @@
     "icon": "/weapons/serpent-spine.png"
   },
   {
-    "id": "320003",
-    "slug": "silver-radiance-of-gradlon",
-    "name": "Silver Radiance of Gradlon",
-    "rarity": 4,
-    "weaponType": "claymore",
-    "icon": "/weapons/silver-radiance-of-gradlon.png"
-  },
-  {
     "id": "12411",
     "slug": "snow-tombed-starsilver",
     "name": "Snow-Tombed Starsilver",
     "rarity": 4,
     "weaponType": "claymore",
     "icon": "/weapons/snow-tombed-starsilver.png"
-  },
-  {
-    "id": "380002",
-    "slug": "super-awesome-magic-key",
-    "name": "Super Awesome Magic Key",
-    "rarity": 4,
-    "weaponType": "claymore",
-    "icon": "/weapons/super-awesome-magic-key.png"
   },
   {
     "id": "12424",
@@ -1430,14 +1286,6 @@
     "rarity": 4,
     "weaponType": "claymore",
     "icon": "/weapons/tidal-shadow.png"
-  },
-  {
-    "id": "390001",
-    "slug": "unbreakable-durandarte",
-    "name": "Unbreakable: Durandarte",
-    "rarity": 4,
-    "weaponType": "claymore",
-    "icon": "/weapons/unbreakable-durandarte.png"
   },
   {
     "id": "12407",
@@ -1624,28 +1472,12 @@
     "icon": "/weapons/sacrificer-s-staff.png"
   },
   {
-    "id": "330001",
-    "slug": "shattered-moon",
-    "name": "Shattered Moon",
-    "rarity": 4,
-    "weaponType": "polearm",
-    "icon": "/weapons/shattered-moon.png"
-  },
-  {
     "id": "13436",
     "slug": "song-of-the-vigil",
     "name": "Song of the Vigil",
     "rarity": 4,
     "weaponType": "polearm",
     "icon": "/weapons/song-of-the-vigil.png"
-  },
-  {
-    "id": "330003",
-    "slug": "starlight-of-fylkir",
-    "name": "Starlight of Fylkir",
-    "rarity": 4,
-    "weaponType": "polearm",
-    "icon": "/weapons/starlight-of-fylkir.png"
   },
   {
     "id": "13432",
@@ -1662,14 +1494,6 @@
     "rarity": 4,
     "weaponType": "polearm",
     "icon": "/weapons/wavebreaker-s-fin.png"
-  },
-  {
-    "id": "380003",
-    "slug": "a-touch-of-frost-in-scorching-summer",
-    "name": "A Touch of Frost in Scorching Summer!",
-    "rarity": 4,
-    "weaponType": "sword",
-    "icon": "/weapons/a-touch-of-frost-in-scorching-summer.png"
   },
   {
     "id": "11414",
@@ -1712,14 +1536,6 @@
     "icon": "/weapons/emberwell.png"
   },
   {
-    "id": "390002",
-    "slug": "exaiphanes-blade-390002",
-    "name": "Exaiphanes Blade",
-    "rarity": 4,
-    "weaponType": "sword",
-    "icon": "/weapons/exaiphanes-blade-390002.png"
-  },
-  {
     "id": "11401",
     "slug": "favonius-sword",
     "name": "Favonius Sword",
@@ -1758,14 +1574,6 @@
     "rarity": 4,
     "weaponType": "sword",
     "icon": "/weapons/flute-of-ezpitzal.png"
-  },
-  {
-    "id": "310003",
-    "slug": "golden-bough-of-nemorensis",
-    "name": "Golden Bough of Nemorensis",
-    "rarity": 4,
-    "weaponType": "sword",
-    "icon": "/weapons/golden-bough-of-nemorensis.png"
   },
   {
     "id": "11435",
@@ -1856,14 +1664,6 @@
     "icon": "/weapons/serenity-s-call.png"
   },
   {
-    "id": "310001",
-    "slug": "serpent-devourer",
-    "name": "Serpent Devourer",
-    "rarity": 4,
-    "weaponType": "sword",
-    "icon": "/weapons/serpent-devourer.png"
-  },
-  {
     "id": "11438",
     "slug": "silver-light",
     "name": "Silver Light",
@@ -1950,197 +1750,5 @@
     "rarity": 4,
     "weaponType": "sword",
     "icon": "/weapons/xiphos-moonlight.png"
-  },
-  {
-    "id": "15305",
-    "slug": "messenger",
-    "name": "Messenger",
-    "rarity": 3,
-    "weaponType": "bow",
-    "icon": "/weapons/messenger.png"
-  },
-  {
-    "id": "15301",
-    "slug": "raven-bow",
-    "name": "Raven Bow",
-    "rarity": 3,
-    "weaponType": "bow",
-    "icon": "/weapons/raven-bow.png"
-  },
-  {
-    "id": "15303",
-    "slug": "recurve-bow",
-    "name": "Recurve Bow",
-    "rarity": 3,
-    "weaponType": "bow",
-    "icon": "/weapons/recurve-bow.png"
-  },
-  {
-    "id": "15302",
-    "slug": "sharpshooter-s-oath",
-    "name": "Sharpshooter's Oath",
-    "rarity": 3,
-    "weaponType": "bow",
-    "icon": "/weapons/sharpshooter-s-oath.png"
-  },
-  {
-    "id": "15304",
-    "slug": "slingshot",
-    "name": "Slingshot",
-    "rarity": 3,
-    "weaponType": "bow",
-    "icon": "/weapons/slingshot.png"
-  },
-  {
-    "id": "14304",
-    "slug": "emerald-orb",
-    "name": "Emerald Orb",
-    "rarity": 3,
-    "weaponType": "catalyst",
-    "icon": "/weapons/emerald-orb.png"
-  },
-  {
-    "id": "14301",
-    "slug": "magic-guide",
-    "name": "Magic Guide",
-    "rarity": 3,
-    "weaponType": "catalyst",
-    "icon": "/weapons/magic-guide.png"
-  },
-  {
-    "id": "14303",
-    "slug": "otherworldly-story",
-    "name": "Otherworldly Story",
-    "rarity": 3,
-    "weaponType": "catalyst",
-    "icon": "/weapons/otherworldly-story.png"
-  },
-  {
-    "id": "14302",
-    "slug": "thrilling-tales-of-dragon-slayers",
-    "name": "Thrilling Tales of Dragon Slayers",
-    "rarity": 3,
-    "weaponType": "catalyst",
-    "icon": "/weapons/thrilling-tales-of-dragon-slayers.png"
-  },
-  {
-    "id": "14305",
-    "slug": "twin-nephrite",
-    "name": "Twin Nephrite",
-    "rarity": 3,
-    "weaponType": "catalyst",
-    "icon": "/weapons/twin-nephrite.png"
-  },
-  {
-    "id": "12302",
-    "slug": "bloodtainted-greatsword",
-    "name": "Bloodtainted Greatsword",
-    "rarity": 3,
-    "weaponType": "claymore",
-    "icon": "/weapons/bloodtainted-greatsword.png"
-  },
-  {
-    "id": "12305",
-    "slug": "debate-club",
-    "name": "Debate Club",
-    "rarity": 3,
-    "weaponType": "claymore",
-    "icon": "/weapons/debate-club.png"
-  },
-  {
-    "id": "12301",
-    "slug": "ferrous-shadow",
-    "name": "Ferrous Shadow",
-    "rarity": 3,
-    "weaponType": "claymore",
-    "icon": "/weapons/ferrous-shadow.png"
-  },
-  {
-    "id": "12306",
-    "slug": "skyrider-greatsword",
-    "name": "Skyrider Greatsword",
-    "rarity": 3,
-    "weaponType": "claymore",
-    "icon": "/weapons/skyrider-greatsword.png"
-  },
-  {
-    "id": "12303",
-    "slug": "white-iron-greatsword",
-    "name": "White Iron Greatsword",
-    "rarity": 3,
-    "weaponType": "claymore",
-    "icon": "/weapons/white-iron-greatsword.png"
-  },
-  {
-    "id": "13303",
-    "slug": "black-tassel",
-    "name": "Black Tassel",
-    "rarity": 3,
-    "weaponType": "polearm",
-    "icon": "/weapons/black-tassel.png"
-  },
-  {
-    "id": "13302",
-    "slug": "halberd",
-    "name": "Halberd",
-    "rarity": 3,
-    "weaponType": "polearm",
-    "icon": "/weapons/halberd.png"
-  },
-  {
-    "id": "13301",
-    "slug": "white-tassel",
-    "name": "White Tassel",
-    "rarity": 3,
-    "weaponType": "polearm",
-    "icon": "/weapons/white-tassel.png"
-  },
-  {
-    "id": "11301",
-    "slug": "cool-steel",
-    "name": "Cool Steel",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/cool-steel.png"
-  },
-  {
-    "id": "11304",
-    "slug": "dark-iron-sword",
-    "name": "Dark Iron Sword",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/dark-iron-sword.png"
-  },
-  {
-    "id": "11305",
-    "slug": "fillet-blade",
-    "name": "Fillet Blade",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/fillet-blade.png"
-  },
-  {
-    "id": "11302",
-    "slug": "harbinger-of-dawn",
-    "name": "Harbinger of Dawn",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/harbinger-of-dawn.png"
-  },
-  {
-    "id": "11306",
-    "slug": "skyrider-sword",
-    "name": "Skyrider Sword",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/skyrider-sword.png"
-  },
-  {
-    "id": "11303",
-    "slug": "traveler-s-handy-sword",
-    "name": "Traveler's Handy Sword",
-    "rarity": 3,
-    "weaponType": "sword",
-    "icon": "/weapons/traveler-s-handy-sword.png"
   }
 ]

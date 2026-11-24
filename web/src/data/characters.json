@@ -8,7 +8,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/jean.png"
+    "icon": "/characters/jean.png",
+    "card": "/character_cards/jean.webp"
   },
   {
     "id": "10000005-anemo",
@@ -19,7 +20,8 @@
     "weapon": "sword",
     "region": "mainactor",
     "release": "2020-09-27",
-    "icon": "/characters/traveler-boy.png"
+    "icon": "/characters/traveler-boy.png",
+    "card": "/character_cards/traveler-boy.webp"
   },
   {
     "id": "10000006",
@@ -30,7 +32,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/lisa.png"
+    "icon": "/characters/lisa.png",
+    "card": "/character_cards/lisa.webp"
   },
   {
     "id": "10000007-anemo",
@@ -41,7 +44,8 @@
     "weapon": "sword",
     "region": "mainactor",
     "release": "2020-09-27",
-    "icon": "/characters/traveler-girl.png"
+    "icon": "/characters/traveler-girl.png",
+    "card": "/character_cards/traveler-girl.webp"
   },
   {
     "id": "10000014",
@@ -52,7 +56,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/barbara.png"
+    "icon": "/characters/barbara.png",
+    "card": "/character_cards/barbara.webp"
   },
   {
     "id": "10000015",
@@ -63,7 +68,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/kaeya.png"
+    "icon": "/characters/kaeya.png",
+    "card": "/character_cards/kaeya.webp"
   },
   {
     "id": "10000016",
@@ -74,7 +80,8 @@
     "weapon": "claymore",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/diluc.png"
+    "icon": "/characters/diluc.png",
+    "card": "/character_cards/diluc.webp"
   },
   {
     "id": "10000020",
@@ -85,7 +92,8 @@
     "weapon": "claymore",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/razor.png"
+    "icon": "/characters/razor.png",
+    "card": "/character_cards/razor.webp"
   },
   {
     "id": "10000021",
@@ -96,7 +104,8 @@
     "weapon": "bow",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/amber.png"
+    "icon": "/characters/amber.png",
+    "card": "/character_cards/amber.webp"
   },
   {
     "id": "10000022",
@@ -107,7 +116,8 @@
     "weapon": "bow",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/venti.png"
+    "icon": "/characters/venti.png",
+    "card": "/character_cards/venti.webp"
   },
   {
     "id": "10000023",
@@ -118,7 +128,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/xiangling.png"
+    "icon": "/characters/xiangling.png",
+    "card": "/character_cards/xiangling.webp"
   },
   {
     "id": "10000024",
@@ -129,7 +140,8 @@
     "weapon": "claymore",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/beidou.png"
+    "icon": "/characters/beidou.png",
+    "card": "/character_cards/beidou.webp"
   },
   {
     "id": "10000025",
@@ -140,7 +152,8 @@
     "weapon": "sword",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/xingqiu.png"
+    "icon": "/characters/xingqiu.png",
+    "card": "/character_cards/xingqiu.webp"
   },
   {
     "id": "10000027",
@@ -151,7 +164,8 @@
     "weapon": "catalyst",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/ningguang.png"
+    "icon": "/characters/ningguang.png",
+    "card": "/character_cards/ningguang.webp"
   },
   {
     "id": "10000029",
@@ -162,7 +176,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/klee.png"
+    "icon": "/characters/klee.png",
+    "card": "/character_cards/klee.webp"
   },
   {
     "id": "10000031",
@@ -173,7 +188,8 @@
     "weapon": "bow",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/fischl.png"
+    "icon": "/characters/fischl.png",
+    "card": "/character_cards/fischl.webp"
   },
   {
     "id": "10000032",
@@ -184,7 +200,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/bennett.png"
+    "icon": "/characters/bennett.png",
+    "card": "/character_cards/bennett.webp"
   },
   {
     "id": "10000034",
@@ -195,7 +212,8 @@
     "weapon": "claymore",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/noelle.png"
+    "icon": "/characters/noelle.png",
+    "card": "/character_cards/noelle.webp"
   },
   {
     "id": "10000035",
@@ -206,7 +224,8 @@
     "weapon": "sword",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/qiqi.png"
+    "icon": "/characters/qiqi.png",
+    "card": "/character_cards/qiqi.webp"
   },
   {
     "id": "10000036",
@@ -217,7 +236,8 @@
     "weapon": "claymore",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/chongyun.png"
+    "icon": "/characters/chongyun.png",
+    "card": "/character_cards/chongyun.webp"
   },
   {
     "id": "10000041",
@@ -228,7 +248,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/mona.png"
+    "icon": "/characters/mona.png",
+    "card": "/character_cards/mona.webp"
   },
   {
     "id": "10000042",
@@ -239,7 +260,8 @@
     "weapon": "sword",
     "region": "liyue",
     "release": "2020-09-27",
-    "icon": "/characters/keqing.png"
+    "icon": "/characters/keqing.png",
+    "card": "/character_cards/keqing.webp"
   },
   {
     "id": "10000043",
@@ -250,7 +272,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2020-09-27",
-    "icon": "/characters/sucrose.png"
+    "icon": "/characters/sucrose.png",
+    "card": "/character_cards/sucrose.webp"
   },
   {
     "id": "10000033",
@@ -261,7 +284,8 @@
     "weapon": "bow",
     "region": "fatui",
     "release": "2020-11-11",
-    "icon": "/characters/tartaglia.png"
+    "icon": "/characters/tartaglia.png",
+    "card": "/character_cards/tartaglia.webp"
   },
   {
     "id": "10000039",
@@ -272,7 +296,8 @@
     "weapon": "bow",
     "region": "mondstadt",
     "release": "2020-11-11",
-    "icon": "/characters/diona.png"
+    "icon": "/characters/diona.png",
+    "card": "/character_cards/diona.webp"
   },
   {
     "id": "10000030",
@@ -283,7 +308,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2020-12-02",
-    "icon": "/characters/zhongli.png"
+    "icon": "/characters/zhongli.png",
+    "card": "/character_cards/zhongli.webp"
   },
   {
     "id": "10000044",
@@ -294,7 +320,8 @@
     "weapon": "claymore",
     "region": "liyue",
     "release": "2020-12-02",
-    "icon": "/characters/xinyan.png"
+    "icon": "/characters/xinyan.png",
+    "card": "/character_cards/xinyan.webp"
   },
   {
     "id": "10000038",
@@ -305,7 +332,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2020-12-21",
-    "icon": "/characters/albedo.png"
+    "icon": "/characters/albedo.png",
+    "card": "/character_cards/albedo.webp"
   },
   {
     "id": "10000037",
@@ -316,7 +344,8 @@
     "weapon": "bow",
     "region": "liyue",
     "release": "2021-01-12",
-    "icon": "/characters/ganyu.png"
+    "icon": "/characters/ganyu.png",
+    "card": "/character_cards/ganyu.webp"
   },
   {
     "id": "10000026",
@@ -327,7 +356,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2021-02-01",
-    "icon": "/characters/xiao.png"
+    "icon": "/characters/xiao.png",
+    "card": "/character_cards/xiao.webp"
   },
   {
     "id": "10000046",
@@ -338,7 +368,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2021-03-02",
-    "icon": "/characters/hu-tao.png"
+    "icon": "/characters/hu-tao.png",
+    "card": "/character_cards/hu-tao.webp"
   },
   {
     "id": "10000045",
@@ -349,7 +380,8 @@
     "weapon": "polearm",
     "region": "mondstadt",
     "release": "2021-04-06",
-    "icon": "/characters/rosaria.png"
+    "icon": "/characters/rosaria.png",
+    "card": "/character_cards/rosaria.webp"
   },
   {
     "id": "10000048",
@@ -360,7 +392,8 @@
     "weapon": "catalyst",
     "region": "liyue",
     "release": "2021-04-26",
-    "icon": "/characters/yanfei.png"
+    "icon": "/characters/yanfei.png",
+    "card": "/character_cards/yanfei.webp"
   },
   {
     "id": "10000051",
@@ -371,7 +404,8 @@
     "weapon": "claymore",
     "region": "mondstadt",
     "release": "2021-05-18",
-    "icon": "/characters/eula.png"
+    "icon": "/characters/eula.png",
+    "card": "/character_cards/eula.webp"
   },
   {
     "id": "10000047",
@@ -382,7 +416,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2021-06-29",
-    "icon": "/characters/kaedehara-kazuha.png"
+    "icon": "/characters/kaedehara-kazuha.png",
+    "card": "/character_cards/kaedehara-kazuha.webp"
   },
   {
     "id": "10000002",
@@ -393,7 +428,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2021-07-20",
-    "icon": "/characters/kamisato-ayaka.png"
+    "icon": "/characters/kamisato-ayaka.png",
+    "card": "/character_cards/kamisato-ayaka.webp"
   },
   {
     "id": "10000049",
@@ -404,7 +440,8 @@
     "weapon": "bow",
     "region": "inazuma",
     "release": "2021-08-10",
-    "icon": "/characters/yoimiya.png"
+    "icon": "/characters/yoimiya.png",
+    "card": "/character_cards/yoimiya.webp"
   },
   {
     "id": "10000053",
@@ -415,7 +452,8 @@
     "weapon": "claymore",
     "region": "inazuma",
     "release": "2021-08-10",
-    "icon": "/characters/sayu.png"
+    "icon": "/characters/sayu.png",
+    "card": "/character_cards/sayu.webp"
   },
   {
     "id": "10000052",
@@ -426,7 +464,8 @@
     "weapon": "polearm",
     "region": "inazuma",
     "release": "2021-08-31",
-    "icon": "/characters/raiden-shogun.png"
+    "icon": "/characters/raiden-shogun.png",
+    "card": "/character_cards/raiden-shogun.webp"
   },
   {
     "id": "10000056",
@@ -437,7 +476,8 @@
     "weapon": "bow",
     "region": "inazuma",
     "release": "2021-08-31",
-    "icon": "/characters/kujou-sara.png"
+    "icon": "/characters/kujou-sara.png",
+    "card": "/character_cards/kujou-sara.webp"
   },
   {
     "id": "10000062",
@@ -448,7 +488,8 @@
     "weapon": "bow",
     "region": "ranger",
     "release": "2021-08-31",
-    "icon": "/characters/aloy.png"
+    "icon": "/characters/aloy.png",
+    "card": "/character_cards/aloy.webp"
   },
   {
     "id": "10000054",
@@ -459,7 +500,8 @@
     "weapon": "catalyst",
     "region": "inazuma",
     "release": "2021-09-21",
-    "icon": "/characters/sangonomiya-kokomi.png"
+    "icon": "/characters/sangonomiya-kokomi.png",
+    "card": "/character_cards/sangonomiya-kokomi.webp"
   },
   {
     "id": "10000050",
@@ -470,7 +512,8 @@
     "weapon": "polearm",
     "region": "inazuma",
     "release": "2021-11-02",
-    "icon": "/characters/thoma.png"
+    "icon": "/characters/thoma.png",
+    "card": "/character_cards/thoma.webp"
   },
   {
     "id": "10000055",
@@ -481,7 +524,8 @@
     "weapon": "bow",
     "region": "inazuma",
     "release": "2021-12-14",
-    "icon": "/characters/gorou.png"
+    "icon": "/characters/gorou.png",
+    "card": "/character_cards/gorou.webp"
   },
   {
     "id": "10000057",
@@ -492,7 +536,8 @@
     "weapon": "claymore",
     "region": "inazuma",
     "release": "2021-12-14",
-    "icon": "/characters/arataki-itto.png"
+    "icon": "/characters/arataki-itto.png",
+    "card": "/character_cards/arataki-itto.webp"
   },
   {
     "id": "10000063",
@@ -503,7 +548,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2022-01-04",
-    "icon": "/characters/shenhe.png"
+    "icon": "/characters/shenhe.png",
+    "card": "/character_cards/shenhe.webp"
   },
   {
     "id": "10000064",
@@ -514,7 +560,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2022-01-04",
-    "icon": "/characters/yun-jin.png"
+    "icon": "/characters/yun-jin.png",
+    "card": "/character_cards/yun-jin.webp"
   },
   {
     "id": "10000058",
@@ -525,7 +572,8 @@
     "weapon": "catalyst",
     "region": "inazuma",
     "release": "2022-02-15",
-    "icon": "/characters/yae-miko.png"
+    "icon": "/characters/yae-miko.png",
+    "card": "/character_cards/yae-miko.webp"
   },
   {
     "id": "10000066",
@@ -536,7 +584,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2022-03-29",
-    "icon": "/characters/kamisato-ayato.png"
+    "icon": "/characters/kamisato-ayato.png",
+    "card": "/character_cards/kamisato-ayato.webp"
   },
   {
     "id": "10000060",
@@ -547,7 +596,8 @@
     "weapon": "bow",
     "region": "liyue",
     "release": "2022-05-30",
-    "icon": "/characters/yelan.png"
+    "icon": "/characters/yelan.png",
+    "card": "/character_cards/yelan.webp"
   },
   {
     "id": "10000065",
@@ -558,7 +608,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2022-06-21",
-    "icon": "/characters/kuki-shinobu.png"
+    "icon": "/characters/kuki-shinobu.png",
+    "card": "/character_cards/kuki-shinobu.webp"
   },
   {
     "id": "10000059",
@@ -569,7 +620,8 @@
     "weapon": "catalyst",
     "region": "inazuma",
     "release": "2022-07-12",
-    "icon": "/characters/shikanoin-heizou.png"
+    "icon": "/characters/shikanoin-heizou.png",
+    "card": "/character_cards/shikanoin-heizou.webp"
   },
   {
     "id": "10000067",
@@ -580,7 +632,8 @@
     "weapon": "bow",
     "region": "sumeru",
     "release": "2022-08-23",
-    "icon": "/characters/collei.png"
+    "icon": "/characters/collei.png",
+    "card": "/character_cards/collei.webp"
   },
   {
     "id": "10000069",
@@ -591,7 +644,8 @@
     "weapon": "bow",
     "region": "sumeru",
     "release": "2022-08-23",
-    "icon": "/characters/tighnari.png"
+    "icon": "/characters/tighnari.png",
+    "card": "/character_cards/tighnari.webp"
   },
   {
     "id": "10000068",
@@ -602,7 +656,8 @@
     "weapon": "claymore",
     "region": "sumeru",
     "release": "2022-09-09",
-    "icon": "/characters/dori.png"
+    "icon": "/characters/dori.png",
+    "card": "/character_cards/dori.webp"
   },
   {
     "id": "10000071",
@@ -613,7 +668,8 @@
     "weapon": "polearm",
     "region": "sumeru",
     "release": "2022-09-26",
-    "icon": "/characters/cyno.png"
+    "icon": "/characters/cyno.png",
+    "card": "/character_cards/cyno.webp"
   },
   {
     "id": "10000072",
@@ -624,7 +680,8 @@
     "weapon": "polearm",
     "region": "sumeru",
     "release": "2022-09-26",
-    "icon": "/characters/candace.png"
+    "icon": "/characters/candace.png",
+    "card": "/character_cards/candace.webp"
   },
   {
     "id": "10000070",
@@ -635,7 +692,8 @@
     "weapon": "sword",
     "region": "sumeru",
     "release": "2022-10-14",
-    "icon": "/characters/nilou.png"
+    "icon": "/characters/nilou.png",
+    "card": "/character_cards/nilou.webp"
   },
   {
     "id": "10000073",
@@ -646,7 +704,8 @@
     "weapon": "catalyst",
     "region": "sumeru",
     "release": "2022-10-31",
-    "icon": "/characters/nahida.png"
+    "icon": "/characters/nahida.png",
+    "card": "/character_cards/nahida.webp"
   },
   {
     "id": "10000074",
@@ -657,7 +716,8 @@
     "weapon": "sword",
     "region": "sumeru",
     "release": "2022-11-18",
-    "icon": "/characters/layla.png"
+    "icon": "/characters/layla.png",
+    "card": "/character_cards/layla.webp"
   },
   {
     "id": "10000075",
@@ -668,7 +728,8 @@
     "weapon": "catalyst",
     "region": "sumeru",
     "release": "2022-12-05",
-    "icon": "/characters/wanderer.png"
+    "icon": "/characters/wanderer.png",
+    "card": "/character_cards/wanderer.webp"
   },
   {
     "id": "10000076",
@@ -679,7 +740,8 @@
     "weapon": "bow",
     "region": "sumeru",
     "release": "2022-12-05",
-    "icon": "/characters/faruzan.png"
+    "icon": "/characters/faruzan.png",
+    "card": "/character_cards/faruzan.webp"
   },
   {
     "id": "10000077",
@@ -690,7 +752,8 @@
     "weapon": "polearm",
     "region": "liyue",
     "release": "2023-01-16",
-    "icon": "/characters/yaoyao.png"
+    "icon": "/characters/yaoyao.png",
+    "card": "/character_cards/yaoyao.webp"
   },
   {
     "id": "10000078",
@@ -701,7 +764,8 @@
     "weapon": "sword",
     "region": "sumeru",
     "release": "2023-01-16",
-    "icon": "/characters/alhaitham.png"
+    "icon": "/characters/alhaitham.png",
+    "card": "/character_cards/alhaitham.webp"
   },
   {
     "id": "10000079",
@@ -712,7 +776,8 @@
     "weapon": "claymore",
     "region": "sumeru",
     "release": "2023-02-27",
-    "icon": "/characters/dehya.png"
+    "icon": "/characters/dehya.png",
+    "card": "/character_cards/dehya.webp"
   },
   {
     "id": "10000080",
@@ -723,7 +788,8 @@
     "weapon": "polearm",
     "region": "mondstadt",
     "release": "2023-03-21",
-    "icon": "/characters/mika.png"
+    "icon": "/characters/mika.png",
+    "card": "/character_cards/mika.webp"
   },
   {
     "id": "10000081",
@@ -734,7 +800,8 @@
     "weapon": "claymore",
     "region": "sumeru",
     "release": "2023-05-02",
-    "icon": "/characters/kaveh.png"
+    "icon": "/characters/kaveh.png",
+    "card": "/character_cards/kaveh.webp"
   },
   {
     "id": "10000082",
@@ -745,7 +812,8 @@
     "weapon": "catalyst",
     "region": "liyue",
     "release": "2023-05-02",
-    "icon": "/characters/baizhu.png"
+    "icon": "/characters/baizhu.png",
+    "card": "/character_cards/baizhu.webp"
   },
   {
     "id": "10000061",
@@ -756,7 +824,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2023-05-22",
-    "icon": "/characters/kirara.png"
+    "icon": "/characters/kirara.png",
+    "card": "/character_cards/kirara.webp"
   },
   {
     "id": "10000083",
@@ -767,7 +836,8 @@
     "weapon": "sword",
     "region": "fontaine",
     "release": "2023-08-14",
-    "icon": "/characters/lynette.png"
+    "icon": "/characters/lynette.png",
+    "card": "/character_cards/lynette.webp"
   },
   {
     "id": "10000084",
@@ -778,7 +848,8 @@
     "weapon": "bow",
     "region": "fontaine",
     "release": "2023-08-14",
-    "icon": "/characters/lyney.png"
+    "icon": "/characters/lyney.png",
+    "card": "/character_cards/lyney.webp"
   },
   {
     "id": "10000085",
@@ -789,7 +860,8 @@
     "weapon": "claymore",
     "region": "fontaine",
     "release": "2023-09-05",
-    "icon": "/characters/freminet.png"
+    "icon": "/characters/freminet.png",
+    "card": "/character_cards/freminet.webp"
   },
   {
     "id": "10000087",
@@ -800,7 +872,8 @@
     "weapon": "catalyst",
     "region": "fontaine",
     "release": "2023-09-25",
-    "icon": "/characters/neuvillette.png"
+    "icon": "/characters/neuvillette.png",
+    "card": "/character_cards/neuvillette.webp"
   },
   {
     "id": "10000086",
@@ -811,7 +884,8 @@
     "weapon": "catalyst",
     "region": "fontaine",
     "release": "2023-10-17",
-    "icon": "/characters/wriothesley.png"
+    "icon": "/characters/wriothesley.png",
+    "card": "/character_cards/wriothesley.webp"
   },
   {
     "id": "10000088",
@@ -822,7 +896,8 @@
     "weapon": "catalyst",
     "region": "fontaine",
     "release": "2023-11-06",
-    "icon": "/characters/charlotte.png"
+    "icon": "/characters/charlotte.png",
+    "card": "/character_cards/charlotte.webp"
   },
   {
     "id": "10000089",
@@ -833,7 +908,8 @@
     "weapon": "sword",
     "region": "fontaine",
     "release": "2023-11-06",
-    "icon": "/characters/furina.png"
+    "icon": "/characters/furina.png",
+    "card": "/character_cards/furina.webp"
   },
   {
     "id": "10000091",
@@ -844,7 +920,8 @@
     "weapon": "claymore",
     "region": "fontaine",
     "release": "2023-12-18",
-    "icon": "/characters/navia.png"
+    "icon": "/characters/navia.png",
+    "card": "/character_cards/navia.webp"
   },
   {
     "id": "10000090",
@@ -855,7 +932,8 @@
     "weapon": "polearm",
     "region": "fontaine",
     "release": "2024-01-09",
-    "icon": "/characters/chevreuse.png"
+    "icon": "/characters/chevreuse.png",
+    "card": "/character_cards/chevreuse.webp"
   },
   {
     "id": "10000092",
@@ -866,7 +944,8 @@
     "weapon": "claymore",
     "region": "liyue",
     "release": "2024-01-29",
-    "icon": "/characters/gaming.png"
+    "icon": "/characters/gaming.png",
+    "card": "/character_cards/gaming.webp"
   },
   {
     "id": "10000093",
@@ -877,7 +956,8 @@
     "weapon": "catalyst",
     "region": "liyue",
     "release": "2024-01-29",
-    "icon": "/characters/xianyun.png"
+    "icon": "/characters/xianyun.png",
+    "card": "/character_cards/xianyun.webp"
   },
   {
     "id": "10000094",
@@ -888,7 +968,8 @@
     "weapon": "sword",
     "region": "inazuma",
     "release": "2024-03-11",
-    "icon": "/characters/chiori.png"
+    "icon": "/characters/chiori.png",
+    "card": "/character_cards/chiori.webp"
   },
   {
     "id": "10000096",
@@ -899,7 +980,8 @@
     "weapon": "polearm",
     "region": "fatui",
     "release": "2024-04-22",
-    "icon": "/characters/arlecchino.png"
+    "icon": "/characters/arlecchino.png",
+    "card": "/character_cards/arlecchino.webp"
   },
   {
     "id": "10000097",
@@ -910,7 +992,8 @@
     "weapon": "bow",
     "region": "sumeru",
     "release": "2024-06-03",
-    "icon": "/characters/sethos.png"
+    "icon": "/characters/sethos.png",
+    "card": "/character_cards/sethos.webp"
   },
   {
     "id": "10000098",
@@ -921,7 +1004,8 @@
     "weapon": "sword",
     "region": "fontaine",
     "release": "2024-06-03",
-    "icon": "/characters/clorinde.png"
+    "icon": "/characters/clorinde.png",
+    "card": "/character_cards/clorinde.webp"
   },
   {
     "id": "10000095",
@@ -932,7 +1016,8 @@
     "weapon": "bow",
     "region": "fontaine",
     "release": "2024-06-26",
-    "icon": "/characters/sigewinne.png"
+    "icon": "/characters/sigewinne.png",
+    "card": "/character_cards/sigewinne.webp"
   },
   {
     "id": "10000099",
@@ -943,7 +1028,8 @@
     "weapon": "polearm",
     "region": "fontaine",
     "release": "2024-08-06",
-    "icon": "/characters/emilie.png"
+    "icon": "/characters/emilie.png",
+    "card": "/character_cards/emilie.webp"
   },
   {
     "id": "10000100",
@@ -954,7 +1040,8 @@
     "weapon": "polearm",
     "region": "natlan",
     "release": "2024-08-26",
-    "icon": "/characters/kachina.png"
+    "icon": "/characters/kachina.png",
+    "card": "/character_cards/kachina.webp"
   },
   {
     "id": "10000102",
@@ -965,7 +1052,8 @@
     "weapon": "catalyst",
     "region": "natlan",
     "release": "2024-08-26",
-    "icon": "/characters/mualani.png"
+    "icon": "/characters/mualani.png",
+    "card": "/character_cards/mualani.webp"
   },
   {
     "id": "10000101",
@@ -976,7 +1064,8 @@
     "weapon": "claymore",
     "region": "natlan",
     "release": "2024-09-17",
-    "icon": "/characters/kinich.png"
+    "icon": "/characters/kinich.png",
+    "card": "/character_cards/kinich.webp"
   },
   {
     "id": "10000103",
@@ -987,7 +1076,8 @@
     "weapon": "sword",
     "region": "natlan",
     "release": "2024-10-07",
-    "icon": "/characters/xilonen.png"
+    "icon": "/characters/xilonen.png",
+    "card": "/character_cards/xilonen.webp"
   },
   {
     "id": "10000104",
@@ -998,7 +1088,8 @@
     "weapon": "bow",
     "region": "natlan",
     "release": "2024-11-18",
-    "icon": "/characters/chasca.png"
+    "icon": "/characters/chasca.png",
+    "card": "/character_cards/chasca.webp"
   },
   {
     "id": "10000105",
@@ -1009,7 +1100,8 @@
     "weapon": "bow",
     "region": "natlan",
     "release": "2024-11-18",
-    "icon": "/characters/ororon.png"
+    "icon": "/characters/ororon.png",
+    "card": "/character_cards/ororon.webp"
   },
   {
     "id": "10000106",
@@ -1020,7 +1112,8 @@
     "weapon": "claymore",
     "region": "natlan",
     "release": "2024-12-30",
-    "icon": "/characters/mavuika.png"
+    "icon": "/characters/mavuika.png",
+    "card": "/character_cards/mavuika.webp"
   },
   {
     "id": "10000107",
@@ -1031,7 +1124,8 @@
     "weapon": "catalyst",
     "region": "natlan",
     "release": "2024-12-30",
-    "icon": "/characters/citlali.png"
+    "icon": "/characters/citlali.png",
+    "card": "/character_cards/citlali.webp"
   },
   {
     "id": "10000108",
@@ -1042,7 +1136,8 @@
     "weapon": "catalyst",
     "region": "liyue",
     "release": "2025-01-21",
-    "icon": "/characters/lan-yan.png"
+    "icon": "/characters/lan-yan.png",
+    "card": "/character_cards/lan-yan.webp"
   },
   {
     "id": "10000109",
@@ -1053,7 +1148,8 @@
     "weapon": "catalyst",
     "region": "inazuma",
     "release": "2025-02-10",
-    "icon": "/characters/yumemizuki-mizuki.png"
+    "icon": "/characters/yumemizuki-mizuki.png",
+    "card": "/character_cards/yumemizuki-mizuki.webp"
   },
   {
     "id": "10000110",
@@ -1064,7 +1160,8 @@
     "weapon": "polearm",
     "region": "natlan",
     "release": "2025-03-24",
-    "icon": "/characters/iansan.png"
+    "icon": "/characters/iansan.png",
+    "card": "/character_cards/iansan.webp"
   },
   {
     "id": "10000111",
@@ -1075,7 +1172,8 @@
     "weapon": "catalyst",
     "region": "natlan",
     "release": "2025-03-24",
-    "icon": "/characters/varesa.png"
+    "icon": "/characters/varesa.png",
+    "card": "/character_cards/varesa.webp"
   },
   {
     "id": "10000112",
@@ -1086,7 +1184,8 @@
     "weapon": "polearm",
     "region": "fontaine",
     "release": "2025-05-05",
-    "icon": "/characters/escoffier.png"
+    "icon": "/characters/escoffier.png",
+    "card": "/character_cards/escoffier.webp"
   },
   {
     "id": "10000113",
@@ -1097,7 +1196,8 @@
     "weapon": "catalyst",
     "region": "natlan",
     "release": "2025-05-05",
-    "icon": "/characters/ifa.png"
+    "icon": "/characters/ifa.png",
+    "card": "/character_cards/ifa.webp"
   },
   {
     "id": "10000114",
@@ -1108,7 +1208,8 @@
     "weapon": "sword",
     "region": "omni_scourge",
     "release": "2025-06-16",
-    "icon": "/characters/skirk.png"
+    "icon": "/characters/skirk.png",
+    "card": "/character_cards/skirk.webp"
   },
   {
     "id": "10000115",
@@ -1119,7 +1220,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2025-06-16",
-    "icon": "/characters/dahlia.png"
+    "icon": "/characters/dahlia.png",
+    "card": "/character_cards/dahlia.webp"
   },
   {
     "id": "10000116",
@@ -1130,7 +1232,8 @@
     "weapon": "polearm",
     "region": "nodkrai",
     "release": "2025-07-28",
-    "icon": "/characters/ineffa.png"
+    "icon": "/characters/ineffa.png",
+    "card": "/character_cards/ineffa.webp"
   },
   {
     "id": "10000119",
@@ -1141,7 +1244,8 @@
     "weapon": "catalyst",
     "region": "nodkrai",
     "release": "2025-09-08",
-    "icon": "/characters/lauma.png"
+    "icon": "/characters/lauma.png",
+    "card": "/character_cards/lauma.webp"
   },
   {
     "id": "10000121",
@@ -1152,7 +1256,8 @@
     "weapon": "claymore",
     "region": "nodkrai",
     "release": "2025-09-08",
-    "icon": "/characters/aino.png"
+    "icon": "/characters/aino.png",
+    "card": "/character_cards/aino.webp"
   },
   {
     "id": "10000120",
@@ -1163,7 +1268,8 @@
     "weapon": "polearm",
     "region": "nodkrai",
     "release": "2025-09-30",
-    "icon": "/characters/flins.png"
+    "icon": "/characters/flins.png",
+    "card": "/character_cards/flins.webp"
   },
   {
     "id": "10000117",
@@ -1174,7 +1280,8 @@
     "weapon": "sword",
     "region": "mainactor",
     "release": "2025-10-20",
-    "icon": "/characters/manekin.png"
+    "icon": "/characters/manekin.png",
+    "card": null
   },
   {
     "id": "10000118",
@@ -1185,7 +1292,8 @@
     "weapon": "sword",
     "region": "mainactor",
     "release": "2025-10-20",
-    "icon": "/characters/manekina.png"
+    "icon": "/characters/manekina.png",
+    "card": null
   },
   {
     "id": "10000122",
@@ -1196,7 +1304,8 @@
     "weapon": "catalyst",
     "region": "nodkrai",
     "release": "2025-10-20",
-    "icon": "/characters/nefer.png"
+    "icon": "/characters/nefer.png",
+    "card": "/character_cards/nefer.webp"
   },
   {
     "id": "10000123",
@@ -1207,7 +1316,8 @@
     "weapon": "sword",
     "region": "mondstadt",
     "release": "2025-12-01",
-    "icon": "/characters/durin.png"
+    "icon": "/characters/durin.png",
+    "card": "/character_cards/durin.webp"
   },
   {
     "id": "10000124",
@@ -1218,7 +1328,8 @@
     "weapon": "bow",
     "region": "nodkrai",
     "release": "2025-12-01",
-    "icon": "/characters/jahoda.png"
+    "icon": "/characters/jahoda.png",
+    "card": "/character_cards/jahoda.webp"
   },
   {
     "id": "10000125",
@@ -1229,7 +1340,8 @@
     "weapon": "catalyst",
     "region": "nodkrai",
     "release": "2026-01-12",
-    "icon": "/characters/columbina.png"
+    "icon": "/characters/columbina.png",
+    "card": "/character_cards/columbina.webp"
   },
   {
     "id": "10000126",
@@ -1240,7 +1352,8 @@
     "weapon": "sword",
     "region": "nodkrai_zibai",
     "release": "2026-02-03",
-    "icon": "/characters/zibai.png"
+    "icon": "/characters/zibai.png",
+    "card": "/character_cards/zibai.webp"
   },
   {
     "id": "10000127",
@@ -1251,7 +1364,8 @@
     "weapon": "polearm",
     "region": "nodkrai",
     "release": "2026-02-03",
-    "icon": "/characters/illuga.png"
+    "icon": "/characters/illuga.png",
+    "card": "/character_cards/illuga.webp"
   },
   {
     "id": "10000128",
@@ -1262,7 +1376,8 @@
     "weapon": "claymore",
     "region": "mondstadt",
     "release": "2026-02-23",
-    "icon": "/characters/varka.png"
+    "icon": "/characters/varka.png",
+    "card": "/character_cards/varka.webp"
   },
   {
     "id": "10000130",
@@ -1273,7 +1388,8 @@
     "weapon": "bow",
     "region": "nodkrai",
     "release": "2026-04-06",
-    "icon": "/characters/linnea.png"
+    "icon": "/characters/linnea.png",
+    "card": "/character_cards/linnea.webp"
   },
   {
     "id": "10000131",
@@ -1284,7 +1400,8 @@
     "weapon": "catalyst",
     "region": "hvision",
     "release": "2026-05-18",
-    "icon": "/characters/nicole.png"
+    "icon": "/characters/nicole.png",
+    "card": "/character_cards/nicole.webp"
   },
   {
     "id": "10000132",
@@ -1295,7 +1412,8 @@
     "weapon": "catalyst",
     "region": "mondstadt",
     "release": "2026-05-18",
-    "icon": "/characters/prune.png"
+    "icon": "/characters/prune.png",
+    "card": "/character_cards/prune.webp"
   },
   {
     "id": "10000129",
@@ -1306,7 +1424,8 @@
     "weapon": "polearm",
     "region": "mondstadt",
     "release": "2026-06-09",
-    "icon": "/characters/lohen.png"
+    "icon": "/characters/lohen.png",
+    "card": "/character_cards/lohen.webp"
   },
   {
     "id": "10000133",
@@ -1317,7 +1436,8 @@
     "weapon": "claymore",
     "region": "snezhnaya_star",
     "release": "2026-06-29",
-    "icon": "/characters/sandrone.png"
+    "icon": "/characters/sandrone.png",
+    "card": "/character_cards/sandrone.webp"
   },
   {
     "id": "10000148",
@@ -1328,7 +1448,8 @@
     "weapon": "polearm",
     "region": "snezhnaya",
     "release": "2026-08-10",
-    "icon": "/characters/alyosha.png"
+    "icon": "/characters/alyosha.png",
+    "card": "/character_cards/alyosha.webp"
   },
   {
     "id": "10000150",
@@ -1339,7 +1460,8 @@
     "weapon": "sword",
     "region": "snezhnaya_star",
     "release": "2026-08-10",
-    "icon": "/characters/odette.png"
+    "icon": "/characters/odette.png",
+    "card": "/character_cards/odette.webp"
   },
   {
     "id": "10000140",
@@ -1350,7 +1472,8 @@
     "weapon": "catalyst",
     "region": "snezhnaya",
     "release": "2026-09-21",
-    "icon": "/characters/vodyanitsa.png"
+    "icon": "/characters/vodyanitsa.png",
+    "card": "/character_cards/vodyanitsa.webp"
   },
   {
     "id": "10000143",
@@ -1361,7 +1484,8 @@
     "weapon": "sword",
     "region": "snezhnaya_star",
     "release": "2026-09-21",
-    "icon": "/characters/vesna.png"
+    "icon": "/characters/vesna.png",
+    "card": "/character_cards/vesna.webp"
   },
   {
     "id": "10000136",
@@ -1372,7 +1496,8 @@
     "weapon": "catalyst",
     "region": "snezhnaya_star",
     "release": "2026-11-02",
-    "icon": "/characters/mitya.png"
+    "icon": "/characters/mitya.png",
+    "card": "/character_cards/mitya.webp"
   },
   {
     "id": "10000137",
@@ -1383,6 +1508,7 @@
     "weapon": "sword",
     "region": "snezhnaya",
     "release": "2026-11-02",
-    "icon": "/characters/valeriy.png"
+    "icon": "/characters/valeriy.png",
+    "card": "/character_cards/valeriy.webp"
   }
 ]

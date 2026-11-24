@@ -44,8 +44,10 @@ def slugify(name: str) -> str:
 
 
 def normalize(weapon_id: str, info: dict) -> dict | None:
+    if info.get("isWeaponSkin") or info.get("specialProp") == "NONE":
+        return None
     rank = info.get("rank", 0)
-    if rank not in (3, 4, 5):
+    if rank not in (4, 5):
         return None
     weapon_type = WEAPONS.get(info.get("type"))
     icon_name = info.get("icon")
@@ -59,7 +61,7 @@ def normalize(weapon_id: str, info: dict) -> dict | None:
     if not slug:
         return None
 
-    rarity = 5 if rank >= 5 else (4 if rank == 4 else 3)
+    rarity = 5 if rank >= 5 else 4
     return {
         "id": str(weapon_id),
         "slug": slug,
@@ -119,7 +121,7 @@ def main() -> None:
     items = requests.get(API_URL, timeout=30).json()["data"]["items"]
     raw_weapons = [w for w in (normalize(k, v) for k, v in items.items()) if w]
     weapons = deduplicate(raw_weapons)
-    print(f"Tìm thấy {len(weapons)} vũ khí 3★–5★ (từ {len(items)} mục API).")
+    print(f"Tìm thấy {len(weapons)} vũ khí 4★–5★ (từ {len(items)} mục API).")
 
     if not args.json_only:
         os.makedirs(ICON_DIR, exist_ok=True)

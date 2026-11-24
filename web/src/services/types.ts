@@ -62,6 +62,7 @@ export interface MatchPickSlot {
   weaponSlug: string | null
   refinement: number
   weaponCost: number
+  weaponRefinementSeconds: number
   totalSlotCost: number
 }
 
@@ -71,14 +72,27 @@ export interface SideOwnedChar {
   level: number
 }
 
+export interface UndoRequest {
+  requesterSide: MatchSide
+  targetStepIndex: number
+  targetStepNumber: number
+  targetAction: 'ban' | 'pick'
+  targetCharacterSlug: string | null
+  stepsToRevert: number
+  createdAt: string
+}
+
 export interface SideState {
   player: MatchPlayerInfo | null
   ready: boolean
   ownedCharacters: Record<string, SideOwnedChar>
   bans: (string | null)[]
   picks: MatchPickSlot[]
+  lineup?: number[]
   totalCost: number
   costPenaltySeconds: number
+  weaponRefinementSeconds: number
+  overtimePenaltySeconds: number
   weaponsLocked: boolean
   chambers: ChamberTimeInput[] | null
   chamberDiffs: number[] | null
@@ -97,6 +111,7 @@ export interface MatchState {
   sides: Record<MatchSide, SideState>
   currentStepIndex: number
   turnDeadlineAt: string | null
+  undoRequest?: UndoRequest | null
   winnerSide: WinnerSide | null
   createdAt: string
   finishedAt: string | null

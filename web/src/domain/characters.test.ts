@@ -38,4 +38,14 @@ describe('domain/characters', () => {
     })
     expect(missing).toEqual([])
   })
+
+  it('có >100 ảnh thẻ dọc và mọi đường dẫn card đều tồn tại trong public/character_cards', () => {
+    const withCard = CHARACTERS.filter((c) => Boolean(c.card))
+    expect(withCard.length).toBeGreaterThan(100)
+    const missing = withCard.filter((c) => {
+      const cardPath = resolve(PUBLIC_DIR, c.card!.replace(/^\//, ''))
+      return !existsSync(cardPath)
+    })
+    expect(missing).toEqual([])
+  })
 })
