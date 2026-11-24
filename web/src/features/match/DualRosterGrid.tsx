@@ -12,6 +12,7 @@ import { calcCharacterCost, formatCost } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchState, SideOwnedChar } from '@/services'
+import { getLockedCharactersByUser } from './series'
 
 interface Props {
   state: MatchState
@@ -102,6 +103,11 @@ export function DualRosterGrid({
     const isBlue = side === 'blue'
     const ownedMap = sideState.ownedCharacters
     const ownPickedSet = new Set(sideState.picks.map((p) => p.characterSlug))
+    const lockedByPriorGame = getLockedCharactersByUser(
+      state.gameHistory,
+      sideState.player?.userId,
+      state.currentGame,
+    )
 
     const isBanTurn = currentStep?.action === 'ban'
     const isPickTurnForThisSide = currentStep?.action === 'pick' && currentStep.side === side
@@ -169,6 +175,8 @@ export function DualRosterGrid({
             const isBanned = bannedSet.has(c.slug)
             const isPicked = allPickedSet.has(c.slug)
             const isOwnPicked = ownPickedSet.has(c.slug)
+            const lockedInGame = lockedByPriorGame.get(c.slug) ?? null
+            const isPreviouslyPicked = lockedInGame !== null
 
             let selectable = false
             if (mode === 'interactive' && currentStep && onSelectCharacter) {
@@ -179,6 +187,7 @@ export function DualRosterGrid({
                   Boolean(owned) &&
                   !isBanned &&
                   !isOwnPicked &&
+                  !isPreviouslyPicked &&
                   (state.ruleset.allowDuplicatePick || !isPicked)
               }
             }
@@ -187,6 +196,7 @@ export function DualRosterGrid({
               isBanned ||
               isPicked ||
               !owned ||
+              (isPreviouslyPicked && currentStep?.action !== 'ban') ||
               (mode === 'interactive' &&
                 currentStep?.action === 'pick' &&
                 currentStep.side === side &&
@@ -208,7 +218,7 @@ export function DualRosterGrid({
                   owned
                     ? ` · Lv${owned.level} · C${owned.constellation} (+${formatCost(costPreview ?? 0)} cost)`
                     : ' · Chưa sở hữu'
-                }`}
+                }${lockedInGame ? ` · Đã pick ở Ván ${lockedInGame} (không thể pick lại)` : ''}`}
                 className={cn(
                   'group relative flex flex-col overflow-hidden rounded border text-left transition',
                   selectable
@@ -250,6 +260,11 @@ export function DualRosterGrid({
                   {isPicked && !isBanned && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-[10px] font-black text-gold-strong">
                       PICK
+                    </span>
+                  )}
+                  {isPreviouslyPicked && !isBanned && !isPicked && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-[10px] font-black text-gold">
+                      VÁN {lockedInGame}
                     </span>
                   )}
                 </div>

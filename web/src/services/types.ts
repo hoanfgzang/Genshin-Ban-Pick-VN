@@ -38,8 +38,16 @@ export interface RuleSetUpsertInput {
   config: RuleSetConfig
 }
 
-export type MatchStatus = 'lobby' | 'drafting' | 'weapon_phase' | 'scoring' | 'finished'
+export type MatchFormat = 'bo1' | 'bo3'
+export type MatchStatus =
+  | 'lobby'
+  | 'drafting'
+  | 'weapon_phase'
+  | 'scoring'
+  | 'between_games'
+  | 'finished'
 export type WinnerSide = MatchSide | 'draw'
+export type WinReason = 'score' | 'lower_cost' | 'fewer_4star' | 'draw'
 
 export interface ChamberTimeInput {
   minutes: number
@@ -101,6 +109,39 @@ export interface SideState {
   scoreSubmitted: boolean
 }
 
+export interface CompletedGameSideSummary {
+  side: MatchSide
+  player: MatchPlayerInfo | null
+  bans: (string | null)[]
+  picks: MatchPickSlot[]
+  totalCost: number
+  costPenaltySeconds: number
+  weaponRefinementSeconds: number
+  overtimePenaltySeconds: number
+  chamberTotalSeconds: number | null
+  finalScore: number | null
+  fourStarCount: number
+}
+
+export interface CompletedGameRecord {
+  gameNumber: number
+  blue: CompletedGameSideSummary
+  red: CompletedGameSideSummary
+  winnerSide: WinnerSide
+  winnerUserId: string | null
+  winReason: WinReason
+  finishedAt: string
+}
+
+export interface NextGameSetup {
+  gameNumber: number
+  sidePickerUserId: string | null
+  autoSwapped: boolean
+  blueUserId: string | null
+  redUserId: string | null
+  readyUserIds: string[]
+}
+
 export interface MatchState {
   code: string
   status: MatchStatus
@@ -113,6 +154,15 @@ export interface MatchState {
   turnDeadlineAt: string | null
   undoRequest?: UndoRequest | null
   winnerSide: WinnerSide | null
+  format?: MatchFormat
+  maxGames?: number
+  winsToWin?: number
+  currentGame?: number
+  seriesScores?: Record<string, number>
+  gameHistory?: CompletedGameRecord[]
+  nextGameSetup?: NextGameSetup | null
+  winnerUserId?: string | null
+  lastGameWinReason?: WinReason | null
   createdAt: string
   finishedAt: string | null
 }
@@ -127,6 +177,11 @@ export interface MatchSummary {
   redPlayer: MatchPlayerInfo | null
   blueFinalScore: number | null
   redFinalScore: number | null
+  format?: MatchFormat
+  currentGame?: number
+  maxGames?: number
+  blueSeriesWins?: number
+  redSeriesWins?: number
   createdAt: string
   finishedAt: string | null
 }
@@ -164,7 +219,7 @@ export interface RuleSetService {
 }
 
 export interface MatchService {
-  create(rulesetId: string): Promise<MatchState>
+  create(rulesetId: string, format?: MatchFormat): Promise<MatchState>
   get(code: string): Promise<MatchState>
   listMyMatches(): Promise<MatchSummary[]>
   getWebSocketUrl(code: string): string

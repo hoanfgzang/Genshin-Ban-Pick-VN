@@ -12,7 +12,7 @@ import {
   formatCost,
   formatSeconds,
 } from '@/domain/cost'
-import type { RuleSet } from '@/domain/ruleset'
+import { TIE_BREAK_OPTIONS, type RuleSet } from '@/domain/ruleset'
 import { REFINEMENTS, type WeaponRarity } from '@/domain/weapon'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
@@ -40,6 +40,9 @@ export function RuleSetViewer({ ruleset }: Props) {
   const bluePicks = config.draftSteps.filter((s) => s.side === 'blue' && s.action === 'pick').length
   const redBans = config.draftSteps.filter((s) => s.side === 'red' && s.action === 'ban').length
   const redPicks = config.draftSteps.filter((s) => s.side === 'red' && s.action === 'pick').length
+  const tieBreak =
+    TIE_BREAK_OPTIONS.find((o) => o.value === (config.tieBreakRule ?? 'none')) ??
+    TIE_BREAK_OPTIONS[0]
 
   const parsedSampleCost = Number.isFinite(Number(sampleCost)) ? Math.max(0, Number(sampleCost)) : 0
   const samplePenalty = calcCostPenaltySeconds(parsedSampleCost, costRules)
@@ -119,6 +122,12 @@ export function RuleSetViewer({ ruleset }: Props) {
             />
             <StatBox label="Mốc 3 ải cố định" value="09:00 / ải" cls="text-gold-strong" />
           </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-line/70 bg-bg/40 px-3.5 py-2.5 text-xs">
+          <span className="text-muted">Phân định ván hòa: </span>
+          <strong className="text-gold-strong">{tieBreak.label}</strong>
+          <span className="text-muted"> — {tieBreak.description}</span>
         </div>
 
         <div className="mt-5">

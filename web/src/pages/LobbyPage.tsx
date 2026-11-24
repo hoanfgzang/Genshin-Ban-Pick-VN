@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { buttonClass } from '@/components/ui/buttonStyles'
+import { Segmented } from '@/components/ui/Segmented'
 import { FullPageSpinner } from '@/components/ui/Spinner'
 import { toast } from '@/components/ui/toast'
 import type { RuleSet } from '@/domain/ruleset'
 import { errorMessage, useAuthStore } from '@/features/auth/authStore'
 import { cn } from '@/lib/cn'
-import { matchService, rulesetService, type MatchSummary } from '@/services'
+import { matchService, rulesetService, type MatchFormat, type MatchSummary } from '@/services'
 
 export function LobbyPage() {
   const user = useAuthStore((s) => s.user)
@@ -15,6 +16,7 @@ export function LobbyPage() {
 
   const [rulesets, setRulesets] = useState<RuleSet[]>([])
   const [selectedRuleId, setSelectedRuleId] = useState('')
+  const [matchFormat, setMatchFormat] = useState<MatchFormat>('bo1')
   const [joinCode, setJoinCode] = useState('')
   const [myMatches, setMyMatches] = useState<MatchSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,7 +56,7 @@ export function LobbyPage() {
     if (!selectedRuleId) return
     setCreating(true)
     try {
-      const match = await matchService.create(selectedRuleId)
+      const match = await matchService.create(selectedRuleId, matchFormat)
       navigate(`/match/${match.code}`)
     } catch (err) {
       toast.error(errorMessage(err))
@@ -102,6 +104,26 @@ export function LobbyPage() {
               </div>
             ) : (
               <div className="mt-3 flex flex-col gap-3">
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-muted">Chế độ thi đấu</span>
+                  <Segmented<MatchFormat>
+                    label="Chế độ thi đấu"
+                    value={matchFormat}
+                    onChange={setMatchFormat}
+                    options={[
+                      { value: 'bo1', label: 'BO1 · 1 ván' },
+                      { value: 'bo3', label: 'BO3 · Thắng 2/3 ván' },
+                    ]}
+                  />
+                  {matchFormat === 'bo3' && (
+                    <p className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-xs text-muted">
+                      <strong className="text-gold-strong">BO3 (Best of 3):</strong> Bên thắng 2 ván
+                      trước thắng chung cuộc (tối đa 3 ván). Nhân vật mỗi người chơi đã pick ở ván
+                      trước sẽ bị khóa cho người đó ở các ván sau; người thua ván trước được chọn bên.
+                    </p>
+                  )}
+                </div>
+
                 <label className="text-sm font-medium text-muted">Chọn bộ luật thi đấu</label>
                 <div className="flex flex-col gap-2">
                   {rulesets.map((rs) => (
@@ -201,7 +223,16 @@ export function LobbyPage() {
                   {myMatches.map((m) => (
                     <tr key={m.id}>
                       <td className="px-3 py-2 font-mono font-bold text-gold-strong">{m.code}</td>
-                      <td className="px-3 py-2 text-xs">{m.rulesetName}</td>
+                      <td className="px-3 py-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>{m.rulesetName}</span>
+                          {m.format === 'bo3' && (
+                            <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold-strong">
+                              BO3
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-3 py-2 text-xs text-hydro">
                         {m.bluePlayer?.displayName ?? '—'}
                         {m.blueFinalScore !== null ? ` (${m.blueFinalScore}s)` : ''}
@@ -211,13 +242,20 @@ export function LobbyPage() {
                         {m.redFinalScore !== null ? ` (${m.redFinalScore}s)` : ''}
                       </td>
                       <td className="px-3 py-2 text-xs">
+                        {m.format === 'bo3' && (
+                          <span className="mr-1.5 font-mono font-bold text-gold-strong">
+                            {m.blueSeriesWins ?? 0}-{m.redSeriesWins ?? 0}
+                          </span>
+                        )}
                         {m.status === 'finished'
                           ? m.winnerSide === 'blue'
                             ? 'Xanh Thắng'
                             : m.winnerSide === 'red'
                               ? 'Đỏ Thắng'
                               : 'Hòa'
-                          : m.status}
+                          : m.status === 'between_games'
+                            ? `Nghỉ giữa ván (${m.currentGame ?? 1}/${m.maxGames ?? 3})`
+                            : m.status}
                       </td>
                       <td className="px-3 py-2 text-right">
                         <Link to={`/match/${m.code}`} className={buttonClass('ghost', 'sm')}>

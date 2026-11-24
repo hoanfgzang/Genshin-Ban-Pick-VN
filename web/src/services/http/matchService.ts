@@ -2,10 +2,10 @@ import type { MatchService, MatchState, MatchSummary } from '../types'
 import { apiRequest, getAuthToken } from './apiClient'
 
 export const httpMatchService: MatchService = {
-  async create(rulesetId) {
+  async create(rulesetId, format = 'bo1') {
     return apiRequest<MatchState>('/api/matches', {
       method: 'POST',
-      body: JSON.stringify({ rulesetId }),
+      body: JSON.stringify({ rulesetId, format }),
     })
   },
 

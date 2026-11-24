@@ -7,12 +7,15 @@ import { toast } from '@/components/ui/toast'
 import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
 import { useAuthStore } from '@/features/auth/authStore'
+import { BetweenGamesPanel } from '@/features/match/BetweenGamesPanel'
 import { DraftSlotsBoard } from '@/features/match/DraftSlotsBoard'
 import { DraftStage } from '@/features/match/DraftStage'
 import { MatchLobbyPhase } from '@/features/match/MatchLobbyPhase'
 import { MatchScoreboardHeader } from '@/features/match/MatchScoreboardHeader'
 import { MatchScoringPhase } from '@/features/match/MatchScoringPhase'
 import { PostDraftTeamsStage } from '@/features/match/PostDraftTeamsStage'
+import { PreviousGamesPicksPanel } from '@/features/match/PreviousGamesPicksPanel'
+import { getPriorGames } from '@/features/match/series'
 import { UndoRequestBanner } from '@/features/match/UndoRequestBanner'
 import { useCountdownSeconds, useMatchSocket } from '@/features/match/useMatchSocket'
 import { WeaponPickerModal } from '@/features/match/WeaponPickerModal'
@@ -24,6 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
   drafting: 'Đang Ban / Pick',
   weapon_phase: 'Đội hình & Vũ khí',
   scoring: 'Nhập thời gian 3 ải',
+  between_games: 'Nghỉ giữa ván',
   finished: 'Đã kết thúc',
 }
 
@@ -95,6 +99,9 @@ export function MatchPage() {
   const weaponModalCharacter = weaponTarget
     ? getCharacter(weaponTarget.pick.characterSlug) ?? null
     : null
+  const isBo3 = state.format === 'bo3'
+  const currentGame = state.currentGame ?? 1
+  const priorGames = getPriorGames(state)
 
   return (
     <div
@@ -115,6 +122,9 @@ export function MatchPage() {
           <Button size="sm" variant="secondary" onClick={copyInviteLink}>
             Sao chép Link mời
           </Button>
+          <span className="rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[11px] font-extrabold text-gold-strong">
+            {isBo3 ? `BO3 · Ván ${currentGame}/${state.maxGames ?? 3}` : 'BO1'}
+          </span>
           <span className="text-xs text-muted">
             Bộ luật: <strong className="text-text">{state.rulesetName}</strong>
           </span>
@@ -156,6 +166,17 @@ export function MatchPage() {
         <>
           <MatchScoreboardHeader state={state} countdown={countdown} />
 
+          {state.status === 'between_games' && (
+            <BetweenGamesPanel
+              state={state}
+              user={user}
+              isAdmin={isAdmin}
+              onChooseNextSide={(side) => sendAction({ action: 'choose_next_side', side })}
+              onSetReady={(ready) => sendAction({ action: 'set_ready', ready })}
+              onRefreshInventory={() => sendAction({ action: 'refresh_inventory' })}
+            />
+          )}
+
           <DraftSlotsBoard
             state={state}
             canEditWeaponsForSide={canEditWeaponsForSide}
@@ -174,6 +195,7 @@ export function MatchPage() {
 
           {state.status === 'drafting' ? (
             <DraftStage
+              key={`draft-g${currentGame}`}
               state={state}
               mySide={mySide}
               isAdmin={isAdmin}
@@ -186,6 +208,7 @@ export function MatchPage() {
             />
           ) : (
             <PostDraftTeamsStage
+              key={`teams-g${currentGame}`}
               state={state}
               mySide={mySide}
               isAdmin={isAdmin}
@@ -201,13 +224,18 @@ export function MatchPage() {
             />
           )}
 
-          {(state.status === 'scoring' || state.status === 'finished') && (
+          {(state.status === 'scoring' ||
+            state.status === 'between_games' ||
+            state.status === 'finished') && (
             <MatchScoringPhase
+              key={`scoring-g${currentGame}-${mySide ?? 'spec'}`}
               state={state}
               mySide={mySide}
               onSubmitScores={(chambers) => sendAction({ action: 'submit_scores', chambers })}
             />
           )}
+
+          {isBo3 && priorGames.length > 0 && <PreviousGamesPicksPanel state={state} />}
         </>
       )}
 

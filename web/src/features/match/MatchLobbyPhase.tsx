@@ -81,6 +81,18 @@ export function MatchLobbyPhase({
               </Link>
             </div>
           )}
+
+          {state.format === 'bo3' &&
+            isMine &&
+            enoughChars &&
+            (player?.ownedCount ?? 0) < requiredPicks * 3 && (
+              <div className="mt-3 rounded-lg border border-gold/40 bg-gold/10 p-3 text-xs text-gold-strong">
+                Chế độ BO3 khóa nhân vật bạn đã pick qua từng ván: cần tối thiểu{' '}
+                <strong>{requiredPicks * 2}</strong> nhân vật nếu đánh 2 ván, hoặc{' '}
+                <strong>{requiredPicks * 3}</strong> nhân vật nếu đánh đủ 3 ván (kho hiện có{' '}
+                {player?.ownedCount ?? 0}).
+              </div>
+            )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -118,6 +130,14 @@ export function MatchLobbyPhase({
 
   return (
     <div className="flex flex-col gap-5">
+      {state.format === 'bo3' && (
+        <div className="panel border-gold/35 bg-gold/10 px-4 py-3 text-xs text-text sm:text-sm">
+          <strong className="text-gold-strong">Chế độ BO3 (Thắng 2/3 ván):</strong> Nhân vật mỗi
+          người chơi đã pick ở các ván trước sẽ bị khóa không thể pick lại cho chính người đó; người
+          thua ván trước được quyền chọn bên cho ván tiếp theo.
+        </div>
+      )}
+
       {!canPlay && (
         <div className="panel border-gold/30 bg-gold/5 p-4 text-sm text-text">
           Bạn đang xem phòng với tư cách Khách. Để tham gia chọn bên và thi đấu, vui lòng{' '}

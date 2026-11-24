@@ -154,6 +154,26 @@ class RoomManager:
                     next_state = draft_engine.set_ready(
                         synced, user_id=user.id, ready=bool(payload.get("ready"))
                     )
+                    if state.status == "between_games" and next_state.status == "drafting":
+                        notice = {
+                            "tone": "success",
+                            "message": f"Bắt đầu Ván {next_state.current_game}/{next_state.max_games}!",
+                        }
+                elif action == "choose_next_side":
+                    raw_side = payload.get("side")
+                    if raw_side not in ("blue", "red"):
+                        raise AppError(400, "INVALID_SIDE", "Bên chọn phải là Xanh (blue) hoặc Đỏ (red).")
+                    next_state = draft_engine.choose_next_side(
+                        state,
+                        user_id=user.id,
+                        user_role=user.role,
+                        side=raw_side,
+                    )
+                    side_text = "Bên Xanh (Đi trước)" if raw_side == "blue" else "Bên Đỏ (Đi sau)"
+                    notice = {
+                        "tone": "info",
+                        "message": f"{user.display_name} đã chọn {side_text} cho Ván {state.current_game + 1}.",
+                    }
                 elif action == "draft_pick_or_ban":
                     next_state = draft_engine.apply_draft_action(
                         state,
@@ -247,6 +267,21 @@ class RoomManager:
                         user_id=user.id,
                         chambers=chambers,
                     )
+                    if (
+                        state.status == "scoring"
+                        and next_state.status == "between_games"
+                        and next_state.next_game_setup
+                    ):
+                        if next_state.next_game_setup.auto_swapped:
+                            notice = {
+                                "tone": "info",
+                                "message": f"Ván {state.current_game} hòa! Hệ thống tự động đảo bên Xanh ↔ Đỏ cho Ván {state.current_game + 1}.",
+                            }
+                        else:
+                            notice = {
+                                "tone": "info",
+                                "message": f"Kết thúc Ván {state.current_game}. Người thua được chọn bên cho Ván {state.current_game + 1}.",
+                            }
                 else:
                     raise AppError(400, "UNKNOWN_ACTION", f"Hành động không hợp lệ: {action}")
 

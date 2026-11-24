@@ -7,6 +7,8 @@ from pydantic import Field, field_validator, model_validator
 
 from .auth import CamelModel
 
+TieBreakRule = Literal["none", "lower_cost", "fewer_4star", "lower_cost_then_fewer_4star"]
+
 
 class DraftStep(CamelModel):
     step: int = Field(ge=1)
@@ -147,6 +149,7 @@ def default_draft_steps() -> list[DraftStep]:
 class RuleSetConfig(CamelModel):
     draft_steps: list[DraftStep] = Field(default_factory=default_draft_steps)
     allow_duplicate_pick: bool = False
+    tie_break_rule: TieBreakRule = "none"
     per_turn_seconds: int = Field(default=45, ge=0, le=600)
     weapon_phase_seconds: int = Field(default=90, ge=0, le=900)
     chamber_base_seconds: Literal[540] = 540
@@ -168,6 +171,7 @@ def default_ruleset_config() -> RuleSetConfig:
     return RuleSetConfig(
         draft_steps=default_draft_steps(),
         allow_duplicate_pick=False,
+        tie_break_rule="none",
         per_turn_seconds=45,
         weapon_phase_seconds=90,
         chamber_base_seconds=540,

@@ -1,5 +1,33 @@
 export type MatchSide = 'blue' | 'red'
 export type DraftActionType = 'ban' | 'pick'
+export type TieBreakRule = 'none' | 'lower_cost' | 'fewer_4star' | 'lower_cost_then_fewer_4star'
+
+export const TIE_BREAK_OPTIONS: ReadonlyArray<{
+  value: TieBreakRule
+  label: string
+  description: string
+}> = [
+  {
+    value: 'none',
+    label: 'Không xét phụ (Mặc định)',
+    description: 'Nếu tổng điểm giây bằng nhau thì kết quả ván là Hòa.',
+  },
+  {
+    value: 'lower_cost',
+    label: 'Ưu tiên tổng Cost thấp hơn',
+    description: 'Khi bằng tổng điểm giây, bên có tổng Cost (nhân vật + vũ khí) ít hơn sẽ thắng.',
+  },
+  {
+    value: 'fewer_4star',
+    label: 'Ưu tiên ít nhân vật 4★ hơn',
+    description: 'Khi bằng tổng điểm giây, bên pick ít nhân vật 4★ hơn sẽ thắng.',
+  },
+  {
+    value: 'lower_cost_then_fewer_4star',
+    label: 'Cost thấp hơn → Ít nhân vật 4★ hơn',
+    description: 'Xét tổng Cost thấp hơn trước; nếu Cost vẫn bằng nhau thì xét bên ít nhân vật 4★ hơn.',
+  },
+]
 
 export interface DraftStep {
   step: number
@@ -32,6 +60,7 @@ export interface CostRules {
 export interface RuleSetConfig {
   draftSteps: DraftStep[]
   allowDuplicatePick: boolean
+  tieBreakRule?: TieBreakRule
   perTurnSeconds: number
   weaponPhaseSeconds: number
   chamberBaseSeconds: 540
@@ -86,6 +115,7 @@ export function createDefaultRuleSetConfig(): RuleSetConfig {
   return {
     draftSteps: createDefaultDraftSteps(),
     allowDuplicatePick: false,
+    tieBreakRule: 'none',
     perTurnSeconds: 45,
     weaponPhaseSeconds: 90,
     chamberBaseSeconds: 540,

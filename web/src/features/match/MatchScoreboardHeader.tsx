@@ -1,4 +1,5 @@
 import { computeCostBreakdown } from './lineup'
+import { getSeriesWinsForSide } from './series'
 import { formatCost, formatSeconds } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
@@ -14,6 +15,7 @@ const PHASE_TITLE: Record<MatchState['status'], string> = {
   drafting: 'DRAFT',
   weapon_phase: 'ĐỘI HÌNH & VŨ KHÍ',
   scoring: 'TÍNH ĐIỂM 3 ẢI',
+  between_games: 'NGHỈ GIỮA VÁN',
   finished: 'KẾT QUẢ',
 }
 
@@ -99,6 +101,10 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
 
   const blueTotalOvertime = blueSavedOvertime + blueLiveOvertime
   const redTotalOvertime = redSavedOvertime + redLiveOvertime
+  const isBo3 = state.format === 'bo3'
+  const winsToWin = state.winsToWin ?? 2
+  const blueSeriesWins = getSeriesWinsForSide(state, 'blue')
+  const redSeriesWins = getSeriesWinsForSide(state, 'red')
 
   const blueClock =
     state.status === 'drafting'
@@ -140,6 +146,24 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
         <div className="order-1 md:order-none">{renderStatusIcon('blue', blueReadyDone, blueActive)}</div>
         <div className="min-w-0 text-left md:text-right">
           <div className="flex items-center gap-2 md:justify-end">
+            {isBo3 && (
+              <div className="flex items-center gap-1" title={`Tỷ số BO3: ${blueSeriesWins} thắng`}>
+                {Array.from({ length: winsToWin }, (_, idx) => (
+                  <span
+                    key={idx}
+                    className={cn(
+                      'size-2.5 rounded-full border',
+                      idx < blueSeriesWins
+                        ? 'border-hydro bg-hydro shadow-[0_0_8px_rgba(76,194,241,0.6)]'
+                        : 'border-hydro/40 bg-transparent',
+                    )}
+                  />
+                ))}
+                <span className="ml-0.5 font-mono text-xs font-extrabold text-hydro">
+                  {blueSeriesWins}
+                </span>
+              </div>
+            )}
             <span className="rounded bg-hydro/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-hydro">
               Blue
             </span>
@@ -202,6 +226,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
         </div>
 
         <div className="text-center">
+          {isBo3 && (
+            <div className="mb-0.5 text-[10px] font-extrabold tracking-widest text-gold uppercase">
+              BO3 · VÁN {state.currentGame ?? 1}/{state.maxGames ?? 3}
+            </div>
+          )}
           <div className="text-xl font-black tracking-wider text-gold-strong sm:text-2xl">
             {PHASE_TITLE[state.status]}
           </div>
@@ -243,6 +272,24 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
             <span className="rounded bg-danger/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-danger">
               Red
             </span>
+            {isBo3 && (
+              <div className="flex items-center gap-1" title={`Tỷ số BO3: ${redSeriesWins} thắng`}>
+                <span className="mr-0.5 font-mono text-xs font-extrabold text-danger">
+                  {redSeriesWins}
+                </span>
+                {Array.from({ length: winsToWin }, (_, idx) => (
+                  <span
+                    key={idx}
+                    className={cn(
+                      'size-2.5 rounded-full border',
+                      idx < redSeriesWins
+                        ? 'border-danger bg-danger shadow-[0_0_8px_rgba(239,107,107,0.6)]'
+                        : 'border-danger/40 bg-transparent',
+                    )}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted">
             <span>

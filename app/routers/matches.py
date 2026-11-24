@@ -53,6 +53,7 @@ async def create_match(
         ruleset_name=ruleset_row.name,
         ruleset=config,
         host_user_id=user.id,
+        match_format=body.format,
     )
 
     match = Match(
@@ -102,6 +103,10 @@ async def list_my_matches(
     summaries: list[MatchSummaryResponse] = []
     for row in rows:
         st = MatchState.model_validate(row.state_json)
+        b_player = st.sides["blue"].player
+        r_player = st.sides["red"].player
+        b_wins = st.series_scores.get(b_player.user_id, 0) if b_player else 0
+        r_wins = st.series_scores.get(r_player.user_id, 0) if r_player else 0
         summaries.append(
             MatchSummaryResponse(
                 id=row.id,
@@ -109,10 +114,15 @@ async def list_my_matches(
                 ruleset_name=row.ruleset_name,
                 status=st.status,
                 winner_side=st.winner_side,
-                blue_player=st.sides["blue"].player,
-                red_player=st.sides["red"].player,
+                blue_player=b_player,
+                red_player=r_player,
                 blue_final_score=st.sides["blue"].final_score,
                 red_final_score=st.sides["red"].final_score,
+                format=st.format,
+                current_game=st.current_game,
+                max_games=st.max_games,
+                blue_series_wins=b_wins,
+                red_series_wins=r_wins,
                 created_at=row.created_at,
                 finished_at=row.finished_at,
             )

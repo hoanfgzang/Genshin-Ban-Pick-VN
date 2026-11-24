@@ -269,7 +269,9 @@ export function PostDraftTeamsStage({
                 ? 'Chế độ Admin: vẫn có thể điều chỉnh lại vị trí/team của cả 2 bên.'
                 : state.status === 'scoring'
                   ? 'Đội hình hiển thị theo thứ tự bạn đã sắp xếp (có thể điều chỉnh lại trước khi kết thúc).'
-                  : 'Trận đấu đã kết thúc.'}
+                  : state.status === 'between_games'
+                    ? 'Ván đấu đã hoàn tất — hãy chọn bên và sẵn sàng ván tiếp theo ở phía trên.'
+                    : 'Trận đấu đã kết thúc.'}
             </span>
           )}
         </div>

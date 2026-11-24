@@ -9,15 +9,21 @@ from ..core.errors import AppError, bad_request, forbidden
 from ..data_loader import get_character, get_character_map, get_weapon, get_weapons
 from ..schemas.match import (
     ChamberTimeInput,
+    CompletedGameRecord,
+    CompletedGameSideSummary,
+    MatchFormat,
     MatchPickSlot,
     MatchPlayerInfo,
     MatchState,
+    NextGameSetup,
     SideName,
     SideOwnedChar,
     SideState,
     UndoRequest,
+    WinReason,
+    WinnerSide,
 )
-from ..schemas.ruleset import DraftStep, RuleSetConfig
+from ..schemas.ruleset import DraftStep, RuleSetConfig, TieBreakRule
 from .cost_engine import (
     calc_chamber_scores,
     calc_character_cost,
@@ -42,7 +48,9 @@ def create_initial_match_state(
     ruleset_name: str,
     ruleset: RuleSetConfig,
     host_user_id: str,
+    match_format: MatchFormat = "bo1",
 ) -> MatchState:
+    is_bo3 = match_format == "bo3"
     return MatchState(
         code=code,
         status="lobby",
@@ -55,6 +63,15 @@ def create_initial_match_state(
         turn_deadline_at=None,
         undo_request=None,
         winner_side=None,
+        format=match_format,
+        max_games=3 if is_bo3 else 1,
+        wins_to_win=2 if is_bo3 else 1,
+        current_game=1,
+        series_scores={},
+        game_history=[],
+        next_game_setup=None,
+        winner_user_id=None,
+        last_game_win_reason=None,
         created_at=utc_now().isoformat(),
         finished_at=None,
     )
@@ -135,6 +152,91 @@ def _recalculate_side_costs(side: SideState, ruleset: RuleSetConfig) -> None:
     side.weapon_refinement_seconds = round(total_ref_sec, 2)
 
 
+def _count_four_star_picks(side: SideState) -> int:
+    count = 0
+    for p in side.picks:
+        char_info = get_character(p.character_slug)
+        if char_info and char_info.get("rarity") == 4:
+            count += 1
+    return count
+
+
+def _previously_picked_slugs_for_user(state: MatchState, user_id: str) -> set[str]:
+    if state.format != "bo3" or not user_id:
+        return set()
+    locked: set[str] = set()
+    for game in state.game_history:
+        for side_summary in (game.blue, game.red):
+            if side_summary.player and side_summary.player.user_id == user_id:
+                locked.update(p.character_slug for p in side_summary.picks)
+    return locked
+
+
+def _resolve_game_winner(
+    blue: SideState,
+    red: SideState,
+    tie_break_rule: TieBreakRule,
+) -> tuple[WinnerSide, WinReason]:
+    b_score = round(blue.final_score or 0.0, 2)
+    r_score = round(red.final_score or 0.0, 2)
+    if b_score < r_score:
+        return ("blue", "score")
+    if r_score < b_score:
+        return ("red", "score")
+
+    def by_cost() -> tuple[WinnerSide, WinReason] | None:
+        b_cost = round(blue.total_cost, 2)
+        r_cost = round(red.total_cost, 2)
+        if b_cost < r_cost:
+            return ("blue", "lower_cost")
+        if r_cost < b_cost:
+            return ("red", "lower_cost")
+        return None
+
+    def by_four_star() -> tuple[WinnerSide, WinReason] | None:
+        b_4s = _count_four_star_picks(blue)
+        r_4s = _count_four_star_picks(red)
+        if b_4s < r_4s:
+            return ("blue", "fewer_4star")
+        if r_4s < b_4s:
+            return ("red", "fewer_4star")
+        return None
+
+    if tie_break_rule == "lower_cost":
+        res = by_cost()
+        if res:
+            return res
+    elif tie_break_rule == "fewer_4star":
+        res = by_four_star()
+        if res:
+            return res
+    elif tie_break_rule == "lower_cost_then_fewer_4star":
+        res = by_cost()
+        if res:
+            return res
+        res = by_four_star()
+        if res:
+            return res
+
+    return ("draw", "draw")
+
+
+def _build_side_summary(side_name: SideName, side_state: SideState) -> CompletedGameSideSummary:
+    return CompletedGameSideSummary(
+        side=side_name,
+        player=side_state.player.model_copy(deep=True) if side_state.player else None,
+        bans=list(side_state.bans),
+        picks=[p.model_copy(deep=True) for p in side_state.picks],
+        total_cost=side_state.total_cost,
+        cost_penalty_seconds=side_state.cost_penalty_seconds,
+        weapon_refinement_seconds=side_state.weapon_refinement_seconds,
+        overtime_penalty_seconds=side_state.overtime_penalty_seconds,
+        chamber_total_seconds=side_state.chamber_total_seconds,
+        final_score=side_state.final_score,
+        four_star_count=_count_four_star_picks(side_state),
+    )
+
+
 def select_side(
     state: MatchState,
     *,
@@ -193,7 +295,7 @@ def refresh_side_inventory(
     user_id: str,
     owned_characters: dict[str, dict[str, Any]],
 ) -> MatchState:
-    if state.status != "lobby":
+    if state.status not in ("lobby", "between_games"):
         return state
     side = _find_user_side(state, user_id)
     if not side:
@@ -215,34 +317,155 @@ def refresh_side_inventory(
     return next_state
 
 
-def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
-    if state.status != "lobby":
-        raise bad_request("INVALID_PHASE", "Trận đấu đã bắt đầu.")
+def choose_next_side(
+    state: MatchState,
+    *,
+    user_id: str,
+    user_role: str = "player",
+    side: SideName,
+) -> MatchState:
+    if state.status != "between_games" or state.next_game_setup is None:
+        raise bad_request("INVALID_PHASE", "Hiện không ở giai đoạn chọn bên cho ván tiếp theo.")
 
-    side = _find_user_side(state, user_id)
-    if not side:
-        raise forbidden("Bạn cần chọn bên Xanh hoặc Đỏ trước khi sẵn sàng.")
+    setup = state.next_game_setup
+    if setup.auto_swapped:
+        raise bad_request(
+            "AUTO_SWAPPED",
+            "Ván trước hòa nên hệ thống tự động đảo bên Xanh ↔ Đỏ cho ván tiếp theo.",
+        )
+
+    is_admin = user_role == "admin"
+    if not is_admin and user_id != setup.side_picker_user_id:
+        raise forbidden("Chỉ người thua ván trước hoặc Admin mới có thể chọn bên cho ván tiếp theo.")
+
+    picker_uid = setup.side_picker_user_id
+    b_player = state.sides["blue"].player
+    r_player = state.sides["red"].player
+    if not b_player or not r_player or not picker_uid:
+        raise bad_request("INVALID_STATE", "Thiếu thông tin người chơi trong trận.")
+
+    other_uid = r_player.user_id if b_player.user_id == picker_uid else b_player.user_id
 
     next_state = state.model_copy(deep=True)
-    if ready:
-        required = _required_picks_for_side(next_state.ruleset, side)
-        owned_count = len(next_state.sides[side].owned_characters)
-        if owned_count < required:
+    assert next_state.next_game_setup is not None
+    if side == "blue":
+        next_state.next_game_setup.blue_user_id = picker_uid
+        next_state.next_game_setup.red_user_id = other_uid
+    else:
+        next_state.next_game_setup.red_user_id = picker_uid
+        next_state.next_game_setup.blue_user_id = other_uid
+    next_state.next_game_setup.ready_user_ids = []
+    return next_state
+
+
+def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
+    if state.status == "lobby":
+        side = _find_user_side(state, user_id)
+        if not side:
+            raise forbidden("Bạn cần chọn bên Xanh hoặc Đỏ trước khi sẵn sàng.")
+
+        next_state = state.model_copy(deep=True)
+        if ready:
+            required = _required_picks_for_side(next_state.ruleset, side)
+            owned_count = len(next_state.sides[side].owned_characters)
+            if owned_count < required:
+                raise bad_request(
+                    "NOT_ENOUGH_CHARACTERS",
+                    f"Kho của bạn cần tối thiểu {required} nhân vật để thi đấu bộ luật này (hiện có {owned_count}).",
+                )
+
+        next_state.sides[side].ready = ready
+
+        if next_state.sides["blue"].player and next_state.sides["red"].player:
+            if next_state.sides["blue"].ready and next_state.sides["red"].ready:
+                b_uid = next_state.sides["blue"].player.user_id
+                r_uid = next_state.sides["red"].player.user_id
+                next_state.series_scores = {b_uid: 0, r_uid: 0}
+                next_state.status = "drafting"
+                next_state.current_step_index = 0
+                first_step = next_state.ruleset.draft_steps[0]
+                bonus = (
+                    next_state.sides[first_step.side].total_cost
+                    * next_state.ruleset.cost_rules.draft_bonus_seconds_per_cost
+                )
+                next_state.turn_deadline_at = _compute_deadline(
+                    next_state.ruleset.per_turn_seconds, bonus
+                )
+        return next_state
+
+    if state.status == "between_games":
+        user_side = _find_user_side(state, user_id)
+        if not user_side:
+            raise forbidden("Bạn không phải người chơi trong trận này.")
+
+        setup = state.next_game_setup
+        if not setup or not setup.blue_user_id or not setup.red_user_id:
             raise bad_request(
-                "NOT_ENOUGH_CHARACTERS",
-                f"Kho của bạn cần tối thiểu {required} nhân vật để thi đấu bộ luật này (hiện có {owned_count}).",
+                "SIDE_CHOICE_REQUIRED",
+                "Đang chờ người thua ván trước chọn bên cho ván tiếp theo.",
             )
 
-    next_state.sides[side].ready = ready
+        next_side: SideName = "blue" if setup.blue_user_id == user_id else "red"
+        next_state = state.model_copy(deep=True)
+        assert next_state.next_game_setup is not None
+        next_setup = next_state.next_game_setup
 
-    if next_state.sides["blue"].player and next_state.sides["red"].player:
-        if next_state.sides["blue"].ready and next_state.sides["red"].ready:
+        if ready:
+            required = _required_picks_for_side(next_state.ruleset, next_side)
+            prev_picked = _previously_picked_slugs_for_user(next_state, user_id)
+            owned_map = next_state.sides[user_side].owned_characters
+            available_count = sum(1 for slug in owned_map if slug not in prev_picked)
+            if available_count < required:
+                raise bad_request(
+                    "NOT_ENOUGH_CHARACTERS",
+                    f"Kho của bạn cần tối thiểu {required} nhân vật chưa dùng ở các ván trước để đấu Ván {next_setup.game_number} (hiện còn {available_count}).",
+                )
+            if user_id not in next_setup.ready_user_ids:
+                next_setup.ready_user_ids.append(user_id)
+        else:
+            next_setup.ready_user_ids = [uid for uid in next_setup.ready_user_ids if uid != user_id]
+
+        if (
+            next_setup.blue_user_id in next_setup.ready_user_ids
+            and next_setup.red_user_id in next_setup.ready_user_ids
+        ):
+            by_uid: dict[str, SideState] = {}
+            for s_key in ("blue", "red"):
+                key: SideName = s_key
+                side_obj = next_state.sides[key]
+                if side_obj.player:
+                    by_uid[side_obj.player.user_id] = side_obj
+
+            blue_prev = by_uid[next_setup.blue_user_id]
+            red_prev = by_uid[next_setup.red_user_id]
+
+            next_state.sides = {
+                "blue": SideState(
+                    player=blue_prev.player.model_copy(deep=True) if blue_prev.player else None,
+                    ready=True,
+                    owned_characters={
+                        k: v.model_copy(deep=True) for k, v in blue_prev.owned_characters.items()
+                    },
+                ),
+                "red": SideState(
+                    player=red_prev.player.model_copy(deep=True) if red_prev.player else None,
+                    ready=True,
+                    owned_characters={
+                        k: v.model_copy(deep=True) for k, v in red_prev.owned_characters.items()
+                    },
+                ),
+            }
+            next_state.current_game = next_setup.game_number
+            next_state.next_game_setup = None
             next_state.status = "drafting"
             next_state.current_step_index = 0
-            first_step = next_state.ruleset.draft_steps[0]
-            bonus = next_state.sides[first_step.side].total_cost * next_state.ruleset.cost_rules.draft_bonus_seconds_per_cost
-            next_state.turn_deadline_at = _compute_deadline(next_state.ruleset.per_turn_seconds, bonus)
-    return next_state
+            next_state.undo_request = None
+            next_state.last_game_win_reason = None
+            next_state.turn_deadline_at = _step_deadline_for_index(next_state, 0)
+
+        return next_state
+
+    raise bad_request("INVALID_PHASE", "Trận đấu đã bắt đầu.")
 
 
 def get_current_step(state: MatchState) -> DraftStep | None:
@@ -322,6 +545,13 @@ def apply_draft_action(
             raise bad_request("ALREADY_PICKED", "Bạn đã Pick nhân vật này rồi.")
         if not next_state.ruleset.allow_duplicate_pick and character_slug in all_picked:
             raise bad_request("ALREADY_PICKED", "Nhân vật này đã được đối phương Pick.")
+
+        acting_user_id = side_state.player.user_id if side_state.player else user_id
+        if character_slug in _previously_picked_slugs_for_user(next_state, acting_user_id):
+            raise bad_request(
+                "PREVIOUSLY_PICKED",
+                "Bạn đã Pick nhân vật này ở ván trước và không thể chọn lại trong chế độ BO3.",
+            )
 
         owned = side_state.owned_characters.get(character_slug)
         if not owned:
@@ -733,16 +963,88 @@ def submit_chamber_times(
     blue = next_state.sides["blue"]
     red = next_state.sides["red"]
     if blue.score_submitted and red.score_submitted:
-        next_state.status = "finished"
-        next_state.finished_at = utc_now().isoformat()
-        b_score = blue.final_score or 0.0
-        r_score = red.final_score or 0.0
-        if b_score < r_score:
-            next_state.winner_side = "blue"
-        elif r_score < b_score:
-            next_state.winner_side = "red"
+        game_winner_side, win_reason = _resolve_game_winner(
+            blue, red, next_state.ruleset.tie_break_rule
+        )
+        next_state.last_game_win_reason = win_reason
+        b_uid = blue.player.user_id if blue.player else ""
+        r_uid = red.player.user_id if red.player else ""
+        game_winner_uid = (
+            b_uid if game_winner_side == "blue" else (r_uid if game_winner_side == "red" else None)
+        )
+
+        if next_state.format == "bo1":
+            next_state.status = "finished"
+            next_state.finished_at = utc_now().isoformat()
+            next_state.winner_side = game_winner_side
+            next_state.winner_user_id = game_winner_uid
         else:
-            next_state.winner_side = "draw"
+            record = CompletedGameRecord(
+                game_number=next_state.current_game,
+                blue=_build_side_summary("blue", blue),
+                red=_build_side_summary("red", red),
+                winner_side=game_winner_side,
+                winner_user_id=game_winner_uid,
+                win_reason=win_reason,
+                finished_at=utc_now().isoformat(),
+            )
+            next_state.game_history = [
+                g for g in next_state.game_history if g.game_number != next_state.current_game
+            ] + [record]
+
+            if b_uid and b_uid not in next_state.series_scores:
+                next_state.series_scores[b_uid] = 0
+            if r_uid and r_uid not in next_state.series_scores:
+                next_state.series_scores[r_uid] = 0
+            if game_winner_uid:
+                next_state.series_scores[game_winner_uid] = (
+                    next_state.series_scores.get(game_winner_uid, 0) + 1
+                )
+
+            b_wins = next_state.series_scores.get(b_uid, 0)
+            r_wins = next_state.series_scores.get(r_uid, 0)
+            series_done = (
+                b_wins >= next_state.wins_to_win
+                or r_wins >= next_state.wins_to_win
+                or next_state.current_game >= next_state.max_games
+            )
+
+            if series_done:
+                next_state.status = "finished"
+                next_state.finished_at = utc_now().isoformat()
+                next_state.next_game_setup = None
+                if b_wins > r_wins:
+                    next_state.winner_side = "blue"
+                    next_state.winner_user_id = b_uid
+                elif r_wins > b_wins:
+                    next_state.winner_side = "red"
+                    next_state.winner_user_id = r_uid
+                else:
+                    next_state.winner_side = "draw"
+                    next_state.winner_user_id = None
+            else:
+                next_state.status = "between_games"
+                next_state.winner_side = None
+                next_state.winner_user_id = None
+                if game_winner_side == "draw":
+                    next_state.next_game_setup = NextGameSetup(
+                        game_number=next_state.current_game + 1,
+                        side_picker_user_id=None,
+                        auto_swapped=True,
+                        blue_user_id=r_uid,
+                        red_user_id=b_uid,
+                        ready_user_ids=[],
+                    )
+                else:
+                    loser_uid = r_uid if game_winner_side == "blue" else b_uid
+                    next_state.next_game_setup = NextGameSetup(
+                        game_number=next_state.current_game + 1,
+                        side_picker_user_id=loser_uid,
+                        auto_swapped=False,
+                        blue_user_id=None,
+                        red_user_id=None,
+                        ready_user_ids=[],
+                    )
 
     return next_state
 
@@ -764,11 +1066,13 @@ def auto_handle_timeout(state: MatchState) -> MatchState | None:
         banned = _all_banned_slugs(state)
         all_picked = _all_picked_slugs(state)
         own_picked = _all_picked_slugs(state, step.side)
+        prev_picked = _previously_picked_slugs_for_user(state, user_id)
         candidates = [
             slug
             for slug in side_state.owned_characters
             if slug not in banned
             and slug not in own_picked
+            and slug not in prev_picked
             and (state.ruleset.allow_duplicate_pick or slug not in all_picked)
         ]
         if not candidates:
@@ -776,7 +1080,10 @@ def auto_handle_timeout(state: MatchState) -> MatchState | None:
             candidates = [
                 slug
                 for slug in get_character_map()
-                if slug not in banned and slug not in own_picked
+                if slug not in banned
+                and slug not in own_picked
+                and slug not in prev_picked
+                and (state.ruleset.allow_duplicate_pick or slug not in all_picked)
             ]
         if not candidates:
             return None

@@ -3,7 +3,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/toast'
-import { createDefaultRuleSetConfig, type RuleSet, type RuleSetConfig } from '@/domain/ruleset'
+import {
+  createDefaultRuleSetConfig,
+  TIE_BREAK_OPTIONS,
+  type RuleSet,
+  type RuleSetConfig,
+  type TieBreakRule,
+} from '@/domain/ruleset'
 import { WEAPON_BY_SLUG } from '@/domain/weapons'
 import { errorMessage } from '@/features/auth/authStore'
 import { rulesetService } from '@/services'
@@ -190,6 +196,33 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
                 <span>Đặt làm bộ luật mặc định</span>
               </label>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-line bg-bg/40 p-3.5">
+            <label className="flex flex-col gap-1.5 text-xs">
+              <span className="font-semibold text-text">
+                Phân định ván hòa (Tie-break khi bằng tổng điểm giây)
+              </span>
+              <select
+                value={config.tieBreakRule ?? 'none'}
+                onChange={(e) =>
+                  setConfig({ ...config, tieBreakRule: e.target.value as TieBreakRule })
+                }
+                className="h-9 max-w-md rounded-lg border border-line bg-panel px-3 text-sm text-text focus:border-gold focus:outline-none"
+              >
+                {TIE_BREAK_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[11px] text-muted">
+                {
+                  TIE_BREAK_OPTIONS.find((o) => o.value === (config.tieBreakRule ?? 'none'))
+                    ?.description
+                }
+              </span>
+            </label>
           </div>
 
           <div className="rounded-xl border border-line bg-bg/30 p-4">
