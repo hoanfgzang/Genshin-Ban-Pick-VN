@@ -1,45 +1,69 @@
 # Genshin Ban/Pick VN
 
-Ứng dụng web hỗ trợ cộng đồng người chơi Genshin Impact tạo trận đấu **ban/pick nhân vật 1v1**, lưu trữ kho nhân vật cá nhân (cung mệnh C0–C6 và level 90/95/100), lựa chọn bộ luật thi đấu và cân bằng đầu tư giữa các tài khoản trong trận.
+Ứng dụng web thi đấu **Ban/Pick nhân vật Genshin Impact 1v1 thời gian thực**, quản lý kho nhân vật cá nhân (C0–C6 và Lv 90/95/100), hệ thống **Cost cân bằng** theo từng bộ luật, chọn vũ khí khi thi đấu và tính điểm 3 ải theo mốc `09:00`.
 
-## Tính năng hiện tại (Giai đoạn 0 & 1)
+## Tính năng chính
 
-- **Đăng nhập / Đăng ký / Chế độ Khách**: giao diện Auth đầy đủ validation (`zod` + `react-hook-form`), lưu phiên và tài khoản giả lập trên trình duyệt.
+- **Tài khoản & Phân quyền**:
+  - Đăng ký & đăng nhập bằng **UID Genshin (9–10 chữ số) + mật khẩu** (email tùy chọn hoặc cấu hình bắt buộc qua `REQUIRE_EMAIL`).
+  - **Chế độ Khách**: lưu kho nhân vật cục bộ trên trình duyệt, xem Bộ luật/bảng Cost và theo dõi trực tiếp trận đấu.
+  - **Admin**: đầy đủ quyền của Player + tạo/chỉnh sửa/xóa Bộ luật, thứ tự từng lượt Ban/Pick, bảng Cost nhân vật (`4★/5★`, `C0–C6`), bảng Cost vũ khí (`3★–5★`, `R1–R5`) và các mốc cộng giây.
 - **Kho nhân vật cá nhân (`/profile`)**:
-  - 126 nhân vật (kèm 2 mục Nhà Lữ Hành Nam/Nữ) hiển thị theo độ hiếm, nguyên tố và vũ khí.
-  - Hai chế độ thao tác: **Chỉnh sửa** (dialog chỉnh sở hữu, C0–C6, Lv 90/95/100, phím tắt `0–6` và `←/→`) và **Chọn nhanh** (bấm thẻ để bật/tắt sở hữu).
-  - Bộ lọc kết hợp (tìm tiếng Việt không dấu, nguyên tố, độ hiếm, vũ khí, trạng thái sở hữu, sắp xếp) đồng bộ qua URL query.
-  - Thao tác hàng loạt (**Đánh dấu tất cả 4★**, **Có tất cả**, **Bỏ tất cả**, **Đặt level…**) và **Nhập / Xuất JSON**.
+  - Lưu nhân vật sở hữu kèm cung mệnh (`C0–C6`) và level (`90/95/100`). Vũ khí **không** cần lưu vào kho tài khoản.
+- **Hệ thống Bộ luật & Cost (`/rules`)**:
+  - Mặc định 1 bộ luật chuẩn (**mỗi bên 3 Ban + 8 Pick**, đội Xanh Dương bên trái Ban trước & Pick trước).
+  - Cost mặc định: nhân vật 5★ `C0 = 1 cost` (`+1` mỗi cung mệnh), vũ khí 5★ `R1 = 1 cost`, nhân vật 4★ có thể gán Cost riêng (hỗ trợ số lẻ như `0.5`).
+  - Cost sử dụng quy đổi thành **giây cộng thêm (điểm)** theo mốc do Admin cài đặt.
+- **Phòng đấu 1v1 Realtime (`/lobby`, `/match/:code`)**:
+  - Tạo phòng theo bộ luật, mời đối thủ qua link/mã 6 ký tự, chọn bên **Xanh Dương (Trái)** hoặc **Đỏ (Phải)**.
+  - Tự động gắn cung mệnh & level từ kho khi Pick nhân vật; cho phép điền **Vũ khí (`R1–R5`)** ngay cạnh nhân vật lúc đang Pick hoặc trong khoảng thời gian trống sau khi Ban/Pick xong.
+  - Nhập thời gian hoàn thành 3 ải (`Phút : Giây`), hệ thống lấy `09:00 − thời gian nhập` ở mỗi ải cộng vào điểm Cost — **bên có tổng điểm thấp nhất thắng**.
 
 ## Cài đặt & chạy local
 
+### 1. Backend Python (`app/`)
+
+Yêu cầu: Python 3.11+ (khuyến nghị tạo virtualenv trong `app/.venv`).
+
+```powershell
+py -m venv app/.venv
+.\app\.venv\Scripts\python.exe -m pip install -r app/requirements.txt
+.\app\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+Tài khoản **Admin mặc định** được tự động khởi tạo khi chạy lần đầu (cấu hình qua biến môi trường trong `app/.env`, tham khảo `app/.env.example`):
+- **UID**: `100000000`
+- **Mật khẩu**: `admin12345`
+
+Chạy kiểm thử Backend:
+```powershell
+.\app\.venv\Scripts\python.exe -m pytest app/tests -v
+```
+
+### 2. Frontend React (`web/`)
+
 Yêu cầu: Node.js + `pnpm`.
 
-```bash
+```powershell
 cd web
 pnpm install
 pnpm dev
 ```
 
-Các lệnh kiểm tra khác trong `web/`:
+Frontend chạy mặc định ở `http://localhost:5173` và tự động proxy `/api` + `/ws` sang Backend Python (`127.0.0.1:8000`).
 
-```bash
-pnpm lint          # Kiểm tra ESLint
+Các lệnh kiểm tra trong `web/`:
+```powershell
+pnpm lint          # Kiểm tra ESLint + React Compiler
 pnpm build         # Kiểm tra TypeScript (tsc -b) và build production
 pnpm test -- --run # Chạy unit tests (Vitest)
 ```
 
-## Cập nhật dữ liệu nhân vật
+## Cập nhật dữ liệu Nhân vật & Vũ khí
 
-Khi Genshin Impact ra nhân vật mới, chạy lại script dataminer (yêu cầu Python 3 và thư viện `requests`) để tải icon vào `web/public/characters/` và cập nhật `web/src/data/characters.json`:
+Khi Genshin Impact ra nhân vật hoặc vũ khí mới:
 
-```bash
-py assets/dataminer2.py
+```powershell
+py assets/dataminer2.py          # Cập nhật nhân vật -> web/src/data/characters.json
+py assets/dataminer_weapons.py   # Cập nhật vũ khí  -> web/src/data/weapons.json
 ```
-
-Tùy chọn thêm: `--json-only`, `--icons-only`, `--force`.
-
-## Tài liệu quy hoạch
-
-- [Lộ trình phát triển dài hạn (GĐ 0–6)](docs/ROADMAP.md)
-- [Kế hoạch kiến trúc Backend (để duyệt sau)](docs/BACKEND_PLAN.md)

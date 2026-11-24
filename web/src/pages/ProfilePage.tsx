@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { FullPageSpinner } from '@/components/ui/Spinner'
+import { toast } from '@/components/ui/toast'
 import type { Character } from '@/domain/character'
 import { CHARACTERS } from '@/domain/characters'
-import { toggleOwned } from '@/domain/inventory'
+import { toggleOwned, type Inventory } from '@/domain/inventory'
 import { useAuthStore } from '@/features/auth/authStore'
 import { BulkActions } from '@/features/inventory/BulkActions'
 import { CharacterEditor } from '@/features/inventory/CharacterEditor'
@@ -12,6 +13,7 @@ import { InventoryFilters } from '@/features/inventory/InventoryFilters'
 import { useInventoryStore } from '@/features/inventory/inventoryStore'
 import { InventorySummary } from '@/features/inventory/InventorySummary'
 import { useFilteredCharacters } from '@/features/inventory/useFilteredCharacters'
+import { mockInventoryService } from '@/services/mock/inventoryService'
 
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user)
@@ -20,13 +22,28 @@ export function ProfilePage() {
   const saveState = useInventoryStore((s) => s.saveState)
   const load = useInventoryStore((s) => s.load)
   const update = useInventoryStore((s) => s.update)
+  const replace = useInventoryStore((s) => s.replace)
 
   const [mode, setMode] = useState<'edit' | 'quick'>('edit')
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
+  const [guestBackup, setGuestBackup] = useState<Inventory | null>(null)
 
   useEffect(() => {
     if (user?.id) void load(user.id)
   }, [user?.id, load])
+
+  useEffect(() => {
+    if (!user || user.isGuest) return
+    let mounted = true
+    void mockInventoryService.get('guest').then((inv) => {
+      if (mounted && Object.keys(inv.characters).length > 0) {
+        setGuestBackup(inv)
+      }
+    })
+    return () => {
+      mounted = false
+    }
+  }, [user])
 
   const { filter, setFilter, resetFilter, characters, isFiltered } = useFilteredCharacters(inventory)
 
@@ -47,6 +64,13 @@ export function ProfilePage() {
     setEditingSlug(c.slug)
   }
 
+  const importFromGuest = () => {
+    if (!guestBackup) return
+    replace({ ...guestBackup, updatedAt: new Date().toISOString() })
+    setGuestBackup(null)
+    toast.success('Đã đồng bộ kho từ chế độ Khách lên tài khoản.')
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <InventorySummary user={user} inventory={inventory} saveState={saveState} />
@@ -57,11 +81,18 @@ export function ProfilePage() {
             Kho nhân vật của bạn đang trống. Bật chế độ <strong>Chọn nhanh</strong> để tích nhanh hoặc dùng{' '}
             <strong>Đánh dấu tất cả 4★</strong>.
           </p>
-          {mode !== 'quick' && (
-            <Button size="sm" variant="primary" onClick={() => setMode('quick')}>
-              Bật Chọn nhanh
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {guestBackup && (
+              <Button size="sm" variant="secondary" onClick={importFromGuest}>
+                Đồng bộ {Object.keys(guestBackup.characters).length} nhân vật từ Khách
+              </Button>
+            )}
+            {mode !== 'quick' && (
+              <Button size="sm" variant="primary" onClick={() => setMode('quick')}>
+                Bật Chọn nhanh
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -72,7 +103,7 @@ export function ProfilePage() {
           mode={mode}
           onModeChange={setMode}
           visibleSlugs={visibleSlugs}
-          username={user.username}
+          username={user.uid}
         />
       </section>
 

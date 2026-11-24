@@ -1,0 +1,7 @@
+# Python venv & local SQLite DB
+app/.venv/
+app/data/
+app/.env
+**/__pycache__/
+*.pyc
+.pytest_cache/

@@ -5,28 +5,33 @@ import { mockAuthService } from './authService'
 import { mockInventoryService } from './inventoryService'
 
 describe('services/mock', () => {
-  it('đăng ký, kiểm tra trùng username/email, đăng nhập đúng/sai mật khẩu', async () => {
+  it('đăng ký bằng UID, kiểm tra trùng UID/email, đăng nhập đúng/sai mật khẩu', async () => {
     const user = await mockAuthService.register({
-      username: 'Alice_01',
+      uid: '801234567',
+      displayName: 'Alice',
       email: 'Alice@Example.com',
       password: 'Password123',
     })
-    expect(user.username).toBe('Alice_01')
+    expect(user.uid).toBe('801234567')
+    expect(user.displayName).toBe('Alice')
     expect(user.email).toBe('alice@example.com')
+    expect(user.role).toBe('player')
     expect(user.isGuest).toBe(false)
     expect((await mockAuthService.getCurrentUser())?.id).toBe(user.id)
 
     await expect(
       mockAuthService.register({
-        username: 'alice_01',
+        uid: '801234567',
+        displayName: 'Alice Clone',
         email: 'other@example.com',
         password: 'Password123',
       }),
-    ).rejects.toMatchObject({ code: 'USERNAME_TAKEN' })
+    ).rejects.toMatchObject({ code: 'UID_TAKEN' })
 
     await expect(
       mockAuthService.register({
-        username: 'Bob_02',
+        uid: '809999999',
+        displayName: 'Bob',
         email: 'alice@example.com',
         password: 'Password123',
       }),
@@ -37,7 +42,7 @@ describe('services/mock', () => {
 
     try {
       await mockAuthService.login({
-        username: 'alice_01',
+        uid: '801234567',
         password: 'WrongPassword',
         remember: true,
       })
@@ -47,9 +52,8 @@ describe('services/mock', () => {
       expect((err as ServiceError).code).toBe('INVALID_CREDENTIALS')
     }
 
-    // remember: false lưu phiên trong sessionStorage thay vì localStorage
     const loggedIn = await mockAuthService.login({
-      username: 'alice_01',
+      uid: '801234567',
       password: 'Password123',
       remember: false,
     })
@@ -61,6 +65,7 @@ describe('services/mock', () => {
   it('hỗ trợ chế độ Khách và đăng xuất', async () => {
     const guest = await mockAuthService.loginAsGuest()
     expect(guest.isGuest).toBe(true)
+    expect(guest.role).toBe('guest')
     expect((await mockAuthService.getCurrentUser())?.isGuest).toBe(true)
 
     await mockAuthService.logout()

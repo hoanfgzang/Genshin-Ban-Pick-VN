@@ -30,12 +30,21 @@ export function InventorySummary({ user, inventory, saveState }: Props) {
     <section className="panel flex flex-col gap-5 p-5 md:flex-row md:items-center" aria-label="Tổng quan kho">
       <div className="flex items-center gap-4">
         <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-gold-strong to-gold text-2xl font-extrabold text-bg">
-          {user.username[0]?.toUpperCase()}
+          {user.displayName[0]?.toUpperCase() ?? 'U'}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold">{user.username}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-xl font-bold">{user.displayName}</h1>
+            {user.role === 'admin' && (
+              <span className="rounded bg-gold/20 px-2 py-0.5 text-xs font-bold text-gold-strong">
+                Admin
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted">
-            {user.isGuest ? 'Chế độ Khách · lưu trên trình duyệt' : (user.email ?? '')}
+            {user.isGuest
+              ? 'Chế độ Khách · lưu trên trình duyệt'
+              : `UID: ${user.uid}${user.email ? ` · ${user.email}` : ''}`}
           </p>
           <SaveIndicator state={saveState} />
         </div>

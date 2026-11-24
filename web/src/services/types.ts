@@ -1,23 +1,119 @@
 import type { Inventory } from '@/domain/inventory'
+import type { MatchSide, RuleSet, RuleSetConfig } from '@/domain/ruleset'
+
+export type UserRole = 'player' | 'admin' | 'guest'
 
 export interface User {
   id: string
-  username: string
+  uid: string
+  displayName: string
   email: string | null
+  role: UserRole
   isGuest: boolean
   createdAt: string
 }
 
+export interface AuthConfig {
+  requireEmail: boolean
+}
+
 export interface LoginInput {
-  username: string
+  uid: string
   password: string
   remember: boolean
 }
 
 export interface RegisterInput {
-  username: string
-  email: string
+  uid: string
+  displayName: string
+  email?: string
   password: string
+}
+
+export interface RuleSetUpsertInput {
+  name: string
+  description: string
+  isActive: boolean
+  isDefault: boolean
+  config: RuleSetConfig
+}
+
+export type MatchStatus = 'lobby' | 'drafting' | 'weapon_phase' | 'scoring' | 'finished'
+export type WinnerSide = MatchSide | 'draw'
+
+export interface ChamberTimeInput {
+  minutes: number
+  seconds: number
+}
+
+export interface MatchPlayerInfo {
+  userId: string
+  uid: string
+  displayName: string
+  ownedCount: number
+}
+
+export interface MatchPickSlot {
+  slot: number
+  characterSlug: string
+  constellation: number
+  level: number
+  characterCost: number
+  weaponSlug: string | null
+  refinement: number
+  weaponCost: number
+  totalSlotCost: number
+}
+
+export interface SideOwnedChar {
+  slug: string
+  constellation: number
+  level: number
+}
+
+export interface SideState {
+  player: MatchPlayerInfo | null
+  ready: boolean
+  ownedCharacters: Record<string, SideOwnedChar>
+  bans: (string | null)[]
+  picks: MatchPickSlot[]
+  totalCost: number
+  costPenaltySeconds: number
+  weaponsLocked: boolean
+  chambers: ChamberTimeInput[] | null
+  chamberDiffs: number[] | null
+  chamberTotalSeconds: number | null
+  finalScore: number | null
+  scoreSubmitted: boolean
+}
+
+export interface MatchState {
+  code: string
+  status: MatchStatus
+  rulesetId: string
+  rulesetName: string
+  ruleset: RuleSetConfig
+  hostUserId: string
+  sides: Record<MatchSide, SideState>
+  currentStepIndex: number
+  turnDeadlineAt: string | null
+  winnerSide: WinnerSide | null
+  createdAt: string
+  finishedAt: string | null
+}
+
+export interface MatchSummary {
+  id: string
+  code: string
+  rulesetName: string
+  status: MatchStatus
+  winnerSide: WinnerSide | null
+  bluePlayer: MatchPlayerInfo | null
+  redPlayer: MatchPlayerInfo | null
+  blueFinalScore: number | null
+  redFinalScore: number | null
+  createdAt: string
+  finishedAt: string | null
 }
 
 /** Lỗi nghiệp vụ hiển thị được cho người dùng. */
@@ -30,8 +126,8 @@ export class ServiceError extends Error {
   }
 }
 
-/** Khớp 1-1 với /api/auth/* trong docs/BACKEND_PLAN.md */
 export interface AuthService {
+  getConfig(): Promise<AuthConfig>
   login(input: LoginInput): Promise<User>
   register(input: RegisterInput): Promise<User>
   loginAsGuest(): Promise<User>
@@ -39,8 +135,22 @@ export interface AuthService {
   getCurrentUser(): Promise<User | null>
 }
 
-/** Khớp với GET/PUT /api/me/inventory */
 export interface InventoryService {
   get(userId: string): Promise<Inventory>
   save(userId: string, inventory: Inventory): Promise<void>
+}
+
+export interface RuleSetService {
+  list(activeOnly?: boolean): Promise<RuleSet[]>
+  get(id: string): Promise<RuleSet>
+  create(input: RuleSetUpsertInput): Promise<RuleSet>
+  update(id: string, input: RuleSetUpsertInput): Promise<RuleSet>
+  remove(id: string): Promise<void>
+}
+
+export interface MatchService {
+  create(rulesetId: string): Promise<MatchState>
+  get(code: string): Promise<MatchState>
+  listMyMatches(): Promise<MatchSummary[]>
+  getWebSocketUrl(code: string): string
 }

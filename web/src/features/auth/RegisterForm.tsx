@@ -1,27 +1,42 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { authService } from '@/services'
 import { errorMessage, useAuthStore } from './authStore'
-import { registerSchema, type RegisterValues } from './schemas'
+import { createRegisterSchema, type RegisterValues } from './schemas'
 
 export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const registerUser = useAuthStore((s) => s.register)
   const [formError, setFormError] = useState<string | null>(null)
+  const [requireEmail, setRequireEmail] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    void authService.getConfig().then((cfg) => {
+      if (mounted) setRequireEmail(cfg.requireEmail)
+    })
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const schema = useMemo(() => createRegisterSchema(requireEmail), [requireEmail])
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { username: '', email: '', password: '', confirmPassword: '' },
+    resolver: zodResolver(schema),
+    defaultValues: { uid: '', displayName: '', email: '', password: '', confirmPassword: '' },
   })
 
-  const onSubmit = handleSubmit(async ({ username, email, password }) => {
+  const onSubmit = handleSubmit(async ({ uid, displayName, email, password }) => {
     setFormError(null)
     try {
-      await registerUser({ username, email, password })
+      await registerUser({ uid, displayName, email: email || undefined, password })
       onSuccess()
     } catch (err) {
       setFormError(errorMessage(err))
@@ -36,15 +51,24 @@ export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       )}
       <Input
-        label="Tên đăng nhập"
+        label="UID Genshin"
+        inputMode="numeric"
+        placeholder="9–10 chữ số (vd: 801234567)"
         autoComplete="username"
         autoFocus
-        hint="3–20 ký tự: chữ không dấu, số, dấu gạch dưới."
-        error={errors.username?.message}
-        {...register('username')}
+        hint="Dùng làm mã định danh đăng nhập và hiển thị khi vào trận."
+        error={errors.uid?.message}
+        {...register('uid')}
       />
       <Input
-        label="Email"
+        label="Tên hiển thị"
+        placeholder="Tên bạn muốn hiện trong phòng đấu"
+        autoComplete="nickname"
+        error={errors.displayName?.message}
+        {...register('displayName')}
+      />
+      <Input
+        label={requireEmail ? 'Email' : 'Email (không bắt buộc)'}
         type="email"
         autoComplete="email"
         error={errors.email?.message}

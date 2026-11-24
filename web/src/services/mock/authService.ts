@@ -2,10 +2,8 @@ import { fakeLatency, readJSON, removeKey, writeJSON } from '@/lib/storage'
 import { ServiceError, type AuthService, type User } from '../types'
 
 /**
- * ⚠️ CHỈ ĐỂ DEMO UI. Tài khoản lưu trong localStorage, không an toàn.
- * Sẽ được thay bằng services/http khi có backend.
+ * ⚠️ CHỈ ĐỂ DEMO/TEST CỤC BỘ. Backend thật nằm ở `services/http`.
  */
-
 interface StoredUser extends User {
   passwordHash: string
 }
@@ -16,8 +14,10 @@ const GUEST_ID = 'guest'
 
 const GUEST_USER: User = {
   id: GUEST_ID,
-  username: 'Khách',
+  uid: '000000000',
+  displayName: 'Khách',
   email: null,
+  role: 'guest',
   isGuest: true,
   createdAt: new Date(0).toISOString(),
 }
@@ -42,31 +42,37 @@ function setSession(userId: string, remember: boolean) {
 }
 
 export const mockAuthService: AuthService = {
-  async login({ username, password, remember }) {
+  async getConfig() {
+    return { requireEmail: false }
+  },
+
+  async login({ uid, password, remember }) {
     await fakeLatency()
-    const user = loadUsers()[username.trim().toLowerCase()]
+    const user = loadUsers()[uid.trim()]
     if (!user || user.passwordHash !== (await hash(password))) {
-      throw new ServiceError('INVALID_CREDENTIALS', 'Sai tên đăng nhập hoặc mật khẩu.')
+      throw new ServiceError('INVALID_CREDENTIALS', 'Sai UID hoặc mật khẩu.')
     }
     setSession(user.id, remember)
     return toPublic(user)
   },
 
-  async register({ username, email, password }) {
+  async register({ uid, displayName, email, password }) {
     await fakeLatency()
     const users = loadUsers()
-    const key = username.trim().toLowerCase()
+    const key = uid.trim()
     if (users[key]) {
-      throw new ServiceError('USERNAME_TAKEN', 'Tên đăng nhập đã tồn tại.')
+      throw new ServiceError('UID_TAKEN', 'UID này đã được đăng ký.')
     }
-    const normalizedEmail = email.trim().toLowerCase()
-    if (Object.values(users).some((u) => u.email === normalizedEmail)) {
+    const normalizedEmail = email?.trim() ? email.trim().toLowerCase() : null
+    if (normalizedEmail && Object.values(users).some((u) => u.email === normalizedEmail)) {
       throw new ServiceError('EMAIL_TAKEN', 'Email đã được sử dụng.')
     }
     const user: StoredUser = {
       id: crypto.randomUUID(),
-      username: username.trim(),
+      uid: key,
+      displayName: displayName.trim(),
       email: normalizedEmail,
+      role: 'player',
       isGuest: false,
       createdAt: new Date().toISOString(),
       passwordHash: await hash(password),

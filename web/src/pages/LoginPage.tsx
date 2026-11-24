@@ -4,12 +4,12 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { FullPageSpinner } from '@/components/ui/Spinner'
 import { Toaster } from '@/components/ui/Toaster'
+import { toast } from '@/components/ui/toast'
 import { BRAND } from '@/config/brand'
 import { CHARACTERS } from '@/domain/characters'
 import { errorMessage, useAuthStore } from '@/features/auth/authStore'
 import { LoginForm } from '@/features/auth/LoginForm'
 import { RegisterForm } from '@/features/auth/RegisterForm'
-import { toast } from '@/components/ui/toast'
 
 type Mode = 'login' | 'register'
 
@@ -44,7 +44,7 @@ export function LoginPage({ mode }: { mode: Mode }) {
     setGuestLoading(true)
     try {
       await loginAsGuest()
-      toast.info('Bạn đang dùng chế độ Khách — dữ liệu chỉ lưu trên trình duyệt này.')
+      toast.info('Bạn đang dùng chế độ Khách — kho lưu trên trình duyệt và có thể xem Bộ luật / theo dõi trận.')
       goNext()
     } catch (err) {
       toast.error(errorMessage(err))
@@ -99,30 +99,16 @@ export function LoginPage({ mode }: { mode: Mode }) {
             <span className="h-px flex-1 bg-line" />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Button disabled title="Sắp ra mắt" className="w-full">
-              <DiscordIcon /> Đăng nhập bằng Discord
-              <span className="rounded bg-bg/60 px-1.5 py-0.5 text-[10px] text-muted">Sắp có</span>
-            </Button>
-            <Button variant="ghost" className="w-full" loading={guestLoading} onClick={onGuest}>
-              Vào với tư cách Khách
-            </Button>
-          </div>
+          <Button variant="ghost" className="w-full border border-line/70" loading={guestLoading} onClick={onGuest}>
+            Vào với tư cách Khách
+          </Button>
         </div>
 
         <p className="mt-4 text-center text-xs text-muted/80">
-          Bản demo: tài khoản được lưu trên trình duyệt, đừng dùng mật khẩu thật.
+          Đăng nhập bằng UID Genshin để lưu kho nhân vật trên máy chủ và tạo phòng Ban/Pick 1v1.
         </p>
       </div>
       <Toaster />
     </div>
-  )
-}
-
-function DiscordIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden="true">
-      <path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.3a18.4 18.4 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18.1a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.8 19.8 0 0 0 6-3c.5-5.2-.9-9.7-3.6-13.7ZM8 15.4c-1.2 0-2.2-1.1-2.2-2.4S6.8 10.6 8 10.6s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4Z" />
-    </svg>
   )
 }

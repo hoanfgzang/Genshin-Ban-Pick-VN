@@ -1,20 +1,19 @@
 import { Link, NavLink, Outlet } from 'react-router'
+import { Toaster } from '@/components/ui/Toaster'
 import { BRAND } from '@/config/brand'
 import { cn } from '@/lib/cn'
-import { Toaster } from '@/components/ui/Toaster'
 import { UserMenu } from './UserMenu'
 
 interface NavItem {
   to: string
   label: string
-  soon?: boolean
 }
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Trang chủ' },
   { to: '/profile', label: 'Kho nhân vật' },
-  { to: '/rules', label: 'Bộ luật', soon: true },
-  { to: '/lobby', label: 'Tạo trận', soon: true },
+  { to: '/rules', label: 'Bộ luật' },
+  { to: '/lobby', label: 'Tạo trận' },
 ]
 
 export function AppShell() {
@@ -33,33 +32,21 @@ export function AppShell() {
             className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Điều hướng chính"
           >
-            {NAV.map((item) =>
-              item.soon ? (
-                <span
-                  key={item.to}
-                  className="hidden shrink-0 cursor-not-allowed items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted/60 md:flex"
-                  title="Sắp ra mắt"
-                  aria-disabled="true"
-                >
-                  {item.label}
-                  <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[10px] text-muted">Sắp có</span>
-                </span>
-              ) : (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === '/'}
-                  className={({ isActive }) =>
-                    cn(
-                      'shrink-0 rounded-md px-2.5 py-2 text-xs font-medium whitespace-nowrap transition sm:px-3 sm:text-sm',
-                      isActive ? 'bg-gold/10 text-gold-strong' : 'text-muted hover:text-text',
-                    )
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ),
-            )}
+            {NAV.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  cn(
+                    'shrink-0 rounded-md px-2.5 py-2 text-xs font-medium whitespace-nowrap transition sm:px-3 sm:text-sm',
+                    isActive ? 'bg-gold/10 text-gold-strong' : 'text-muted hover:text-text',
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </nav>
 
           <UserMenu />

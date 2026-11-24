@@ -15,7 +15,7 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: '', password: '', remember: true },
+    defaultValues: { uid: '', password: '', remember: true },
   })
 
   const onSubmit = handleSubmit(async (values) => {
@@ -36,11 +36,13 @@ export function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
       )}
       <Input
-        label="Tên đăng nhập"
+        label="UID Genshin"
+        inputMode="numeric"
+        placeholder="Ví dụ: 801234567"
         autoComplete="username"
         autoFocus
-        error={errors.username?.message}
-        {...register('username')}
+        error={errors.uid?.message}
+        {...register('uid')}
       />
       <Input
         label="Mật khẩu"

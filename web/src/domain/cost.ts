@@ -1,0 +1,102 @@
+import { getCharacter } from './characters'
+import type { CostRules } from './ruleset'
+import { getWeapon } from './weapons'
+
+export const CHAMBER_BASE_SECONDS = 540
+
+export function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+export function calcCharacterCost(
+  slug: string,
+  constellation: number,
+  costRules: CostRules,
+): number {
+  const c = Math.max(0, Math.min(6, Math.trunc(constellation)))
+  const override = costRules.characterOverrides[slug]
+  if (override && override.length === 7) {
+    return round2(override[c] ?? 0)
+  }
+  const char = getCharacter(slug)
+  const rarity = char?.rarity ?? 5
+  const table = rarity >= 5 ? costRules.defaultChar5Costs : costRules.defaultChar4Costs
+  return round2(table[c] ?? 0)
+}
+
+export function calcWeaponCost(
+  slug: string | null | undefined,
+  refinement: number,
+  costRules: CostRules,
+): number {
+  if (!slug) return 0
+  const idx = Math.max(0, Math.min(4, Math.trunc(refinement) - 1))
+  const override = costRules.weaponOverrides[slug]
+  if (override && override.length === 5) {
+    return round2(override[idx] ?? 0)
+  }
+  const weapon = getWeapon(slug)
+  const rarity = weapon?.rarity ?? 4
+  const table =
+    rarity >= 5
+      ? costRules.defaultWeapon5Costs
+      : rarity === 4
+        ? costRules.defaultWeapon4Costs
+        : costRules.defaultWeapon3Costs
+  return round2(table[idx] ?? 0)
+}
+
+export function calcCostPenaltySeconds(totalCost: number, costRules: CostRules): number {
+  const cost = Math.max(0, totalCost)
+  if (cost <= 0) return 0
+
+  if (!costRules.milestones.length) {
+    return round2(cost * costRules.baseSecondsPerCost)
+  }
+
+  const milestones = [...costRules.milestones].sort((a, b) => a.minCost - b.minCost)
+  let totalSeconds = 0
+
+  const firstMin = milestones[0].minCost
+  if (firstMin > 0) {
+    totalSeconds += Math.min(cost, firstMin) * costRules.baseSecondsPerCost
+  }
+
+  for (const m of milestones) {
+    if (cost >= m.minCost && (m.minCost === 0 ? cost > 0 : true)) {
+      totalSeconds += m.bonusSeconds
+    }
+    if (cost > m.minCost) {
+      const upper = m.maxCost ?? Number.POSITIVE_INFINITY
+      const portion = Math.min(cost, upper) - m.minCost
+      if (portion > 0) {
+        totalSeconds += portion * m.secondsPerCost
+      }
+    }
+  }
+
+  const lastMax = milestones[milestones.length - 1].maxCost
+  if (lastMax !== null && cost > lastMax) {
+    totalSeconds += (cost - lastMax) * costRules.baseSecondsPerCost
+  }
+
+  return round2(totalSeconds)
+}
+
+export function calcChamberDiff(minutes: number, seconds: number): number | null {
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return null
+  if (minutes < 0 || minutes > 9 || seconds < 0 || seconds > 59) return null
+  const entered = Math.trunc(minutes) * 60 + Math.trunc(seconds)
+  if (entered > CHAMBER_BASE_SECONDS) return null
+  return CHAMBER_BASE_SECONDS - entered
+}
+
+export function formatCost(cost: number): string {
+  const r = round2(cost)
+  return Number.isInteger(r) ? String(r) : r.toFixed(2).replace(/\.?0+$/, '')
+}
+
+export function formatSeconds(sec: number): string {
+  const r = round2(sec)
+  return Number.isInteger(r) ? `${r}s` : `${r.toFixed(1)}s`
+}

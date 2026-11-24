@@ -1,12 +1,16 @@
-/**
- * Điểm chuyển đổi duy nhất giữa mock (localStorage) và backend thật.
- * GĐ4: thêm services/http/* và chọn theo import.meta.env.VITE_API_MODE.
- */
+import { httpAuthService } from './http/authService'
+import { httpInventoryService } from './http/inventoryService'
+import { httpMatchService } from './http/matchService'
+import { httpRuleSetService } from './http/rulesetService'
 import { mockAuthService } from './mock/authService'
 import { mockInventoryService } from './mock/inventoryService'
-import type { AuthService, InventoryService } from './types'
+import type { AuthService, InventoryService, MatchService, RuleSetService } from './types'
 
-export const authService: AuthService = mockAuthService
-export const inventoryService: InventoryService = mockInventoryService
+const useMock = import.meta.env.VITE_API_MODE === 'mock'
+
+export const authService: AuthService = useMock ? mockAuthService : httpAuthService
+export const inventoryService: InventoryService = useMock ? mockInventoryService : httpInventoryService
+export const rulesetService: RuleSetService = httpRuleSetService
+export const matchService: MatchService = httpMatchService
 
 export * from './types'

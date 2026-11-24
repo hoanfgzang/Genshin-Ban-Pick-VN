@@ -14,19 +14,22 @@ const FEATURES = [
     title: 'Kho nhân vật cá nhân',
     status: 'Sẵn sàng',
     ready: true,
-    desc: 'Lưu danh sách nhân vật sở hữu kèm cung mệnh (C0–C6) và level (90/95/100). Hỗ trợ chọn nhanh và nhập/xuất JSON.',
+    to: '/profile',
+    desc: 'Lưu danh sách nhân vật sở hữu kèm cung mệnh (C0–C6) và level (90/95/100). Khi vào trận sẽ tự động lấy đúng dữ liệu kho.',
   },
   {
-    title: 'Bộ luật & Chế độ chơi',
-    status: 'Giai đoạn 2',
-    ready: false,
-    desc: 'Tùy chọn thứ tự ban/pick, giới hạn thời gian mỗi lượt và quy tắc thi đấu linh hoạt cho từng giải.',
+    title: 'Bộ luật & Hệ thống Cost',
+    status: 'Sẵn sàng',
+    ready: true,
+    to: '/rules',
+    desc: 'Tra cứu Cost nhân vật (4★/5★ theo C0–C6), Cost vũ khí (R1–R5), thứ tự lượt Ban/Pick và bảng mốc quy đổi giây do Admin điều chỉnh.',
   },
   {
-    title: 'Ban/Pick Realtime & Cân bằng',
-    status: 'Giai đoạn 3–5',
-    ready: false,
-    desc: 'Tạo phòng đấu 1v1 tương tác thời gian thực cùng cơ chế tính điểm cân bằng giữa hai tài khoản ngay trong trận.',
+    title: 'Ban/Pick Realtime & Tính điểm',
+    status: 'Sẵn sàng',
+    ready: true,
+    to: '/lobby',
+    desc: 'Tạo phòng đấu 1v1 (Xanh Dương vs Đỏ), gắn vũ khí ngay lúc Pick hoặc pha chờ, nhập thời gian 3 ải (mốc 9:00) để phân định thắng thua.',
   },
 ]
 
@@ -49,13 +52,18 @@ export function HomePage() {
 
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             {user ? (
-              <Link to="/profile" className={buttonClass('primary', 'lg')}>
-                Mở kho nhân vật
-              </Link>
+              <>
+                <Link to="/lobby" className={buttonClass('primary', 'lg')}>
+                  Tạo phòng đấu 1v1
+                </Link>
+                <Link to="/profile" className={buttonClass('secondary', 'lg')}>
+                  Mở kho nhân vật
+                </Link>
+              </>
             ) : (
               <>
                 <Link to="/login" className={buttonClass('primary', 'lg')}>
-                  Bắt đầu ngay
+                  Đăng nhập bằng UID
                 </Link>
                 <Link to="/register" className={buttonClass('secondary', 'lg')}>
                   Đăng ký tài khoản
@@ -80,7 +88,11 @@ export function HomePage() {
 
       <section className="grid gap-4 md:grid-cols-3" aria-label="Tính năng chính">
         {FEATURES.map((f) => (
-          <article key={f.title} className="panel flex flex-col gap-2.5 p-5">
+          <Link
+            key={f.title}
+            to={f.to}
+            className="panel flex flex-col gap-2.5 p-5 transition hover:border-gold/50 hover:-translate-y-0.5"
+          >
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-base font-bold text-text">{f.title}</h2>
               <span
@@ -93,7 +105,7 @@ export function HomePage() {
               </span>
             </div>
             <p className="text-sm leading-relaxed text-muted">{f.desc}</p>
-          </article>
+          </Link>
         ))}
       </section>
     </div>

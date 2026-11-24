@@ -1,0 +1,2146 @@
+[
+  {
+    "id": "15502",
+    "slug": "amos-bow",
+    "name": "Amos' Bow",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/amos-bow.png"
+  },
+  {
+    "id": "15508",
+    "slug": "aqua-simulacra",
+    "name": "Aqua Simulacra",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/aqua-simulacra.png"
+  },
+  {
+    "id": "15514",
+    "slug": "astral-vulture-s-crimson-plumage",
+    "name": "Astral Vulture's Crimson Plumage",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/astral-vulture-s-crimson-plumage.png"
+  },
+  {
+    "id": "15503",
+    "slug": "elegy-for-the-end",
+    "name": "Elegy for the End",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/elegy-for-the-end.png"
+  },
+  {
+    "id": "15516",
+    "slug": "golden-frostbound-oath",
+    "name": "Golden Frostbound Oath",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/golden-frostbound-oath.png"
+  },
+  {
+    "id": "15511",
+    "slug": "hunter-s-path",
+    "name": "Hunter's Path",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/hunter-s-path.png"
+  },
+  {
+    "id": "15507",
+    "slug": "polar-star",
+    "name": "Polar Star",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/polar-star.png"
+  },
+  {
+    "id": "15513",
+    "slug": "silvershower-heartstrings",
+    "name": "Silvershower Heartstrings",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/silvershower-heartstrings.png"
+  },
+  {
+    "id": "15501",
+    "slug": "skyward-harp",
+    "name": "Skyward Harp",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/skyward-harp.png"
+  },
+  {
+    "id": "350002",
+    "slug": "starpiercer-sublimation",
+    "name": "Starpiercer - Sublimation",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/starpiercer-sublimation.png"
+  },
+  {
+    "id": "15515",
+    "slug": "the-daybreak-chronicles",
+    "name": "The Daybreak Chronicles",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/the-daybreak-chronicles.png"
+  },
+  {
+    "id": "15512",
+    "slug": "the-first-great-magic",
+    "name": "The First Great Magic",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/the-first-great-magic.png"
+  },
+  {
+    "id": "15509",
+    "slug": "thundering-pulse",
+    "name": "Thundering Pulse",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/thundering-pulse.png"
+  },
+  {
+    "id": "350004",
+    "slug": "yayu-sublimation",
+    "name": "Yayu - Sublimation",
+    "rarity": 5,
+    "weaponType": "bow",
+    "icon": "/weapons/yayu-sublimation.png"
+  },
+  {
+    "id": "14511",
+    "slug": "a-thousand-floating-dreams",
+    "name": "A Thousand Floating Dreams",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/a-thousand-floating-dreams.png"
+  },
+  {
+    "id": "14523",
+    "slug": "angelos-heptades",
+    "name": "Angelos' Heptades",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/angelos-heptades.png"
+  },
+  {
+    "id": "14513",
+    "slug": "cashflow-supervision",
+    "name": "Cashflow Supervision",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/cashflow-supervision.png"
+  },
+  {
+    "id": "14515",
+    "slug": "crane-s-echoing-call",
+    "name": "Crane's Echoing Call",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/crane-s-echoing-call.png"
+  },
+  {
+    "id": "340004",
+    "slug": "dawnstar-of-shahar-sublimation",
+    "name": "Dawnstar of Shahar - Sublimation",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/dawnstar-of-shahar-sublimation.png"
+  },
+  {
+    "id": "14506",
+    "slug": "everlasting-moonglow",
+    "name": "Everlasting Moonglow",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/everlasting-moonglow.png"
+  },
+  {
+    "id": "340002",
+    "slug": "hallowed-fetters-sublimation",
+    "name": "Hallowed Fetters - Sublimation",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/hallowed-fetters-sublimation.png"
+  },
+  {
+    "id": "14524",
+    "slug": "hymn-of-the-maelstrom",
+    "name": "Hymn of the Maelstrom",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/hymn-of-the-maelstrom.png"
+  },
+  {
+    "id": "14505",
+    "slug": "jadefall-s-splendor",
+    "name": "Jadefall's Splendor",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/jadefall-s-splendor.png"
+  },
+  {
+    "id": "14509",
+    "slug": "kagura-s-verity",
+    "name": "Kagura's Verity",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/kagura-s-verity.png"
+  },
+  {
+    "id": "14502",
+    "slug": "lost-prayer-to-the-sacred-winds",
+    "name": "Lost Prayer to the Sacred Winds",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/lost-prayer-to-the-sacred-winds.png"
+  },
+  {
+    "id": "14504",
+    "slug": "memory-of-dust",
+    "name": "Memory of Dust",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/memory-of-dust.png"
+  },
+  {
+    "id": "14520",
+    "slug": "nightweaver-s-looking-glass",
+    "name": "Nightweaver's Looking Glass",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/nightweaver-s-looking-glass.png"
+  },
+  {
+    "id": "14522",
+    "slug": "nocturne-s-curtain-call",
+    "name": "Nocturne's Curtain Call",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/nocturne-s-curtain-call.png"
+  },
+  {
+    "id": "14521",
+    "slug": "reliquary-of-truth",
+    "name": "Reliquary of Truth",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/reliquary-of-truth.png"
+  },
+  {
+    "id": "14501",
+    "slug": "skyward-atlas",
+    "name": "Skyward Atlas",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/skyward-atlas.png"
+  },
+  {
+    "id": "14517",
+    "slug": "starcaller-s-watch",
+    "name": "Starcaller's Watch",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/starcaller-s-watch.png"
+  },
+  {
+    "id": "14525",
+    "slug": "starsealed-edict",
+    "name": "Starsealed Edict",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/starsealed-edict.png"
+  },
+  {
+    "id": "14518",
+    "slug": "sunny-morning-sleep-in",
+    "name": "Sunny Morning Sleep-In",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/sunny-morning-sleep-in.png"
+  },
+  {
+    "id": "14516",
+    "slug": "surf-s-up",
+    "name": "Surf's Up",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/surf-s-up.png"
+  },
+  {
+    "id": "14514",
+    "slug": "tome-of-the-eternal-flow",
+    "name": "Tome of the Eternal Flow",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/tome-of-the-eternal-flow.png"
+  },
+  {
+    "id": "14512",
+    "slug": "tulaytullah-s-remembrance",
+    "name": "Tulaytullah's Remembrance",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/tulaytullah-s-remembrance.png"
+  },
+  {
+    "id": "14519",
+    "slug": "vivid-notions",
+    "name": "Vivid Notions",
+    "rarity": 5,
+    "weaponType": "catalyst",
+    "icon": "/weapons/vivid-notions.png"
+  },
+  {
+    "id": "12516",
+    "slug": "a-teaspoon-of-transcendence",
+    "name": "A Teaspoon of Transcendence",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/a-teaspoon-of-transcendence.png"
+  },
+  {
+    "id": "12514",
+    "slug": "a-thousand-blazing-suns",
+    "name": "A Thousand Blazing Suns",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/a-thousand-blazing-suns.png"
+  },
+  {
+    "id": "320002",
+    "slug": "ardent-storm-sublimation",
+    "name": "Ardent Storm - Sublimation",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/ardent-storm-sublimation.png"
+  },
+  {
+    "id": "12511",
+    "slug": "beacon-of-the-reed-sea",
+    "name": "Beacon of the Reed Sea",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/beacon-of-the-reed-sea.png"
+  },
+  {
+    "id": "12513",
+    "slug": "fang-of-the-mountain-king",
+    "name": "Fang of the Mountain King",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/fang-of-the-mountain-king.png"
+  },
+  {
+    "id": "12515",
+    "slug": "gest-of-the-mighty-wolf",
+    "name": "Gest of the Mighty Wolf",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/gest-of-the-mighty-wolf.png"
+  },
+  {
+    "id": "12510",
+    "slug": "redhorn-stonethresher",
+    "name": "Redhorn Stonethresher",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/redhorn-stonethresher.png"
+  },
+  {
+    "id": "320004",
+    "slug": "silver-radiance-of-gradlon-sublimation",
+    "name": "Silver Radiance of Gradlon - Sublimation",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/silver-radiance-of-gradlon-sublimation.png"
+  },
+  {
+    "id": "12501",
+    "slug": "skyward-pride",
+    "name": "Skyward Pride",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/skyward-pride.png"
+  },
+  {
+    "id": "12503",
+    "slug": "song-of-broken-pines",
+    "name": "Song of Broken Pines",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/song-of-broken-pines.png"
+  },
+  {
+    "id": "12504",
+    "slug": "the-unforged",
+    "name": "The Unforged",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/the-unforged.png"
+  },
+  {
+    "id": "12512",
+    "slug": "verdict",
+    "name": "Verdict",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/verdict.png"
+  },
+  {
+    "id": "12502",
+    "slug": "wolf-s-gravestone",
+    "name": "Wolf's Gravestone",
+    "rarity": 5,
+    "weaponType": "claymore",
+    "icon": "/weapons/wolf-s-gravestone.png"
+  },
+  {
+    "id": "13516",
+    "slug": "bloodsoaked-ruins",
+    "name": "Bloodsoaked Ruins",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/bloodsoaked-ruins.png"
+  },
+  {
+    "id": "13507",
+    "slug": "calamity-queller",
+    "name": "Calamity Queller",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/calamity-queller.png"
+  },
+  {
+    "id": "13512",
+    "slug": "crimson-moon-s-semblance",
+    "name": "Crimson Moon's Semblance",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/crimson-moon-s-semblance.png"
+  },
+  {
+    "id": "13517",
+    "slug": "disaster-and-remorse",
+    "name": "Disaster and Remorse",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/disaster-and-remorse.png"
+  },
+  {
+    "id": "13509",
+    "slug": "engulfing-lightning",
+    "name": "Engulfing Lightning",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/engulfing-lightning.png"
+  },
+  {
+    "id": "13515",
+    "slug": "fractured-halo",
+    "name": "Fractured Halo",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/fractured-halo.png"
+  },
+  {
+    "id": "13513",
+    "slug": "lumidouce-elegy",
+    "name": "Lumidouce Elegy",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/lumidouce-elegy.png"
+  },
+  {
+    "id": "13505",
+    "slug": "primordial-jade-winged-spear",
+    "name": "Primordial Jade Winged-Spear",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/primordial-jade-winged-spear.png"
+  },
+  {
+    "id": "330002",
+    "slug": "shattered-moon-sublimation",
+    "name": "Shattered Moon - Sublimation",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/shattered-moon-sublimation.png"
+  },
+  {
+    "id": "13502",
+    "slug": "skyward-spine",
+    "name": "Skyward Spine",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/skyward-spine.png"
+  },
+  {
+    "id": "13501",
+    "slug": "staff-of-homa",
+    "name": "Staff of Homa",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/staff-of-homa.png"
+  },
+  {
+    "id": "13511",
+    "slug": "staff-of-the-scarlet-sands",
+    "name": "Staff of the Scarlet Sands",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/staff-of-the-scarlet-sands.png"
+  },
+  {
+    "id": "330004",
+    "slug": "starlight-of-fylkir-sublimation",
+    "name": "Starlight of Fylkir - Sublimation",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/starlight-of-fylkir-sublimation.png"
+  },
+  {
+    "id": "13514",
+    "slug": "symphonist-of-scents",
+    "name": "Symphonist of Scents",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/symphonist-of-scents.png"
+  },
+  {
+    "id": "13504",
+    "slug": "vortex-vanquisher",
+    "name": "Vortex Vanquisher",
+    "rarity": 5,
+    "weaponType": "polearm",
+    "icon": "/weapons/vortex-vanquisher.png"
+  },
+  {
+    "id": "11515",
+    "slug": "absolution",
+    "name": "Absolution",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/absolution.png"
+  },
+  {
+    "id": "11501",
+    "slug": "aquila-favonia",
+    "name": "Aquila Favonia",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/aquila-favonia.png"
+  },
+  {
+    "id": "11518",
+    "slug": "athame-artis",
+    "name": "Athame Artis",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/athame-artis.png"
+  },
+  {
+    "id": "11517",
+    "slug": "azurelight",
+    "name": "Azurelight",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/azurelight.png"
+  },
+  {
+    "id": "11522",
+    "slug": "beyond-the-chrysalis",
+    "name": "Beyond the Chrysalis",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/beyond-the-chrysalis.png"
+  },
+  {
+    "id": "11521",
+    "slug": "exaiphanes-blade",
+    "name": "Exaiphanes Blade",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/exaiphanes-blade.png"
+  },
+  {
+    "id": "11503",
+    "slug": "freedom-sworn",
+    "name": "Freedom-Sworn",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/freedom-sworn.png"
+  },
+  {
+    "id": "310004",
+    "slug": "golden-bough-of-nemorensis-sublimation",
+    "name": "Golden Bough of Nemorensis - Sublimation",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/golden-bough-of-nemorensis-sublimation.png"
+  },
+  {
+    "id": "11510",
+    "slug": "haran-geppaku-futsu",
+    "name": "Haran Geppaku Futsu",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/haran-geppaku-futsu.png"
+  },
+  {
+    "id": "11511",
+    "slug": "key-of-khaj-nisut",
+    "name": "Key of Khaj-Nisut",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/key-of-khaj-nisut.png"
+  },
+  {
+    "id": "11512",
+    "slug": "light-of-foliar-incision",
+    "name": "Light of Foliar Incision",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/light-of-foliar-incision.png"
+  },
+  {
+    "id": "11519",
+    "slug": "lightbearing-moonshard",
+    "name": "Lightbearing Moonshard",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/lightbearing-moonshard.png"
+  },
+  {
+    "id": "11509",
+    "slug": "mistsplitter-reforged",
+    "name": "Mistsplitter Reforged",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/mistsplitter-reforged.png"
+  },
+  {
+    "id": "11516",
+    "slug": "peak-patrol-song",
+    "name": "Peak Patrol Song",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/peak-patrol-song.png"
+  },
+  {
+    "id": "11505",
+    "slug": "primordial-jade-cutter",
+    "name": "Primordial Jade Cutter",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/primordial-jade-cutter.png"
+  },
+  {
+    "id": "310002",
+    "slug": "serpent-devourer-sublimation",
+    "name": "Serpent Devourer - Sublimation",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/serpent-devourer-sublimation.png"
+  },
+  {
+    "id": "11502",
+    "slug": "skyward-blade",
+    "name": "Skyward Blade",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/skyward-blade.png"
+  },
+  {
+    "id": "11513",
+    "slug": "splendor-of-tranquil-waters",
+    "name": "Splendor of Tranquil Waters",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/splendor-of-tranquil-waters.png"
+  },
+  {
+    "id": "11504",
+    "slug": "summit-shaper",
+    "name": "Summit Shaper",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/summit-shaper.png"
+  },
+  {
+    "id": "11514",
+    "slug": "uraku-misugiri",
+    "name": "Uraku Misugiri",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/uraku-misugiri.png"
+  },
+  {
+    "id": "11520",
+    "slug": "whitelake-frostfeather",
+    "name": "Whitelake Frostfeather",
+    "rarity": 5,
+    "weaponType": "sword",
+    "icon": "/weapons/whitelake-frostfeather.png"
+  },
+  {
+    "id": "15410",
+    "slug": "alley-hunter",
+    "name": "Alley Hunter",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/alley-hunter.png"
+  },
+  {
+    "id": "15408",
+    "slug": "blackcliff-warbow",
+    "name": "Blackcliff Warbow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/blackcliff-warbow.png"
+  },
+  {
+    "id": "15437",
+    "slug": "breezeborne-refrain",
+    "name": "Breezeborne Refrain",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/breezeborne-refrain.png"
+  },
+  {
+    "id": "15431",
+    "slug": "chain-breaker",
+    "name": "Chain Breaker",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/chain-breaker.png"
+  },
+  {
+    "id": "15426",
+    "slug": "cloudforged",
+    "name": "Cloudforged",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/cloudforged.png"
+  },
+  {
+    "id": "15407",
+    "slug": "compound-bow",
+    "name": "Compound Bow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/compound-bow.png"
+  },
+  {
+    "id": "15436",
+    "slug": "covenant-of-frost-and-snow",
+    "name": "Covenant of Frost and Snow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/covenant-of-frost-and-snow.png"
+  },
+  {
+    "id": "15418",
+    "slug": "end-of-the-line",
+    "name": "End of the Line",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/end-of-the-line.png"
+  },
+  {
+    "id": "15411",
+    "slug": "fading-twilight",
+    "name": "Fading Twilight",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/fading-twilight.png"
+  },
+  {
+    "id": "15401",
+    "slug": "favonius-warbow",
+    "name": "Favonius Warbow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/favonius-warbow.png"
+  },
+  {
+    "id": "15430",
+    "slug": "flower-wreathed-feathers",
+    "name": "Flower-Wreathed Feathers",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/flower-wreathed-feathers.png"
+  },
+  {
+    "id": "15414",
+    "slug": "hamayumi",
+    "name": "Hamayumi",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/hamayumi.png"
+  },
+  {
+    "id": "15419",
+    "slug": "ibis-piercer",
+    "name": "Ibis Piercer",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/ibis-piercer.png"
+  },
+  {
+    "id": "15435",
+    "slug": "jade-vista",
+    "name": "Jade Vista",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/jade-vista.png"
+  },
+  {
+    "id": "15417",
+    "slug": "king-s-squire",
+    "name": "King's Squire",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/king-s-squire.png"
+  },
+  {
+    "id": "15412",
+    "slug": "mitternachts-waltz",
+    "name": "Mitternachts Waltz",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/mitternachts-waltz.png"
+  },
+  {
+    "id": "15416",
+    "slug": "mouun-s-moon",
+    "name": "Mouun's Moon",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/mouun-s-moon.png"
+  },
+  {
+    "id": "15415",
+    "slug": "predator",
+    "name": "Predator",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/predator.png"
+  },
+  {
+    "id": "15406",
+    "slug": "prototype-crescent",
+    "name": "Prototype Crescent",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/prototype-crescent.png"
+  },
+  {
+    "id": "15434",
+    "slug": "rainbow-serpent-s-rain-bow",
+    "name": "Rainbow Serpent's Rain Bow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/rainbow-serpent-s-rain-bow.png"
+  },
+  {
+    "id": "15427",
+    "slug": "range-gauge",
+    "name": "Range Gauge",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/range-gauge.png"
+  },
+  {
+    "id": "15404",
+    "slug": "royal-bow",
+    "name": "Royal Bow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/royal-bow.png"
+  },
+  {
+    "id": "15405",
+    "slug": "rust",
+    "name": "Rust",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/rust.png"
+  },
+  {
+    "id": "15403",
+    "slug": "sacrificial-bow",
+    "name": "Sacrificial Bow",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/sacrificial-bow.png"
+  },
+  {
+    "id": "15424",
+    "slug": "scion-of-the-blazing-sun",
+    "name": "Scion of the Blazing Sun",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/scion-of-the-blazing-sun.png"
+  },
+  {
+    "id": "15432",
+    "slug": "sequence-of-solitude",
+    "name": "Sequence of Solitude",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/sequence-of-solitude.png"
+  },
+  {
+    "id": "15433",
+    "slug": "snare-hook",
+    "name": "Snare Hook",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/snare-hook.png"
+  },
+  {
+    "id": "15425",
+    "slug": "song-of-stillness",
+    "name": "Song of Stillness",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/song-of-stillness.png"
+  },
+  {
+    "id": "350001",
+    "slug": "starpiercer",
+    "name": "Starpiercer",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/starpiercer.png"
+  },
+  {
+    "id": "15402",
+    "slug": "the-stringless",
+    "name": "The Stringless",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/the-stringless.png"
+  },
+  {
+    "id": "15409",
+    "slug": "the-viridescent-hunt",
+    "name": "The Viridescent Hunt",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/the-viridescent-hunt.png"
+  },
+  {
+    "id": "15413",
+    "slug": "windblume-ode",
+    "name": "Windblume Ode",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/windblume-ode.png"
+  },
+  {
+    "id": "350003",
+    "slug": "yayu",
+    "name": "Yayu",
+    "rarity": 4,
+    "weaponType": "bow",
+    "icon": "/weapons/yayu.png"
+  },
+  {
+    "id": "14427",
+    "slug": "ash-graven-drinking-horn",
+    "name": "Ash-Graven Drinking Horn",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/ash-graven-drinking-horn.png"
+  },
+  {
+    "id": "14426",
+    "slug": "ballad-of-the-boundless-blue",
+    "name": "Ballad of the Boundless Blue",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/ballad-of-the-boundless-blue.png"
+  },
+  {
+    "id": "14408",
+    "slug": "blackcliff-agate",
+    "name": "Blackcliff Agate",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/blackcliff-agate.png"
+  },
+  {
+    "id": "14433",
+    "slug": "blackmarrow-lantern",
+    "name": "Blackmarrow Lantern",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/blackmarrow-lantern.png"
+  },
+  {
+    "id": "14435",
+    "slug": "clash-of-kings",
+    "name": "Clash of Kings",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/clash-of-kings.png"
+  },
+  {
+    "id": "14434",
+    "slug": "dawning-frost",
+    "name": "Dawning Frost",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/dawning-frost.png"
+  },
+  {
+    "id": "340003",
+    "slug": "dawnstar-of-shahar",
+    "name": "Dawnstar of Shahar",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/dawnstar-of-shahar.png"
+  },
+  {
+    "id": "14413",
+    "slug": "dodoco-tales",
+    "name": "Dodoco Tales",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/dodoco-tales.png"
+  },
+  {
+    "id": "14436",
+    "slug": "echoes-of-the-heart",
+    "name": "Echoes of the Heart",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/echoes-of-the-heart.png"
+  },
+  {
+    "id": "14432",
+    "slug": "etherlight-spindlelute",
+    "name": "Etherlight Spindlelute",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/etherlight-spindlelute.png"
+  },
+  {
+    "id": "14409",
+    "slug": "eye-of-perception",
+    "name": "Eye of Perception",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/eye-of-perception.png"
+  },
+  {
+    "id": "14401",
+    "slug": "favonius-codex",
+    "name": "Favonius Codex",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/favonius-codex.png"
+  },
+  {
+    "id": "14425",
+    "slug": "flowing-purity",
+    "name": "Flowing Purity",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/flowing-purity.png"
+  },
+  {
+    "id": "14412",
+    "slug": "frostbearer",
+    "name": "Frostbearer",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/frostbearer.png"
+  },
+  {
+    "id": "14417",
+    "slug": "fruit-of-fulfillment",
+    "name": "Fruit of Fulfillment",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/fruit-of-fulfillment.png"
+  },
+  {
+    "id": "14414",
+    "slug": "hakushin-ring",
+    "name": "Hakushin Ring",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/hakushin-ring.png"
+  },
+  {
+    "id": "340001",
+    "slug": "hallowed-fetters",
+    "name": "Hallowed Fetters",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/hallowed-fetters.png"
+  },
+  {
+    "id": "14407",
+    "slug": "mappa-mare",
+    "name": "Mappa Mare",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/mappa-mare.png"
+  },
+  {
+    "id": "14415",
+    "slug": "oathsworn-eye",
+    "name": "Oathsworn Eye",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/oathsworn-eye.png"
+  },
+  {
+    "id": "380001",
+    "slug": "phantasmal-gift-star-omen",
+    "name": "Phantasmal Gift: Star Omen",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/phantasmal-gift-star-omen.png"
+  },
+  {
+    "id": "14406",
+    "slug": "prototype-amber",
+    "name": "Prototype Amber",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/prototype-amber.png"
+  },
+  {
+    "id": "14431",
+    "slug": "ring-of-yaxche",
+    "name": "Ring of Yaxche",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/ring-of-yaxche.png"
+  },
+  {
+    "id": "14404",
+    "slug": "royal-grimoire",
+    "name": "Royal Grimoire",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/royal-grimoire.png"
+  },
+  {
+    "id": "14403",
+    "slug": "sacrificial-fragments",
+    "name": "Sacrificial Fragments",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/sacrificial-fragments.png"
+  },
+  {
+    "id": "14424",
+    "slug": "sacrificial-jade",
+    "name": "Sacrificial Jade",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/sacrificial-jade.png"
+  },
+  {
+    "id": "14405",
+    "slug": "solar-pearl",
+    "name": "Solar Pearl",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/solar-pearl.png"
+  },
+  {
+    "id": "14402",
+    "slug": "the-widsith",
+    "name": "The Widsith",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/the-widsith.png"
+  },
+  {
+    "id": "14416",
+    "slug": "wandering-evenstar",
+    "name": "Wandering Evenstar",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/wandering-evenstar.png"
+  },
+  {
+    "id": "14430",
+    "slug": "waveriding-whirl",
+    "name": "Waveriding Whirl",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/waveriding-whirl.png"
+  },
+  {
+    "id": "14410",
+    "slug": "wine-and-song",
+    "name": "Wine and Song",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/wine-and-song.png"
+  },
+  {
+    "id": "14437",
+    "slug": "winter-s-heavy-heart",
+    "name": "Winter's Heavy Heart",
+    "rarity": 4,
+    "weaponType": "catalyst",
+    "icon": "/weapons/winter-s-heavy-heart.png"
+  },
+  {
+    "id": "12426",
+    "slug": "ultimate-overlord-s-mega-magic-sword",
+    "name": "\"Ultimate Overlord's Mega Magic Sword\"",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/ultimate-overlord-s-mega-magic-sword.png"
+  },
+  {
+    "id": "12416",
+    "slug": "akuoumaru",
+    "name": "Akuoumaru",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/akuoumaru.png"
+  },
+  {
+    "id": "320001",
+    "slug": "ardent-storm",
+    "name": "Ardent Storm",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/ardent-storm.png"
+  },
+  {
+    "id": "12408",
+    "slug": "blackcliff-slasher",
+    "name": "Blackcliff Slasher",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/blackcliff-slasher.png"
+  },
+  {
+    "id": "12436",
+    "slug": "blade-of-atonement",
+    "name": "Blade of Atonement",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/blade-of-atonement.png"
+  },
+  {
+    "id": "12431",
+    "slug": "earth-shaker",
+    "name": "Earth Shaker",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/earth-shaker.png"
+  },
+  {
+    "id": "12401",
+    "slug": "favonius-greatsword",
+    "name": "Favonius Greatsword",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/favonius-greatsword.png"
+  },
+  {
+    "id": "12432",
+    "slug": "flame-forged-insight",
+    "name": "Flame-Forged Insight",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/flame-forged-insight.png"
+  },
+  {
+    "id": "12417",
+    "slug": "forest-regalia",
+    "name": "Forest Regalia",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/forest-regalia.png"
+  },
+  {
+    "id": "12435",
+    "slug": "forged-by-the-golden-melody",
+    "name": "Forged by the Golden Melody",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/forged-by-the-golden-melody.png"
+  },
+  {
+    "id": "12430",
+    "slug": "fruitful-hook",
+    "name": "Fruitful Hook",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/fruitful-hook.png"
+  },
+  {
+    "id": "12414",
+    "slug": "katsuragikiri-nagamasa",
+    "name": "Katsuragikiri Nagamasa",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/katsuragikiri-nagamasa.png"
+  },
+  {
+    "id": "12410",
+    "slug": "lithic-blade",
+    "name": "Lithic Blade",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/lithic-blade.png"
+  },
+  {
+    "id": "12412",
+    "slug": "luxurious-sea-lord",
+    "name": "Luxurious Sea-Lord",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/luxurious-sea-lord.png"
+  },
+  {
+    "id": "12418",
+    "slug": "mailed-flower",
+    "name": "Mailed Flower",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/mailed-flower.png"
+  },
+  {
+    "id": "12415",
+    "slug": "makhaira-aquamarine",
+    "name": "Makhaira Aquamarine",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/makhaira-aquamarine.png"
+  },
+  {
+    "id": "12433",
+    "slug": "master-key",
+    "name": "Master Key",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/master-key.png"
+  },
+  {
+    "id": "12427",
+    "slug": "portable-power-saw",
+    "name": "Portable Power Saw",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/portable-power-saw.png"
+  },
+  {
+    "id": "12406",
+    "slug": "prototype-archaic",
+    "name": "Prototype Archaic",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/prototype-archaic.png"
+  },
+  {
+    "id": "12405",
+    "slug": "rainslasher",
+    "name": "Rainslasher",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/rainslasher.png"
+  },
+  {
+    "id": "12404",
+    "slug": "royal-greatsword",
+    "name": "Royal Greatsword",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/royal-greatsword.png"
+  },
+  {
+    "id": "12403",
+    "slug": "sacrificial-greatsword",
+    "name": "Sacrificial Greatsword",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/sacrificial-greatsword.png"
+  },
+  {
+    "id": "12409",
+    "slug": "serpent-spine",
+    "name": "Serpent Spine",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/serpent-spine.png"
+  },
+  {
+    "id": "320003",
+    "slug": "silver-radiance-of-gradlon",
+    "name": "Silver Radiance of Gradlon",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/silver-radiance-of-gradlon.png"
+  },
+  {
+    "id": "12411",
+    "slug": "snow-tombed-starsilver",
+    "name": "Snow-Tombed Starsilver",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/snow-tombed-starsilver.png"
+  },
+  {
+    "id": "380002",
+    "slug": "super-awesome-magic-key",
+    "name": "Super Awesome Magic Key",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/super-awesome-magic-key.png"
+  },
+  {
+    "id": "12424",
+    "slug": "talking-stick",
+    "name": "Talking Stick",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/talking-stick.png"
+  },
+  {
+    "id": "12402",
+    "slug": "the-bell",
+    "name": "The Bell",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/the-bell.png"
+  },
+  {
+    "id": "12425",
+    "slug": "tidal-shadow",
+    "name": "Tidal Shadow",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/tidal-shadow.png"
+  },
+  {
+    "id": "390001",
+    "slug": "unbreakable-durandarte",
+    "name": "Unbreakable: Durandarte",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/unbreakable-durandarte.png"
+  },
+  {
+    "id": "12407",
+    "slug": "whiteblind",
+    "name": "Whiteblind",
+    "rarity": 4,
+    "weaponType": "claymore",
+    "icon": "/weapons/whiteblind.png"
+  },
+  {
+    "id": "13415",
+    "slug": "the-catch",
+    "name": "\"The Catch\"",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/the-catch.png"
+  },
+  {
+    "id": "13424",
+    "slug": "ballad-of-the-fjords",
+    "name": "Ballad of the Fjords",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/ballad-of-the-fjords.png"
+  },
+  {
+    "id": "13404",
+    "slug": "blackcliff-pole",
+    "name": "Blackcliff Pole",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/blackcliff-pole.png"
+  },
+  {
+    "id": "13403",
+    "slug": "crescent-pike",
+    "name": "Crescent Pike",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/crescent-pike.png"
+  },
+  {
+    "id": "13405",
+    "slug": "deathmatch",
+    "name": "Deathmatch",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/deathmatch.png"
+  },
+  {
+    "id": "13426",
+    "slug": "dialogues-of-the-desert-sages",
+    "name": "Dialogues of the Desert Sages",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/dialogues-of-the-desert-sages.png"
+  },
+  {
+    "id": "13401",
+    "slug": "dragon-s-bane",
+    "name": "Dragon's Bane",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/dragon-s-bane.png"
+  },
+  {
+    "id": "13409",
+    "slug": "dragonspine-spear",
+    "name": "Dragonspine Spear",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/dragonspine-spear.png"
+  },
+  {
+    "id": "13407",
+    "slug": "favonius-lance",
+    "name": "Favonius Lance",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/favonius-lance.png"
+  },
+  {
+    "id": "13431",
+    "slug": "footprint-of-the-rainbow",
+    "name": "Footprint of the Rainbow",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/footprint-of-the-rainbow.png"
+  },
+  {
+    "id": "13435",
+    "slug": "frostbreath",
+    "name": "Frostbreath",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/frostbreath.png"
+  },
+  {
+    "id": "13414",
+    "slug": "kitain-cross-spear",
+    "name": "Kitain Cross Spear",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/kitain-cross-spear.png"
+  },
+  {
+    "id": "13406",
+    "slug": "lithic-spear",
+    "name": "Lithic Spear",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/lithic-spear.png"
+  },
+  {
+    "id": "13419",
+    "slug": "missive-windspear",
+    "name": "Missive Windspear",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/missive-windspear.png"
+  },
+  {
+    "id": "13417",
+    "slug": "moonpiercer",
+    "name": "Moonpiercer",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/moonpiercer.png"
+  },
+  {
+    "id": "13430",
+    "slug": "mountain-bracing-bolt",
+    "name": "Mountain-Bracing Bolt",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/mountain-bracing-bolt.png"
+  },
+  {
+    "id": "13427",
+    "slug": "prospector-s-drill",
+    "name": "Prospector's Drill",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/prospector-s-drill.png"
+  },
+  {
+    "id": "13433",
+    "slug": "prospector-s-shovel",
+    "name": "Prospector's Shovel",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/prospector-s-shovel.png"
+  },
+  {
+    "id": "13402",
+    "slug": "prototype-starglitter",
+    "name": "Prototype Starglitter",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/prototype-starglitter.png"
+  },
+  {
+    "id": "13425",
+    "slug": "rightful-reward",
+    "name": "Rightful Reward",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/rightful-reward.png"
+  },
+  {
+    "id": "13408",
+    "slug": "royal-spear",
+    "name": "Royal Spear",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/royal-spear.png"
+  },
+  {
+    "id": "13434",
+    "slug": "sacrificer-s-staff",
+    "name": "Sacrificer's Staff",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/sacrificer-s-staff.png"
+  },
+  {
+    "id": "330001",
+    "slug": "shattered-moon",
+    "name": "Shattered Moon",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/shattered-moon.png"
+  },
+  {
+    "id": "13436",
+    "slug": "song-of-the-vigil",
+    "name": "Song of the Vigil",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/song-of-the-vigil.png"
+  },
+  {
+    "id": "330003",
+    "slug": "starlight-of-fylkir",
+    "name": "Starlight of Fylkir",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/starlight-of-fylkir.png"
+  },
+  {
+    "id": "13432",
+    "slug": "tamayuratei-no-ohanashi",
+    "name": "Tamayuratei no Ohanashi",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/tamayuratei-no-ohanashi.png"
+  },
+  {
+    "id": "13416",
+    "slug": "wavebreaker-s-fin",
+    "name": "Wavebreaker's Fin",
+    "rarity": 4,
+    "weaponType": "polearm",
+    "icon": "/weapons/wavebreaker-s-fin.png"
+  },
+  {
+    "id": "380003",
+    "slug": "a-touch-of-frost-in-scorching-summer",
+    "name": "A Touch of Frost in Scorching Summer!",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/a-touch-of-frost-in-scorching-summer.png"
+  },
+  {
+    "id": "11414",
+    "slug": "amenoma-kageuchi",
+    "name": "Amenoma Kageuchi",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/amenoma-kageuchi.png"
+  },
+  {
+    "id": "11408",
+    "slug": "blackcliff-longsword",
+    "name": "Blackcliff Longsword",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/blackcliff-longsword.png"
+  },
+  {
+    "id": "11432",
+    "slug": "calamity-of-eshu",
+    "name": "Calamity of Eshu",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/calamity-of-eshu.png"
+  },
+  {
+    "id": "11415",
+    "slug": "cinnabar-spindle",
+    "name": "Cinnabar Spindle",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/cinnabar-spindle.png"
+  },
+  {
+    "id": "11436",
+    "slug": "emberwell",
+    "name": "Emberwell",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/emberwell.png"
+  },
+  {
+    "id": "390002",
+    "slug": "exaiphanes-blade-390002",
+    "name": "Exaiphanes Blade",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/exaiphanes-blade-390002.png"
+  },
+  {
+    "id": "11401",
+    "slug": "favonius-sword",
+    "name": "Favonius Sword",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/favonius-sword.png"
+  },
+  {
+    "id": "11413",
+    "slug": "festering-desire",
+    "name": "Festering Desire",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/festering-desire.png"
+  },
+  {
+    "id": "11425",
+    "slug": "finale-of-the-deep",
+    "name": "Finale of the Deep",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/finale-of-the-deep.png"
+  },
+  {
+    "id": "11426",
+    "slug": "fleuve-cendre-ferryman",
+    "name": "Fleuve Cendre Ferryman",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/fleuve-cendre-ferryman.png"
+  },
+  {
+    "id": "11431",
+    "slug": "flute-of-ezpitzal",
+    "name": "Flute of Ezpitzal",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/flute-of-ezpitzal.png"
+  },
+  {
+    "id": "310003",
+    "slug": "golden-bough-of-nemorensis",
+    "name": "Golden Bough of Nemorensis",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/golden-bough-of-nemorensis.png"
+  },
+  {
+    "id": "11435",
+    "slug": "heretic-s-molten-blade",
+    "name": "Heretic's Molten Blade",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/heretic-s-molten-blade.png"
+  },
+  {
+    "id": "11407",
+    "slug": "iron-sting",
+    "name": "Iron Sting",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/iron-sting.png"
+  },
+  {
+    "id": "11416",
+    "slug": "kagotsurube-isshin",
+    "name": "Kagotsurube Isshin",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/kagotsurube-isshin.png"
+  },
+  {
+    "id": "11405",
+    "slug": "lion-s-roar",
+    "name": "Lion's Roar",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/lion-s-roar.png"
+  },
+  {
+    "id": "11434",
+    "slug": "moonweaver-s-dawn",
+    "name": "Moonweaver's Dawn",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/moonweaver-s-dawn.png"
+  },
+  {
+    "id": "11437",
+    "slug": "new-bough",
+    "name": "New Bough",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/new-bough.png"
+  },
+  {
+    "id": "11406",
+    "slug": "prototype-rancour",
+    "name": "Prototype Rancour",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/prototype-rancour.png"
+  },
+  {
+    "id": "11404",
+    "slug": "royal-longsword",
+    "name": "Royal Longsword",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/royal-longsword.png"
+  },
+  {
+    "id": "11403",
+    "slug": "sacrificial-sword",
+    "name": "Sacrificial Sword",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/sacrificial-sword.png"
+  },
+  {
+    "id": "11417",
+    "slug": "sapwood-blade",
+    "name": "Sapwood Blade",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/sapwood-blade.png"
+  },
+  {
+    "id": "11433",
+    "slug": "serenity-s-call",
+    "name": "Serenity's Call",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/serenity-s-call.png"
+  },
+  {
+    "id": "310001",
+    "slug": "serpent-devourer",
+    "name": "Serpent Devourer",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/serpent-devourer.png"
+  },
+  {
+    "id": "11438",
+    "slug": "silver-light",
+    "name": "Silver Light",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/silver-light.png"
+  },
+  {
+    "id": "11430",
+    "slug": "sturdy-bone",
+    "name": "Sturdy Bone",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/sturdy-bone.png"
+  },
+  {
+    "id": "11412",
+    "slug": "sword-of-descension",
+    "name": "Sword of Descension",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/sword-of-descension.png"
+  },
+  {
+    "id": "11428",
+    "slug": "sword-of-narzissenkreuz",
+    "name": "Sword of Narzissenkreuz",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/sword-of-narzissenkreuz.png"
+  },
+  {
+    "id": "11410",
+    "slug": "the-alley-flash",
+    "name": "The Alley Flash",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/the-alley-flash.png"
+  },
+  {
+    "id": "11409",
+    "slug": "the-black-sword",
+    "name": "The Black Sword",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/the-black-sword.png"
+  },
+  {
+    "id": "11427",
+    "slug": "the-dockhand-s-assistant",
+    "name": "The Dockhand's Assistant",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/the-dockhand-s-assistant.png"
+  },
+  {
+    "id": "11402",
+    "slug": "the-flute",
+    "name": "The Flute",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/the-flute.png"
+  },
+  {
+    "id": "11422",
+    "slug": "toukabou-shigure",
+    "name": "Toukabou Shigure",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/toukabou-shigure.png"
+  },
+  {
+    "id": "11424",
+    "slug": "wolf-fang",
+    "name": "Wolf-Fang",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/wolf-fang.png"
+  },
+  {
+    "id": "11418",
+    "slug": "xiphos-moonlight",
+    "name": "Xiphos' Moonlight",
+    "rarity": 4,
+    "weaponType": "sword",
+    "icon": "/weapons/xiphos-moonlight.png"
+  },
+  {
+    "id": "15305",
+    "slug": "messenger",
+    "name": "Messenger",
+    "rarity": 3,
+    "weaponType": "bow",
+    "icon": "/weapons/messenger.png"
+  },
+  {
+    "id": "15301",
+    "slug": "raven-bow",
+    "name": "Raven Bow",
+    "rarity": 3,
+    "weaponType": "bow",
+    "icon": "/weapons/raven-bow.png"
+  },
+  {
+    "id": "15303",
+    "slug": "recurve-bow",
+    "name": "Recurve Bow",
+    "rarity": 3,
+    "weaponType": "bow",
+    "icon": "/weapons/recurve-bow.png"
+  },
+  {
+    "id": "15302",
+    "slug": "sharpshooter-s-oath",
+    "name": "Sharpshooter's Oath",
+    "rarity": 3,
+    "weaponType": "bow",
+    "icon": "/weapons/sharpshooter-s-oath.png"
+  },
+  {
+    "id": "15304",
+    "slug": "slingshot",
+    "name": "Slingshot",
+    "rarity": 3,
+    "weaponType": "bow",
+    "icon": "/weapons/slingshot.png"
+  },
+  {
+    "id": "14304",
+    "slug": "emerald-orb",
+    "name": "Emerald Orb",
+    "rarity": 3,
+    "weaponType": "catalyst",
+    "icon": "/weapons/emerald-orb.png"
+  },
+  {
+    "id": "14301",
+    "slug": "magic-guide",
+    "name": "Magic Guide",
+    "rarity": 3,
+    "weaponType": "catalyst",
+    "icon": "/weapons/magic-guide.png"
+  },
+  {
+    "id": "14303",
+    "slug": "otherworldly-story",
+    "name": "Otherworldly Story",
+    "rarity": 3,
+    "weaponType": "catalyst",
+    "icon": "/weapons/otherworldly-story.png"
+  },
+  {
+    "id": "14302",
+    "slug": "thrilling-tales-of-dragon-slayers",
+    "name": "Thrilling Tales of Dragon Slayers",
+    "rarity": 3,
+    "weaponType": "catalyst",
+    "icon": "/weapons/thrilling-tales-of-dragon-slayers.png"
+  },
+  {
+    "id": "14305",
+    "slug": "twin-nephrite",
+    "name": "Twin Nephrite",
+    "rarity": 3,
+    "weaponType": "catalyst",
+    "icon": "/weapons/twin-nephrite.png"
+  },
+  {
+    "id": "12302",
+    "slug": "bloodtainted-greatsword",
+    "name": "Bloodtainted Greatsword",
+    "rarity": 3,
+    "weaponType": "claymore",
+    "icon": "/weapons/bloodtainted-greatsword.png"
+  },
+  {
+    "id": "12305",
+    "slug": "debate-club",
+    "name": "Debate Club",
+    "rarity": 3,
+    "weaponType": "claymore",
+    "icon": "/weapons/debate-club.png"
+  },
+  {
+    "id": "12301",
+    "slug": "ferrous-shadow",
+    "name": "Ferrous Shadow",
+    "rarity": 3,
+    "weaponType": "claymore",
+    "icon": "/weapons/ferrous-shadow.png"
+  },
+  {
+    "id": "12306",
+    "slug": "skyrider-greatsword",
+    "name": "Skyrider Greatsword",
+    "rarity": 3,
+    "weaponType": "claymore",
+    "icon": "/weapons/skyrider-greatsword.png"
+  },
+  {
+    "id": "12303",
+    "slug": "white-iron-greatsword",
+    "name": "White Iron Greatsword",
+    "rarity": 3,
+    "weaponType": "claymore",
+    "icon": "/weapons/white-iron-greatsword.png"
+  },
+  {
+    "id": "13303",
+    "slug": "black-tassel",
+    "name": "Black Tassel",
+    "rarity": 3,
+    "weaponType": "polearm",
+    "icon": "/weapons/black-tassel.png"
+  },
+  {
+    "id": "13302",
+    "slug": "halberd",
+    "name": "Halberd",
+    "rarity": 3,
+    "weaponType": "polearm",
+    "icon": "/weapons/halberd.png"
+  },
+  {
+    "id": "13301",
+    "slug": "white-tassel",
+    "name": "White Tassel",
+    "rarity": 3,
+    "weaponType": "polearm",
+    "icon": "/weapons/white-tassel.png"
+  },
+  {
+    "id": "11301",
+    "slug": "cool-steel",
+    "name": "Cool Steel",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/cool-steel.png"
+  },
+  {
+    "id": "11304",
+    "slug": "dark-iron-sword",
+    "name": "Dark Iron Sword",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/dark-iron-sword.png"
+  },
+  {
+    "id": "11305",
+    "slug": "fillet-blade",
+    "name": "Fillet Blade",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/fillet-blade.png"
+  },
+  {
+    "id": "11302",
+    "slug": "harbinger-of-dawn",
+    "name": "Harbinger of Dawn",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/harbinger-of-dawn.png"
+  },
+  {
+    "id": "11306",
+    "slug": "skyrider-sword",
+    "name": "Skyrider Sword",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/skyrider-sword.png"
+  },
+  {
+    "id": "11303",
+    "slug": "traveler-s-handy-sword",
+    "name": "Traveler's Handy Sword",
+    "rarity": 3,
+    "weaponType": "sword",
+    "icon": "/weapons/traveler-s-handy-sword.png"
+  }
+]

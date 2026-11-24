@@ -1,30 +1,45 @@
 import { z } from 'zod'
 
-const username = z
+const uid = z
   .string()
   .trim()
-  .min(3, 'Tên đăng nhập tối thiểu 3 ký tự.')
-  .max(20, 'Tên đăng nhập tối đa 20 ký tự.')
-  .regex(/^[a-zA-Z0-9_]+$/, 'Chỉ dùng chữ không dấu, số và dấu gạch dưới.')
+  .regex(/^\d{9,10}$/, 'UID Genshin phải gồm 9–10 chữ số.')
+
+const displayName = z
+  .string()
+  .trim()
+  .min(2, 'Tên hiển thị tối thiểu 2 ký tự.')
+  .max(30, 'Tên hiển thị tối đa 30 ký tự.')
 
 const password = z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự.').max(72, 'Mật khẩu quá dài.')
 
+const emailField = z.email('Email không hợp lệ.')
+
 export const loginSchema = z.object({
-  username: z.string().trim().min(1, 'Vui lòng nhập tên đăng nhập.'),
+  uid: z.string().trim().min(1, 'Vui lòng nhập UID.'),
   password: z.string().min(1, 'Vui lòng nhập mật khẩu.'),
   remember: z.boolean(),
 })
 export type LoginValues = z.infer<typeof loginSchema>
 
-export const registerSchema = z
-  .object({
-    username,
-    email: z.string().trim().pipe(z.email('Email không hợp lệ.')),
-    password,
-    confirmPassword: z.string(),
-  })
-  .refine((v) => v.password === v.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Mật khẩu xác nhận không khớp.',
-  })
+export function createRegisterSchema(requireEmail = false) {
+  return z
+    .object({
+      uid,
+      displayName,
+      email: z
+        .string()
+        .trim()
+        .refine((v) => !requireEmail || v.length > 0, 'Vui lòng nhập email.')
+        .refine((v) => !v || emailField.safeParse(v).success, 'Email không hợp lệ.'),
+      password,
+      confirmPassword: z.string(),
+    })
+    .refine((v) => v.password === v.confirmPassword, {
+      path: ['confirmPassword'],
+      message: 'Mật khẩu xác nhận không khớp.',
+    })
+}
+
+export const registerSchema = createRegisterSchema(false)
 export type RegisterValues = z.infer<typeof registerSchema>
