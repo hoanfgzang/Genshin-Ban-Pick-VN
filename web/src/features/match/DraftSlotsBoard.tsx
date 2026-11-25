@@ -18,6 +18,8 @@ export function DraftSlotsBoard({
   canEditWeaponsForSide,
   onSelectPickSlot,
 }: Props) {
+  const isPostDraft = state.status !== 'drafting'
+
   const board = useMemo(
     () =>
       buildDraftBoardRows(
@@ -89,7 +91,7 @@ export function DraftSlotsBoard({
                 : isBlue
                   ? 'border-hydro/65 bg-bg/80'
                   : 'border-danger/65 bg-bg/80',
-          canClickPick && 'cursor-pointer hover:-translate-y-0.5 hover:border-gold-strong',
+          canClickPick && 'cursor-pointer hover:z-10 hover:-translate-y-0.5 hover:border-gold-strong',
         )}
         title={
           char
@@ -134,7 +136,12 @@ export function DraftSlotsBoard({
                 </span>
               )}
               {constellation !== null && (
-                <span className="absolute right-0.5 bottom-0.5 rounded bg-black/80 px-1 py-0.2 font-mono text-[9px] font-extrabold leading-none text-gold-strong">
+                <span
+                  className={cn(
+                    'absolute right-0.5 bottom-0.5 rounded bg-black/80 px-1 py-0.2 font-mono font-extrabold leading-none text-gold-strong',
+                    isPostDraft && !isBan ? 'text-[10px]' : 'text-[9px]',
+                  )}
+                >
                   C{constellation}
                 </span>
               )}
@@ -148,7 +155,12 @@ export function DraftSlotsBoard({
                 />
               )}
             </div>
-            <div className="truncate bg-white px-0.5 py-0.5 text-center text-[9px] font-bold leading-tight text-black">
+            <div
+              className={cn(
+                'truncate bg-white px-0.5 py-0.5 text-center font-bold leading-tight text-black',
+                isPostDraft && !isBan ? 'text-[10px]' : 'text-[9px]',
+              )}
+            >
               {char.name}
             </div>
           </>
@@ -200,8 +212,32 @@ export function DraftSlotsBoard({
     return <div key={cell.step}>{inner}</div>
   }
 
-  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start') =>
+  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start', compact = false) =>
     rows.map((row, rIdx) => {
+      if (compact) {
+        return (
+          <div
+            key={rIdx}
+            className={cn(
+              'flex flex-wrap items-center justify-center gap-0',
+              align === 'end' ? 'md:justify-end' : 'md:justify-start',
+            )}
+          >
+            {row.map((cell, cIdx) => {
+              const pos =
+                row.length === 1
+                  ? 'single'
+                  : cIdx === 0
+                    ? 'first'
+                    : cIdx === row.length - 1
+                      ? 'last'
+                      : 'middle'
+              return renderCell(cell, pos)
+            })}
+          </div>
+        )
+      }
+
       const groups = groupConsecutiveCells(row)
       return (
         <div
@@ -236,12 +272,25 @@ export function DraftSlotsBoard({
       className="panel grid grid-cols-1 items-center gap-3 border-line/70 bg-bg/55 px-3 py-2.5 [--slot-w:2.5rem] sm:[--slot-w:3rem] md:grid-cols-[1fr_auto_1fr] md:[--slot-w:2.5rem] lg:[--slot-w:3rem] xl:[--slot-w:3.5rem] 2xl:[--slot-w:4rem]"
     >
       {/* Blue: Khối Pick ở ngoài (trái), cách xa khối Ban ở gần tâm */}
-      <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-end md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16">
-        <div className="flex flex-col items-center gap-1.5 md:items-end">
+      <div
+        className={cn(
+          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-end',
+          isPostDraft
+            ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
+            : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
+        )}
+      >
+        <div
+          className={cn(
+            'flex flex-col items-center gap-1.5 md:items-end',
+            isPostDraft &&
+              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
+          )}
+        >
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          {renderRows(board.blue.pickRows, 'end')}
+          {renderRows(board.blue.pickRows, 'end', isPostDraft)}
         </div>
 
         {board.blue.banRows.length > 0 && (
@@ -249,7 +298,9 @@ export function DraftSlotsBoard({
             <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
               BAN
             </span>
-            {renderRows(board.blue.banRows, 'end')}
+            <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
+              {renderRows(board.blue.banRows, 'end', isPostDraft)}
+            </div>
           </div>
         )}
       </div>
@@ -262,21 +313,36 @@ export function DraftSlotsBoard({
       </div>
 
       {/* Red: Khối Ban ở gần tâm, cách xa khối Pick ở ngoài (phải) */}
-      <div className="flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-start md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16">
+      <div
+        className={cn(
+          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-start',
+          isPostDraft
+            ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
+            : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
+        )}
+      >
         {board.red.banRows.length > 0 && (
           <div className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/25 bg-danger/5 px-2 py-1.5 md:items-start">
             <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
               BAN
             </span>
-            {renderRows(board.red.banRows, 'start')}
+            <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
+              {renderRows(board.red.banRows, 'start', isPostDraft)}
+            </div>
           </div>
         )}
 
-        <div className="flex flex-col items-center gap-1.5 md:items-start">
+        <div
+          className={cn(
+            'flex flex-col items-center gap-1.5 md:items-start',
+            isPostDraft &&
+              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
+          )}
+        >
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          {renderRows(board.red.pickRows, 'start')}
+          {renderRows(board.red.pickRows, 'start', isPostDraft)}
         </div>
       </div>
     </section>

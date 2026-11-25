@@ -48,6 +48,14 @@ export function PostDraftTeamsStage({
     overIndex: number | null
   } | null>(null)
   const [showRosters, setShowRosters] = useState(false)
+  const [revealDone, setRevealDone] = useState(false)
+  const maxSideCards = Math.max(state.sides.blue.picks.length, state.sides.red.picks.length, 1)
+
+  useEffect(() => {
+    if (revealDone) return
+    const timer = window.setTimeout(() => setRevealDone(true), (maxSideCards - 1) * 65 + 480)
+    return () => window.clearTimeout(timer)
+  }, [revealDone, maxSideCards])
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -158,44 +166,54 @@ export function PostDraftTeamsStage({
                       dragState?.side === side &&
                       dragState.overIndex === lineupIndex &&
                       dragState.fromIndex !== lineupIndex
+                    const totalSideCards = order.length
+                    const revealOrder = isBlue ? totalSideCards - 1 - lineupIndex : lineupIndex
 
                     return (
-                      <TeamSlotCard
+                      <div
                         key={pick.slot}
-                        pick={pick}
-                        slotInTeam={posInTeam + 1}
-                        costRules={state.ruleset.costRules}
-                        canReorder={canReorder}
-                        canEditWeapon={canEditWeapon}
-                        isSelectedForSwap={isSelectedForSwap}
-                        isDropTarget={isDropTarget}
-                        onClickCharacter={() => handleCharacterClick(side, lineupIndex, order)}
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = 'move'
-                          e.dataTransfer.setData('text/plain', `${side}:${lineupIndex}`)
-                          setSwapSource(null)
-                          setDragState({ side, fromIndex: lineupIndex, overIndex: null })
-                        }}
-                        onDragOver={(e) => {
-                          if (!dragState || dragState.side !== side) return
-                          e.preventDefault()
-                          e.dataTransfer.dropEffect = 'move'
-                          if (dragState.overIndex !== lineupIndex) {
-                            setDragState((cur) => (cur ? { ...cur, overIndex: lineupIndex } : null))
-                          }
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          if (!dragState || dragState.side !== side) return
-                          const fromIdx = dragState.fromIndex
-                          setDragState(null)
-                          if (fromIdx !== lineupIndex) {
-                            onReorderLineup(side, swapLineupPositions(order, fromIdx, lineupIndex))
-                          }
-                        }}
-                        onDragEnd={() => setDragState(null)}
-                        onClickWeapon={() => onSelectWeaponSlot(side, pick)}
-                      />
+                        className={cn(
+                          'min-w-0',
+                          !revealDone && (isBlue ? 'team-card-reveal-blue' : 'team-card-reveal-red'),
+                        )}
+                        style={!revealDone ? { animationDelay: `${revealOrder * 65}ms` } : undefined}
+                      >
+                        <TeamSlotCard
+                          pick={pick}
+                          slotInTeam={posInTeam + 1}
+                          costRules={state.ruleset.costRules}
+                          canReorder={canReorder}
+                          canEditWeapon={canEditWeapon}
+                          isSelectedForSwap={isSelectedForSwap}
+                          isDropTarget={isDropTarget}
+                          onClickCharacter={() => handleCharacterClick(side, lineupIndex, order)}
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move'
+                            e.dataTransfer.setData('text/plain', `${side}:${lineupIndex}`)
+                            setSwapSource(null)
+                            setDragState({ side, fromIndex: lineupIndex, overIndex: null })
+                          }}
+                          onDragOver={(e) => {
+                            if (!dragState || dragState.side !== side) return
+                            e.preventDefault()
+                            e.dataTransfer.dropEffect = 'move'
+                            if (dragState.overIndex !== lineupIndex) {
+                              setDragState((cur) => (cur ? { ...cur, overIndex: lineupIndex } : null))
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            if (!dragState || dragState.side !== side) return
+                            const fromIdx = dragState.fromIndex
+                            setDragState(null)
+                            if (fromIdx !== lineupIndex) {
+                              onReorderLineup(side, swapLineupPositions(order, fromIdx, lineupIndex))
+                            }
+                          }}
+                          onDragEnd={() => setDragState(null)}
+                          onClickWeapon={() => onSelectWeaponSlot(side, pick)}
+                        />
+                      </div>
                     )
                   })}
                 </div>
