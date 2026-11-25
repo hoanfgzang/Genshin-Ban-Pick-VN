@@ -206,6 +206,19 @@ export function splitBanCellsIntoRows(bans: readonly DraftBoardCell[]): DraftBoa
   return packRunsIntoRows(bans, half)
 }
 
+function chunkCellsIntoRows(
+  cells: readonly DraftBoardCell[],
+  rowSize: number,
+): DraftBoardCell[][] {
+  if (cells.length === 0) return []
+  const cap = Math.max(1, rowSize)
+  const rows: DraftBoardCell[][] = []
+  for (let i = 0; i < cells.length; i += cap) {
+    rows.push(cells.slice(i, i + cap))
+  }
+  return rows
+}
+
 /**
  * Chia danh sách bước Ban/Pick cho bên Trái (Blue) và Phải (Red):
  * - Pick tách thành khối riêng nằm xa Ban ở phía ngoài; Ban nằm phía gần tâm.
@@ -261,8 +274,13 @@ export function buildDraftBoardRows(
       }
     })
 
-    const pickRows = splitPickCellsIntoRows(picks, maxConsecutivePicks)
-    const banRows = splitBanCellsIntoRows(bans)
+    const isPostDraft = matchStatus !== 'drafting'
+    const pickRows = isPostDraft
+      ? chunkCellsIntoRows(picks, Math.ceil(picks.length / 2))
+      : splitPickCellsIntoRows(picks, maxConsecutivePicks)
+    const banRows = isPostDraft
+      ? chunkCellsIntoRows(bans, Math.ceil(bans.length / 2))
+      : splitBanCellsIntoRows(bans)
 
     if (side === 'blue') {
       return {

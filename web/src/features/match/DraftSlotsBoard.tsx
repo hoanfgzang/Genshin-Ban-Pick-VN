@@ -274,7 +274,7 @@ export function DraftSlotsBoard({
       {/* Blue: Khối Pick ở ngoài (trái), cách xa khối Ban ở gần tâm */}
       <div
         className={cn(
-          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-end',
+          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-end',
           isPostDraft
             ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
             : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
@@ -315,7 +315,7 @@ export function DraftSlotsBoard({
       {/* Red: Khối Ban ở gần tâm, cách xa khối Pick ở ngoài (phải) */}
       <div
         className={cn(
-          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-start md:justify-start',
+          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-start',
           isPostDraft
             ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
             : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
