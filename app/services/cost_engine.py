@@ -98,13 +98,11 @@ def calc_cost_penalty_seconds(total_cost: float, cost_rules: CostRules) -> float
         total_seconds += under_part * cost_rules.base_seconds_per_cost
 
     for m in milestones:
-        if cost >= m.min_cost and (cost > 0 if m.min_cost == 0 else True):
-            total_seconds += m.bonus_seconds
-        if cost > m.min_cost:
-            upper = m.max_cost if m.max_cost is not None else math.inf
-            portion = min(cost, upper) - m.min_cost
-            if portion > 0:
-                total_seconds += portion * m.seconds_per_cost
+    upper = m.max_cost if m.max_cost is not None else math.inf
+    if m.min_cost <= cost < upper:
+        total_seconds = cost * m.bonus_seconds  # hoặc m.rate
+        break
+
 
     # Nếu cost vượt quá max_cost của mốc cuối cùng mà mốc cuối có max_cost hữu hạn
     last_max = milestones[-1].max_cost
