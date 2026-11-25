@@ -80,10 +80,14 @@ export interface MatchPickSlot {
   constellation: number
   level: number
   characterCost: number
+  characterCustomCostId?: string | null
+  characterCustomCostNote?: string | null
   weaponSlug: string | null
   refinement: number
   weaponCost: number
   weaponRefinementSeconds: number
+  weaponCustomCostId?: string | null
+  weaponCustomCostNote?: string | null
   totalSlotCost: number
 }
 

@@ -239,6 +239,10 @@ class RoomManager:
                     refinement = int(payload.get("refinement", 1))
                     raw_side = payload.get("side")
                     target_side: SideName | None = raw_side if raw_side in ("blue", "red") else None
+                    raw_wcc = payload.get("weaponCustomCostId")
+                    weapon_custom_cost_id = (
+                        raw_wcc if isinstance(raw_wcc, str) and raw_wcc.strip() else None
+                    )
                     next_state = draft_engine.set_pick_weapon(
                         state,
                         user_id=user.id,
@@ -247,6 +251,23 @@ class RoomManager:
                         slot=slot,
                         weapon_slug=weapon_slug,
                         refinement=refinement,
+                        weapon_custom_cost_id=weapon_custom_cost_id,
+                    )
+                elif action == "set_character_custom_cost":
+                    slot = int(payload.get("slot", -1))
+                    raw_side = payload.get("side")
+                    target_side: SideName | None = raw_side if raw_side in ("blue", "red") else None
+                    raw_cid = payload.get("customCostId")
+                    custom_cost_id = (
+                        raw_cid if isinstance(raw_cid, str) and raw_cid.strip() else None
+                    )
+                    next_state = draft_engine.set_pick_character_custom_cost(
+                        state,
+                        user_id=user.id,
+                        user_role=user.role,
+                        target_side=target_side,
+                        slot=slot,
+                        custom_cost_id=custom_cost_id,
                     )
                 elif action == "reorder_lineup":
                     raw_side = payload.get("side")

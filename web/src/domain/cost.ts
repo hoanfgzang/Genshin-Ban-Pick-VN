@@ -1,5 +1,5 @@
 import { getCharacter } from './characters'
-import type { CostRules } from './ruleset'
+import type { CharacterCustomCost, CostRules, WeaponCustomCost } from './ruleset'
 import { getWeapon } from './weapons'
 
 export const CHAMBER_BASE_SECONDS = 540
@@ -8,12 +8,31 @@ export function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+export function getCharacterCustomCosts(slug: string, costRules: CostRules): CharacterCustomCost[] {
+  return costRules.characterCustomCosts?.[slug] ?? []
+}
+
+export function getWeaponCustomCosts(
+  slug: string | null | undefined,
+  costRules: CostRules,
+): WeaponCustomCost[] {
+  if (!slug) return []
+  return costRules.weaponCustomCosts?.[slug] ?? []
+}
+
 export function calcCharacterCost(
   slug: string,
   constellation: number,
   costRules: CostRules,
+  customCostId?: string | null,
 ): number {
   const c = Math.max(0, Math.min(6, Math.trunc(constellation)))
+  if (customCostId) {
+    const custom = getCharacterCustomCosts(slug, costRules).find((item) => item.id === customCostId)
+    if (custom && custom.costs.length === 7) {
+      return round2(custom.costs[c] ?? 0)
+    }
+  }
   const override = costRules.characterOverrides[slug]
   if (override && override.length === 7) {
     return round2(override[c] ?? 0)
@@ -27,8 +46,15 @@ export function calcCharacterCost(
 export function calcWeaponCost(
   slug: string | null | undefined,
   costRules: CostRules,
+  customCostId?: string | null,
 ): number {
   if (!slug) return 0
+  if (customCostId) {
+    const custom = getWeaponCustomCosts(slug, costRules).find((item) => item.id === customCostId)
+    if (custom) {
+      return round2(custom.cost ?? 0)
+    }
+  }
   if (slug in costRules.weaponCostOverrides) {
     return round2(costRules.weaponCostOverrides[slug] ?? 0)
   }
@@ -41,9 +67,16 @@ export function calcWeaponRefinementSeconds(
   slug: string | null | undefined,
   refinement: number,
   costRules: CostRules,
+  customCostId?: string | null,
 ): number {
   if (!slug) return 0
   const idx = Math.max(0, Math.min(4, Math.trunc(refinement) - 1))
+  if (customCostId) {
+    const custom = getWeaponCustomCosts(slug, costRules).find((item) => item.id === customCostId)
+    if (custom && custom.refinementSeconds.length === 5) {
+      return round2(custom.refinementSeconds[idx] ?? 0)
+    }
+  }
   const override = costRules.weaponRefinementOverrides[slug]
   if (override && override.length === 5) {
     return round2(override[idx] ?? 0)

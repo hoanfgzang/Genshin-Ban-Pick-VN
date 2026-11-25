@@ -39,6 +39,68 @@ def _validate_float_list(vals: list[float], expected_len: int, label: str) -> li
     return [round(float(x), 2) for x in vals]
 
 
+class CharacterCustomCost(CamelModel):
+    id: str = Field(min_length=1, max_length=64)
+    costs: list[float]
+    note: str = Field(min_length=1, max_length=300)
+
+    @field_validator("id")
+    @classmethod
+    def check_id(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("ID Custom Cost không được để trống.")
+        return cleaned
+
+    @field_validator("costs")
+    @classmethod
+    def check_costs(cls, v: list[float]) -> list[float]:
+        return _validate_float_list(v, 7, "Custom C0–C6")
+
+    @field_validator("note")
+    @classmethod
+    def check_note(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Ghi chú điều kiện Custom Cost không được để trống.")
+        return cleaned
+
+
+class WeaponCustomCost(CamelModel):
+    id: str = Field(min_length=1, max_length=64)
+    cost: float = Field(default=0.0, ge=0)
+    refinement_seconds: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
+    note: str = Field(min_length=1, max_length=300)
+
+    @field_validator("id")
+    @classmethod
+    def check_id(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("ID Custom Cost vũ khí không được để trống.")
+        return cleaned
+
+    @field_validator("cost")
+    @classmethod
+    def check_cost(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("Giá trị cost vũ khí không được âm.")
+        return round(float(v), 2)
+
+    @field_validator("refinement_seconds")
+    @classmethod
+    def check_ref_seconds(cls, v: list[float]) -> list[float]:
+        return _validate_float_list(v, 5, "Custom R1–R5 (giây)")
+
+    @field_validator("note")
+    @classmethod
+    def check_note(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Ghi chú điều kiện Custom Cost vũ khí không được để trống.")
+        return cleaned
+
+
 class CostRules(CamelModel):
     default_char_5_costs: list[float] = Field(default_factory=lambda: [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
     default_char_4_costs: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -47,8 +109,10 @@ class CostRules(CamelModel):
     default_weapon_5_refinement_seconds: list[float] = Field(default_factory=lambda: [0.0, 5.0, 10.0, 15.0, 20.0])
     default_weapon_4_refinement_seconds: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
     character_overrides: dict[str, list[float]] = Field(default_factory=dict)
+    character_custom_costs: dict[str, list[CharacterCustomCost]] = Field(default_factory=dict)
     weapon_cost_overrides: dict[str, float] = Field(default_factory=dict)
     weapon_refinement_overrides: dict[str, list[float]] = Field(default_factory=dict)
+    weapon_custom_costs: dict[str, list[WeaponCustomCost]] = Field(default_factory=dict)
     base_seconds_per_cost: float = Field(default=5.0, ge=0)
     milestones: list[CostMilestone] = Field(default_factory=list)
     draft_bonus_seconds_per_cost: float = Field(default=0.0, ge=0)
@@ -116,6 +180,32 @@ class CostRules(CamelModel):
             k: _validate_float_list(vals, 5, f"weaponRefinementOverrides[{k}]")
             for k, vals in v.items()
         }
+
+    @field_validator("character_custom_costs")
+    @classmethod
+    def check_char_custom_costs(
+        cls, v: dict[str, list[CharacterCustomCost]]
+    ) -> dict[str, list[CharacterCustomCost]]:
+        for slug, items in v.items():
+            seen: set[str] = set()
+            for item in items:
+                if item.id in seen:
+                    raise ValueError(f"Trùng ID Custom Cost '{item.id}' cho nhân vật {slug}.")
+                seen.add(item.id)
+        return v
+
+    @field_validator("weapon_custom_costs")
+    @classmethod
+    def check_weapon_custom_costs(
+        cls, v: dict[str, list[WeaponCustomCost]]
+    ) -> dict[str, list[WeaponCustomCost]]:
+        for slug, items in v.items():
+            seen: set[str] = set()
+            for item in items:
+                if item.id in seen:
+                    raise ValueError(f"Trùng ID Custom Cost '{item.id}' cho vũ khí {slug}.")
+                seen.add(item.id)
+        return v
 
 
 def default_draft_steps() -> list[DraftStep]:

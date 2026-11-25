@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from pydantic import ValidationError
 import pytest
 
 from app.data_loader import get_weapons
-from app.schemas.ruleset import CostMilestone, CostRules
+from app.schemas.ruleset import CharacterCustomCost, CostMilestone, CostRules, WeaponCustomCost
 from app.services.cost_engine import (
     calc_chamber_scores,
     calc_character_cost,
@@ -119,3 +120,56 @@ def test_chamber_9_minute_subtraction_math() -> None:
                 {"minutes": 8, "seconds": 0},
             ]
         )
+
+
+def test_custom_cost_rules_and_calculations() -> None:
+    # Ghi chú điều kiện bắt buộc không được trống
+    with pytest.raises(ValidationError):
+        CharacterCustomCost(id="cc-1", costs=[0, 1, 2, 3, 4, 5, 6], note="   ")
+    with pytest.raises(ValidationError):
+        WeaponCustomCost(id="wc-1", cost=1.5, refinement_seconds=[0, 0, 0, 0, 0], note="")
+
+    # Không cho phép trùng ID Custom Cost trên cùng nhân vật / vũ khí
+    with pytest.raises(ValidationError):
+        CostRules(
+            character_custom_costs={
+                "furina": [
+                    CharacterCustomCost(id="cc-1", costs=[2, 3, 4, 5, 6, 7, 8], note="Đi cùng Neuvillette"),
+                    CharacterCustomCost(id="cc-1", costs=[1, 2, 3, 4, 5, 6, 7], note="Trùng ID"),
+                ]
+            }
+        )
+
+    rules = CostRules(
+        character_custom_costs={
+            "bennett": [
+                CharacterCustomCost(
+                    id="cc-1",
+                    costs=[0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 1.5],
+                    note="Đi cùng đội hình Mavuika Melt",
+                ),
+            ]
+        },
+        weapon_custom_costs={
+            "favonius-warbow": [
+                WeaponCustomCost(
+                    id="wc-1",
+                    cost=0.5,
+                    refinement_seconds=[0.0, 2.0, 4.0, 6.0, 8.0],
+                    note="Trang bị cho Yelan / Furina",
+                )
+            ]
+        },
+    )
+
+    assert calc_character_cost("bennett", 6, rules) == 0.0
+    assert calc_character_cost("bennett", 6, rules, "cc-1") == 1.5
+    assert calc_character_cost("bennett", 6, rules, "unknown-id") == 0.0
+
+    assert calc_weapon_cost("favonius-warbow", rules) == 0.0
+    assert calc_weapon_cost("favonius-warbow", rules, "wc-1") == 0.5
+    assert calc_weapon_cost("favonius-warbow", rules, "unknown-id") == 0.0
+
+    assert calc_weapon_refinement_seconds("favonius-warbow", 5, rules) == 0.0
+    assert calc_weapon_refinement_seconds("favonius-warbow", 5, rules, "wc-1") == 8.0
+    assert calc_weapon_refinement_seconds("favonius-warbow", 5, rules, "unknown-id") == 0.0

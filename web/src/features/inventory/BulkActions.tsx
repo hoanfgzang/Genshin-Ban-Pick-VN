@@ -15,6 +15,7 @@ import {
   type InventoryDiff,
   type Level,
 } from '@/domain/inventory'
+import { ImportGuideDialog } from './ImportGuideDialog'
 import { useInventoryStore } from './inventoryStore'
 
 interface Props {
@@ -39,6 +40,7 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
   const replace = useInventoryStore((s) => s.replace)
   const fileRef = useRef<HTMLInputElement>(null)
   const [levelOpen, setLevelOpen] = useState(false)
+  const [guideOpen, setGuideOpen] = useState(false)
   const [level, setLevelValue] = useState<Level>(90)
   const [pending, setPending] = useState<{
     inv: Inventory
@@ -122,7 +124,15 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
       <Button size="sm" onClick={() => setLevelOpen(true)} disabled={ownedVisible === 0}>
         Đặt level…
       </Button>
-      <div className="ml-auto flex gap-2">
+      <div className="ml-auto flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="border-gold/45 text-gold-strong hover:border-gold"
+          onClick={() => setGuideOpen(true)}
+        >
+          Hướng dẫn nhập nhanh
+        </Button>
         <Button size="sm" variant="ghost" onClick={() => fileRef.current?.click()}>
           Nhập JSON
         </Button>
@@ -199,6 +209,12 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
           </ul>
         )}
       </Dialog>
+
+      <ImportGuideDialog
+        open={guideOpen}
+        onOpenChange={setGuideOpen}
+        onOpenImport={() => fileRef.current?.click()}
+      />
     </div>
   )
 }

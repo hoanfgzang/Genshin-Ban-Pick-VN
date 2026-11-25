@@ -16,9 +16,14 @@ export function RulesPage() {
   const [rulesets, setRulesets] = useState<RuleSet[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ open: boolean; target: RuleSet | null }>({
+  const [editing, setEditing] = useState<{
+    open: boolean
+    target: RuleSet | null
+    template: RuleSet | null
+  }>({
     open: false,
     target: null,
+    template: null,
   })
 
   useEffect(() => {
@@ -49,7 +54,7 @@ export function RulesPage() {
     const fresh = await rulesetService.list(false)
     setRulesets(fresh)
     setSelectedId(saved.id)
-    setEditing({ open: false, target: null })
+    setEditing({ open: false, target: null, template: null })
   }
 
   const handleDelete = async (rs: RuleSet) => {
@@ -82,9 +87,16 @@ export function RulesPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setEditing({ open: true, target: selected })}
+                  onClick={() => setEditing({ open: true, target: selected, template: null })}
                 >
                   Chỉnh sửa luật này
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setEditing({ open: true, target: null, template: selected })}
+                >
+                  Nhân bản luật này
                 </Button>
                 {rulesets.length > 1 && (
                   <Button size="sm" variant="danger" onClick={() => handleDelete(selected)}>
@@ -96,7 +108,7 @@ export function RulesPage() {
             <Button
               size="sm"
               variant="primary"
-              onClick={() => setEditing({ open: true, target: null })}
+              onClick={() => setEditing({ open: true, target: null, template: null })}
             >
               + Tạo bộ luật mới
             </Button>
@@ -129,8 +141,11 @@ export function RulesPage() {
 
       {editing.open ? (
         <RuleSetEditor
+          key={editing.target?.id ?? (editing.template ? `clone-${editing.template.id}` : 'new')}
           initial={editing.target}
-          onCancel={() => setEditing({ open: false, target: null })}
+          template={editing.template}
+          existingRulesets={rulesets}
+          onCancel={() => setEditing({ open: false, target: null, template: null })}
           onSaved={handleSaved}
         />
       ) : selected ? (

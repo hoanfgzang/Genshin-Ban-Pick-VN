@@ -44,10 +44,14 @@ class MatchPickSlot(CamelModel):
     constellation: int
     level: int
     character_cost: float
+    character_custom_cost_id: str | None = None
+    character_custom_cost_note: str | None = None
     weapon_slug: str | None = None
     refinement: int = 1
     weapon_cost: float = 0.0
     weapon_refinement_seconds: float = 0.0
+    weapon_custom_cost_id: str | None = None
+    weapon_custom_cost_note: str | None = None
     total_slot_cost: float
 
 

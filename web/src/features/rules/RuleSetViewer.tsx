@@ -1,8 +1,8 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Chip } from '@/components/ui/Chip'
 import { ElementIcon } from '@/components/ui/ElementIcon'
-import { WEAPON_LABEL, type Rarity, type WeaponType, WEAPONS } from '@/domain/character'
+import { ELEMENT_LABEL, WEAPON_LABEL, type Rarity, type WeaponType, WEAPONS } from '@/domain/character'
 import { CHARACTERS } from '@/domain/characters'
 import {
   calcCharacterCost,
@@ -16,6 +16,14 @@ import { getStepBaseSeconds, TIE_BREAK_OPTIONS, type RuleSet } from '@/domain/ru
 import { REFINEMENTS, type WeaponRarity } from '@/domain/weapon'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
+import {
+  COST_ELEMENT_ORDER,
+  filterAndSortCharacters,
+  filterAndSortWeapons,
+  type CharCostSortKey,
+  type ElementFilterValue,
+  type WeaponCostSortKey,
+} from './costTableUtils'
 
 interface Props {
   ruleset: RuleSet
@@ -28,13 +36,18 @@ export function RuleSetViewer({ ruleset }: Props) {
   const { costRules } = config
   const [sampleCost, setSampleCost] = useState('8')
   const [charQuery, setCharQuery] = useState('')
+  const [charElements, setCharElements] = useState<ElementFilterValue[]>([])
   const [charRarity, setCharRarity] = useState<Rarity | null>(null)
   const [onlyCharOverrides, setOnlyCharOverrides] = useState(false)
+  const [onlyCharCustom, setOnlyCharCustom] = useState(false)
+  const [charSort, setCharSort] = useState<CharCostSortKey>('default')
 
   const [weaponQuery, setWeaponQuery] = useState('')
   const [weaponTypeFilter, setWeaponTypeFilter] = useState<WeaponType | null>(null)
   const [weaponRarityFilter, setWeaponRarityFilter] = useState<WeaponRarity | null>(null)
   const [onlyWeaponOverrides, setOnlyWeaponOverrides] = useState(false)
+  const [onlyWeaponCustom, setOnlyWeaponCustom] = useState(false)
+  const [weaponSort, setWeaponSort] = useState<WeaponCostSortKey>('default')
 
   const blueBans = config.draftSteps.filter((s) => s.side === 'blue' && s.action === 'ban').length
   const bluePicks = config.draftSteps.filter((s) => s.side === 'blue' && s.action === 'pick').length
@@ -47,49 +60,80 @@ export function RuleSetViewer({ ruleset }: Props) {
   const parsedSampleCost = Number.isFinite(Number(sampleCost)) ? Math.max(0, Number(sampleCost)) : 0
   const samplePenalty = calcCostPenaltySeconds(parsedSampleCost, costRules)
 
-  const filteredCharacters = useMemo(() => {
-    const q = charQuery.trim().toLowerCase()
-    return CHARACTERS.filter((c) => {
-      if (q && !c.name.toLowerCase().includes(q) && !c.slug.includes(q)) return false
-      if (charRarity && c.rarity !== charRarity) return false
-      if (onlyCharOverrides && !(c.slug in costRules.characterOverrides)) return false
-      return true
-    })
-  }, [charQuery, charRarity, onlyCharOverrides, costRules.characterOverrides])
+  const charCustomMap = useMemo(
+    () => costRules.characterCustomCosts ?? {},
+    [costRules.characterCustomCosts],
+  )
+  const weaponCustomMap = useMemo(
+    () => costRules.weaponCustomCosts ?? {},
+    [costRules.weaponCustomCosts],
+  )
+
+  const charCustomCount = useMemo(
+    () => Object.values(charCustomMap).reduce((sum, list) => sum + list.length, 0),
+    [charCustomMap],
+  )
+  const charOverriddenCount = useMemo(
+    () =>
+      CHARACTERS.filter(
+        (c) => c.slug in costRules.characterOverrides || (charCustomMap[c.slug]?.length ?? 0) > 0,
+      ).length,
+    [costRules.characterOverrides, charCustomMap],
+  )
+
+  const filteredCharacters = useMemo(
+    () =>
+      filterAndSortCharacters(CHARACTERS, costRules, {
+        query: charQuery,
+        elements: charElements,
+        rarity: charRarity,
+        onlyOverridden: onlyCharOverrides,
+        onlyCustom: onlyCharCustom,
+        sort: charSort,
+      }),
+    [charQuery, charElements, charRarity, onlyCharOverrides, onlyCharCustom, charSort, costRules],
+  )
+
+  const weaponCustomCount = useMemo(
+    () => Object.values(weaponCustomMap).reduce((sum, list) => sum + list.length, 0),
+    [weaponCustomMap],
+  )
 
   const overriddenWeaponCount = useMemo(
     () =>
       WEAPONS_LIST.filter(
         (w) =>
           w.slug in costRules.weaponCostOverrides ||
-          w.slug in costRules.weaponRefinementOverrides,
+          w.slug in costRules.weaponRefinementOverrides ||
+          (weaponCustomMap[w.slug]?.length ?? 0) > 0,
       ).length,
-    [costRules.weaponCostOverrides, costRules.weaponRefinementOverrides],
+    [costRules.weaponCostOverrides, costRules.weaponRefinementOverrides, weaponCustomMap],
   )
 
-  const filteredWeapons = useMemo(() => {
-    const q = weaponQuery.trim().toLowerCase()
-    return WEAPONS_LIST.filter((w) => {
-      if (q && !w.name.toLowerCase().includes(q) && !w.slug.includes(q)) return false
-      if (weaponTypeFilter && w.weaponType !== weaponTypeFilter) return false
-      if (weaponRarityFilter && w.rarity !== weaponRarityFilter) return false
-      if (
-        onlyWeaponOverrides &&
-        !(w.slug in costRules.weaponCostOverrides) &&
-        !(w.slug in costRules.weaponRefinementOverrides)
-      ) {
-        return false
-      }
-      return true
-    })
-  }, [
-    weaponQuery,
-    weaponTypeFilter,
-    weaponRarityFilter,
-    onlyWeaponOverrides,
-    costRules.weaponCostOverrides,
-    costRules.weaponRefinementOverrides,
-  ])
+  const filteredWeapons = useMemo(
+    () =>
+      filterAndSortWeapons(WEAPONS_LIST, costRules, {
+        query: weaponQuery,
+        weaponType: weaponTypeFilter,
+        rarity: weaponRarityFilter,
+        onlyOverridden: onlyWeaponOverrides,
+        onlyCustom: onlyWeaponCustom,
+        sort: weaponSort,
+      }),
+    [
+      weaponQuery,
+      weaponTypeFilter,
+      weaponRarityFilter,
+      onlyWeaponOverrides,
+      onlyWeaponCustom,
+      weaponSort,
+      costRules,
+    ],
+  )
+
+  const toggleCharElement = (el: ElementFilterValue) => {
+    setCharElements((prev) => (prev.includes(el) ? prev.filter((x) => x !== el) : [...prev, el]))
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -278,6 +322,19 @@ export function RuleSetViewer({ ruleset }: Props) {
                 placeholder="Tìm nhân vật…"
                 className="h-9 w-full max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
               />
+              <label className="flex items-center gap-1.5 text-xs text-muted">
+                <span>Sắp xếp</span>
+                <select
+                  value={charSort}
+                  onChange={(e) => setCharSort(e.target.value as CharCostSortKey)}
+                  className="h-9 cursor-pointer rounded-lg border border-line bg-bg/60 px-2.5 text-xs text-text focus:border-gold focus:outline-none"
+                >
+                  <option value="default">Mặc định</option>
+                  <option value="name_asc">Tên A → Z</option>
+                  <option value="name_desc">Tên Z → A</option>
+                  <option value="element">Theo hệ (Hỏa → Nham)</option>
+                </select>
+              </label>
               <Chip active={charRarity === 5} onClick={() => setCharRarity((r) => (r === 5 ? null : 5))}>
                 5★
               </Chip>
@@ -285,15 +342,46 @@ export function RuleSetViewer({ ruleset }: Props) {
                 4★
               </Chip>
               <Chip active={onlyCharOverrides} onClick={() => setOnlyCharOverrides((v) => !v)}>
-                Đã chỉnh riêng ({Object.keys(costRules.characterOverrides).length})
+                Đã chỉnh riêng ({charOverriddenCount})
               </Chip>
+              <Chip active={onlyCharCustom} onClick={() => setOnlyCharCustom((v) => !v)}>
+                Điều kiện đặc biệt ({charCustomCount})
+              </Chip>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Lọc nhân vật theo hệ">
+              <span className="mr-1 text-xs text-muted">Hệ:</span>
+              {COST_ELEMENT_ORDER.map((el) => (
+                <Chip key={el} active={charElements.includes(el)} onClick={() => toggleCharElement(el)}>
+                  <ElementIcon element={el} className="size-3.5" />
+                  {ELEMENT_LABEL[el]}
+                </Chip>
+              ))}
+              <Chip active={charElements.includes('none')} onClick={() => toggleCharElement('none')}>
+                Khác
+              </Chip>
+              {(charQuery || charElements.length > 0 || charRarity || onlyCharOverrides || onlyCharCustom) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCharQuery('')
+                    setCharElements([])
+                    setCharRarity(null)
+                    setOnlyCharOverrides(false)
+                    setOnlyCharCustom(false)
+                  }}
+                  className="ml-1 cursor-pointer text-xs font-medium text-gold underline-offset-2 hover:underline"
+                >
+                  Xóa bộ lọc
+                </button>
+              )}
             </div>
 
             <div className="max-h-[28rem] overflow-auto rounded-lg border border-line">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="sticky top-0 bg-panel-2 text-xs text-muted">
                   <tr>
-                    <th className="px-3 py-2">Nhân vật</th>
+                    <th className="px-3 py-2">Nhân vật ({filteredCharacters.length})</th>
                     {CONSTELLATIONS.map((c) => (
                       <th key={c} className="px-2 py-2 text-center">
                         C{c}
@@ -304,36 +392,68 @@ export function RuleSetViewer({ ruleset }: Props) {
                 <tbody className="divide-y divide-line/50">
                   {filteredCharacters.map((c) => {
                     const isOverridden = c.slug in costRules.characterOverrides
+                    const customList = charCustomMap[c.slug] ?? []
                     return (
-                      <tr key={c.slug} className={isOverridden ? 'bg-gold/5' : undefined}>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <img src={c.icon} alt="" className="size-7 rounded-md object-cover" loading="lazy" />
-                            {c.element && <ElementIcon element={c.element} className="size-3.5 shrink-0" />}
-                            <span className="font-medium text-text">{c.name}</span>
-                            <span className="text-[11px] text-muted">{c.rarity}★</span>
-                            {isOverridden && (
-                              <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
-                                Tùy chỉnh
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        {CONSTELLATIONS.map((lvl) => {
-                          const val = calcCharacterCost(c.slug, lvl, costRules)
-                          return (
-                            <td
-                              key={lvl}
-                              className={cn(
-                                'px-2 py-2 text-center font-mono',
-                                val > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
+                      <Fragment key={c.slug}>
+                        <tr className={isOverridden || customList.length > 0 ? 'bg-gold/5' : undefined}>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <img src={c.icon} alt="" className="size-7 rounded-md object-cover" loading="lazy" />
+                              {c.element && <ElementIcon element={c.element} className="size-3.5 shrink-0" />}
+                              <span className="font-medium text-text">{c.name}</span>
+                              <span className="text-[11px] text-muted">{c.rarity}★</span>
+                              {isOverridden && (
+                                <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
+                                  Tùy chỉnh
+                                </span>
                               )}
-                            >
-                              {formatCost(val)}
+                              {customList.length > 0 && (
+                                <span className="rounded bg-hydro/20 px-1.5 py-0.5 text-[10px] font-semibold text-hydro">
+                                  {customList.length} ĐK
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          {CONSTELLATIONS.map((lvl) => {
+                            const val = calcCharacterCost(c.slug, lvl, costRules)
+                            return (
+                              <td
+                                key={lvl}
+                                className={cn(
+                                  'px-2 py-2 text-center font-mono',
+                                  val > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
+                                )}
+                              >
+                                {formatCost(val)}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                        {customList.map((cc) => (
+                          <tr key={`${c.slug}-${cc.id}`} className="bg-hydro/5 text-xs">
+                            <td className="py-1.5 pr-3 pl-9">
+                              <span className="mr-1.5 rounded bg-hydro/20 px-1.5 py-0.5 text-[10px] font-bold text-hydro">
+                                Điều kiện
+                              </span>
+                              <span className="text-text">{cc.note}</span>
                             </td>
-                          )
-                        })}
-                      </tr>
+                            {CONSTELLATIONS.map((lvl) => {
+                              const val = cc.costs[lvl] ?? 0
+                              return (
+                                <td
+                                  key={lvl}
+                                  className={cn(
+                                    'px-2 py-1.5 text-center font-mono',
+                                    val > 0 ? 'font-semibold text-hydro' : 'text-muted/60',
+                                  )}
+                                >
+                                  {formatCost(val)}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </Fragment>
                     )
                   })}
                 </tbody>
@@ -350,6 +470,20 @@ export function RuleSetViewer({ ruleset }: Props) {
                 placeholder="Tìm vũ khí…"
                 className="h-9 w-full max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
               />
+              <label className="flex items-center gap-1.5 text-xs text-muted">
+                <span>Sắp xếp</span>
+                <select
+                  value={weaponSort}
+                  onChange={(e) => setWeaponSort(e.target.value as WeaponCostSortKey)}
+                  className="h-9 cursor-pointer rounded-lg border border-line bg-bg/60 px-2.5 text-xs text-text focus:border-gold focus:outline-none"
+                >
+                  <option value="default">Mặc định</option>
+                  <option value="name_asc">Tên A → Z</option>
+                  <option value="name_desc">Tên Z → A</option>
+                  <option value="rarity">Độ hiếm (5★ → 4★)</option>
+                  <option value="weaponType">Loại vũ khí</option>
+                </select>
+              </label>
               {([5, 4] as const).map((r) => (
                 <Chip
                   key={r}
@@ -371,13 +505,16 @@ export function RuleSetViewer({ ruleset }: Props) {
               <Chip active={onlyWeaponOverrides} onClick={() => setOnlyWeaponOverrides((v) => !v)}>
                 Đã chỉnh riêng ({overriddenWeaponCount})
               </Chip>
+              <Chip active={onlyWeaponCustom} onClick={() => setOnlyWeaponCustom((v) => !v)}>
+                Điều kiện đặc biệt ({weaponCustomCount})
+              </Chip>
             </div>
 
             <div className="max-h-[28rem] overflow-auto rounded-lg border border-line">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead className="sticky top-0 bg-panel-2 text-xs text-muted">
                   <tr>
-                    <th className="px-3 py-2">Vũ khí</th>
+                    <th className="px-3 py-2">Vũ khí ({filteredWeapons.length})</th>
                     <th className="px-2 py-2 text-center">Cost</th>
                     {REFINEMENTS.map((r) => (
                       <th key={r} className="px-2 py-2 text-center">
@@ -388,49 +525,89 @@ export function RuleSetViewer({ ruleset }: Props) {
                 </thead>
                 <tbody className="divide-y divide-line/50">
                   {filteredWeapons.map((w) => {
-                    const isOverridden =
+                    const isBaseOverridden =
                       w.slug in costRules.weaponCostOverrides ||
                       w.slug in costRules.weaponRefinementOverrides
+                    const customList = weaponCustomMap[w.slug] ?? []
                     const baseCost = calcWeaponCost(w.slug, costRules)
                     return (
-                      <tr key={w.slug} className={isOverridden ? 'bg-gold/5' : undefined}>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
-                            <img src={w.icon} alt="" className="size-7 rounded-md bg-bg/60 object-contain" loading="lazy" />
-                            <span className="font-medium text-text">{w.name}</span>
-                            <span className="text-[11px] text-muted">
-                              {w.rarity}★ · {WEAPON_LABEL[w.weaponType]}
-                            </span>
-                            {isOverridden && (
-                              <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
-                                Tùy chỉnh
+                      <Fragment key={w.slug}>
+                        <tr className={isBaseOverridden || customList.length > 0 ? 'bg-gold/5' : undefined}>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <img src={w.icon} alt="" className="size-7 rounded-md bg-bg/60 object-contain" loading="lazy" />
+                              <span className="font-medium text-text">{w.name}</span>
+                              <span className="text-[11px] text-muted">
+                                {w.rarity}★ · {WEAPON_LABEL[w.weaponType]}
                               </span>
+                              {isBaseOverridden && (
+                                <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
+                                  Tùy chỉnh
+                                </span>
+                              )}
+                              {customList.length > 0 && (
+                                <span className="rounded bg-hydro/20 px-1.5 py-0.5 text-[10px] font-semibold text-hydro">
+                                  {customList.length} ĐK
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td
+                            className={cn(
+                              'px-2 py-2 text-center font-mono',
+                              baseCost > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
                             )}
-                          </div>
-                        </td>
-                        <td
-                          className={cn(
-                            'px-2 py-2 text-center font-mono',
-                            baseCost > 0 ? 'font-semibold text-gold-strong' : 'text-muted/60',
-                          )}
-                        >
-                          {formatCost(baseCost)}
-                        </td>
-                        {REFINEMENTS.map((r) => {
-                          const val = calcWeaponRefinementSeconds(w.slug, r, costRules)
-                          return (
+                          >
+                            {formatCost(baseCost)}
+                          </td>
+                          {REFINEMENTS.map((r) => {
+                            const val = calcWeaponRefinementSeconds(w.slug, r, costRules)
+                            return (
+                              <td
+                                key={r}
+                                className={cn(
+                                  'px-2 py-2 text-center font-mono',
+                                  val > 0 ? 'font-semibold text-pyro' : 'text-muted/60',
+                                )}
+                              >
+                                {val > 0 ? `+${formatSeconds(val)}` : '0s'}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                        {customList.map((wc) => (
+                          <tr key={`${w.slug}-${wc.id}`} className="bg-hydro/5 text-xs">
+                            <td className="py-1.5 pr-3 pl-9">
+                              <span className="mr-1.5 rounded bg-hydro/20 px-1.5 py-0.5 text-[10px] font-bold text-hydro">
+                                Điều kiện
+                              </span>
+                              <span className="text-text">{wc.note}</span>
+                            </td>
                             <td
-                              key={r}
                               className={cn(
-                                'px-2 py-2 text-center font-mono',
-                                val > 0 ? 'font-semibold text-pyro' : 'text-muted/60',
+                                'px-2 py-1.5 text-center font-mono',
+                                wc.cost > 0 ? 'font-semibold text-hydro' : 'text-muted/60',
                               )}
                             >
-                              {val > 0 ? `+${formatSeconds(val)}` : '0s'}
+                              {formatCost(wc.cost)}
                             </td>
-                          )
-                        })}
-                      </tr>
+                            {REFINEMENTS.map((r, rIdx) => {
+                              const val = wc.refinementSeconds[rIdx] ?? 0
+                              return (
+                                <td
+                                  key={r}
+                                  className={cn(
+                                    'px-2 py-1.5 text-center font-mono',
+                                    val > 0 ? 'font-semibold text-pyro' : 'text-muted/60',
+                                  )}
+                                >
+                                  {val > 0 ? `+${formatSeconds(val)}` : '0s'}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </Fragment>
                     )
                   })}
                 </tbody>

@@ -878,6 +878,33 @@ def cancel_undo_request(
     return next_state
 
 
+def _resolve_slot_actor(
+    state: MatchState,
+    *,
+    user_id: str,
+    user_role: str,
+    target_side: SideName | None,
+) -> SideName:
+    is_admin = user_role == "admin"
+    if is_admin and target_side in ("blue", "red"):
+        if state.status not in ("drafting", "weapon_phase", "scoring"):
+            raise bad_request(
+                "INVALID_PHASE",
+                "Không thể chỉnh vũ khí hoặc Custom Cost khi trận đấu chưa bắt đầu hoặc đã kết thúc.",
+            )
+        return target_side
+
+    if state.status not in ("drafting", "weapon_phase"):
+        raise bad_request(
+            "INVALID_PHASE",
+            "Chỉ có thể chỉnh vũ khí hoặc Custom Cost trong lúc Ban/Pick hoặc pha điền vũ khí.",
+        )
+    found_side = _find_user_side(state, user_id)
+    if not found_side:
+        raise forbidden("Bạn không phải người chơi trong trận này.")
+    return found_side
+
+
 def set_pick_weapon(
     state: MatchState,
     *,
@@ -887,25 +914,15 @@ def set_pick_weapon(
     slot: int,
     weapon_slug: str,
     refinement: int,
+    weapon_custom_cost_id: str | None = None,
 ) -> MatchState:
     is_admin = user_role == "admin"
-    if is_admin and target_side in ("blue", "red"):
-        if state.status not in ("drafting", "weapon_phase", "scoring"):
-            raise bad_request(
-                "INVALID_PHASE",
-                "Không thể chỉnh vũ khí khi trận đấu chưa bắt đầu hoặc đã kết thúc.",
-            )
-        side: SideName = target_side
-    else:
-        if state.status not in ("drafting", "weapon_phase"):
-            raise bad_request(
-                "INVALID_PHASE",
-                "Chỉ có thể chọn vũ khí trong lúc Ban/Pick hoặc pha điền vũ khí.",
-            )
-        found_side = _find_user_side(state, user_id)
-        if not found_side:
-            raise forbidden("Bạn không phải người chơi trong trận này.")
-        side = found_side
+    side = _resolve_slot_actor(
+        state,
+        user_id=user_id,
+        user_role=user_role,
+        target_side=target_side,
+    )
 
     side_state = state.sides[side]
     if side_state.weapons_locked and not is_admin:
@@ -926,19 +943,104 @@ def set_pick_weapon(
             f"{char_info['name']} không thể trang bị loại vũ khí này.",
         )
 
+    w_cid = (
+        weapon_custom_cost_id.strip()
+        if isinstance(weapon_custom_cost_id, str) and weapon_custom_cost_id.strip()
+        else None
+    )
+    w_note: str | None = None
+    if w_cid is not None:
+        matched_wcc = next(
+            (
+                item
+                for item in state.ruleset.cost_rules.weapon_custom_costs.get(weapon_slug, [])
+                if item.id == w_cid
+            ),
+            None,
+        )
+        if not matched_wcc:
+            raise bad_request("INVALID_CUSTOM_COST", "Mức Custom Cost vũ khí không tồn tại.")
+        w_note = matched_wcc.note
+
     next_state = state.model_copy(deep=True)
     next_side_state = next_state.sides[side]
     target_pick = next_side_state.picks[slot]
     target_pick.weapon_slug = weapon_slug
     target_pick.refinement = refinement
+    target_pick.weapon_custom_cost_id = w_cid
+    target_pick.weapon_custom_cost_note = w_note
     target_pick.weapon_cost = calc_weapon_cost(
         weapon_slug,
         next_state.ruleset.cost_rules,
+        w_cid,
     )
     target_pick.weapon_refinement_seconds = calc_weapon_refinement_seconds(
         weapon_slug,
         refinement,
         next_state.ruleset.cost_rules,
+        w_cid,
+    )
+    _recalculate_side_costs(next_side_state, next_state.ruleset)
+    if next_side_state.score_submitted and next_side_state.chamber_total_seconds is not None:
+        next_side_state.final_score = _compute_final_score(next_side_state)
+    return next_state
+
+
+def set_pick_character_custom_cost(
+    state: MatchState,
+    *,
+    user_id: str,
+    user_role: str = "player",
+    target_side: SideName | None = None,
+    slot: int,
+    custom_cost_id: str | None,
+) -> MatchState:
+    is_admin = user_role == "admin"
+    side = _resolve_slot_actor(
+        state,
+        user_id=user_id,
+        user_role=user_role,
+        target_side=target_side,
+    )
+
+    side_state = state.sides[side]
+    if side_state.weapons_locked and not is_admin:
+        raise bad_request("WEAPONS_LOCKED", "Bạn đã khóa đội hình vũ khí.")
+    if slot < 0 or slot >= len(side_state.picks):
+        raise bad_request("INVALID_SLOT", "Vị trí nhân vật không hợp lệ.")
+
+    cid = (
+        custom_cost_id.strip()
+        if isinstance(custom_cost_id, str) and custom_cost_id.strip()
+        else None
+    )
+    pick = side_state.picks[slot]
+    c_note: str | None = None
+    if cid is not None:
+        matched_ccc = next(
+            (
+                item
+                for item in state.ruleset.cost_rules.character_custom_costs.get(
+                    pick.character_slug, []
+                )
+                if item.id == cid
+            ),
+            None,
+        )
+        if not matched_ccc:
+            raise bad_request("INVALID_CUSTOM_COST", "Mức Custom Cost nhân vật không tồn tại.")
+        c_note = matched_ccc.note
+
+    next_state = state.model_copy(deep=True)
+    next_side_state = next_state.sides[side]
+    target_pick = next_side_state.picks[slot]
+    target_pick.character_custom_cost_id = cid
+    target_pick.character_custom_cost_note = c_note
+    target_pick.character_cost = calc_character_cost(
+        target_pick.character_slug,
+        target_pick.constellation,
+        next_state.ruleset.cost_rules,
+        cid,
     )
     _recalculate_side_costs(next_side_state, next_state.ruleset)
     if next_side_state.score_submitted and next_side_state.chamber_total_seconds is not None:

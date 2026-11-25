@@ -3,8 +3,10 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { buttonClass } from '@/components/ui/buttonStyles'
 import { toast } from '@/components/ui/toast'
+import { getCharacter } from '@/domain/characters'
 import { calcChamberDiff, formatCost, formatSeconds } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
+import { getWeapon } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
 import type { ChamberTimeInput, MatchState } from '@/services'
 import { countFourStarPicks, formatWinReason, getSeriesWinsForSide } from './series'
@@ -159,6 +161,30 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
           <p className="py-4 text-center text-xs text-muted">
             Đang chờ người chơi nhập thời gian hoàn thành 3 ải…
           </p>
+        )}
+
+        {s.picks.some((p) => p.characterCustomCostNote || p.weaponCustomCostNote) && (
+          <div className="rounded-lg border border-hydro/35 bg-hydro/5 px-3 py-2 text-[11px]">
+            <div className="mb-1 font-bold text-hydro">Custom Cost đang áp dụng:</div>
+            <ul className="space-y-0.5 text-text">
+              {s.picks.flatMap((p) => {
+                const items: string[] = []
+                if (p.characterCustomCostNote) {
+                  const chName = getCharacter(p.characterSlug)?.name ?? p.characterSlug
+                  items.push(
+                    `• ${chName} (C${p.constellation} · ${formatCost(p.characterCost)} cost): ${p.characterCustomCostNote}`,
+                  )
+                }
+                if (p.weaponCustomCostNote && p.weaponSlug) {
+                  const wpName = getWeapon(p.weaponSlug)?.name ?? p.weaponSlug
+                  items.push(
+                    `• ${wpName} (R${p.refinement} · ${formatCost(p.weaponCost)} cost): ${p.weaponCustomCostNote}`,
+                  )
+                }
+                return items.map((line, i) => <li key={`${p.slot}-${i}`}>{line}</li>)
+              })}
+            </ul>
+          </div>
         )}
       </section>
     )

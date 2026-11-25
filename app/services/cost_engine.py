@@ -8,8 +8,18 @@ from ..schemas.ruleset import CostRules
 CHAMBER_BASE_SECONDS = 540  # Cố định cứng 9:00 mỗi ải
 
 
-def calc_character_cost(slug: str, constellation: int, cost_rules: CostRules) -> float:
+def calc_character_cost(
+    slug: str,
+    constellation: int,
+    cost_rules: CostRules,
+    custom_cost_id: str | None = None,
+) -> float:
     c = max(0, min(6, int(constellation)))
+    if custom_cost_id:
+        for item in cost_rules.character_custom_costs.get(slug, []):
+            if item.id == custom_cost_id and len(item.costs) == 7:
+                return round(float(item.costs[c]), 2)
+
     override = cost_rules.character_overrides.get(slug)
     if override and len(override) == 7:
         return round(float(override[c]), 2)
@@ -20,9 +30,18 @@ def calc_character_cost(slug: str, constellation: int, cost_rules: CostRules) ->
     return round(float(table[c]), 2)
 
 
-def calc_weapon_cost(slug: str | None, cost_rules: CostRules) -> float:
+def calc_weapon_cost(
+    slug: str | None,
+    cost_rules: CostRules,
+    custom_cost_id: str | None = None,
+) -> float:
     if not slug:
         return 0.0
+    if custom_cost_id:
+        for item in cost_rules.weapon_custom_costs.get(slug, []):
+            if item.id == custom_cost_id:
+                return round(float(item.cost), 2)
+
     if slug in cost_rules.weapon_cost_overrides:
         return round(float(cost_rules.weapon_cost_overrides[slug]), 2)
 
@@ -33,11 +52,19 @@ def calc_weapon_cost(slug: str | None, cost_rules: CostRules) -> float:
 
 
 def calc_weapon_refinement_seconds(
-    slug: str | None, refinement: int, cost_rules: CostRules
+    slug: str | None,
+    refinement: int,
+    cost_rules: CostRules,
+    custom_cost_id: str | None = None,
 ) -> float:
     if not slug:
         return 0.0
     idx = max(0, min(4, int(refinement) - 1))
+    if custom_cost_id:
+        for item in cost_rules.weapon_custom_costs.get(slug, []):
+            if item.id == custom_cost_id and len(item.refinement_seconds) == 5:
+                return round(float(item.refinement_seconds[idx]), 2)
+
     override = cost_rules.weapon_refinement_overrides.get(slug)
     if override and len(override) == 5:
         return round(float(override[idx]), 2)

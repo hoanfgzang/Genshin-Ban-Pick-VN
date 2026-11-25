@@ -36,7 +36,7 @@ export function MatchPage() {
   const user = useAuthStore((s) => s.user)
   const { state, loading, connected, notFound, sendAction } = useMatchSocket(code)
   const countdown = useCountdownSeconds(state?.turnDeadlineAt ?? null)
-  const [weaponTarget, setWeaponTarget] = useState<{ side: MatchSide; pick: MatchPickSlot } | null>(
+  const [weaponTarget, setWeaponTarget] = useState<{ side: MatchSide; slot: number } | null>(
     null,
   )
   const [draftHover, setDraftHover] = useState<{ stepKey: string; slug: string | null } | null>(
@@ -99,8 +99,11 @@ export function MatchPage() {
     return (state.status === 'weapon_phase' || state.status === 'scoring') && mySide === side
   }
 
-  const weaponModalCharacter = weaponTarget
-    ? getCharacter(weaponTarget.pick.characterSlug) ?? null
+  const activePick: MatchPickSlot | null = weaponTarget
+    ? (state.sides[weaponTarget.side].picks[weaponTarget.slot] ?? null)
+    : null
+  const weaponModalCharacter = activePick
+    ? getCharacter(activePick.characterSlug) ?? null
     : null
   const isBo3 = state.format === 'bo3'
   const currentGame = state.currentGame ?? 1
@@ -201,7 +204,7 @@ export function MatchPage() {
             state={state}
             hoverCharacterSlug={effectiveHoverSlug}
             canEditWeaponsForSide={canEditWeaponsForSide}
-            onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
+            onSelectPickSlot={(side, pick) => setWeaponTarget({ side, slot: pick.slot })}
           />
 
           {(state.status === 'drafting' || state.status === 'weapon_phase') && (
@@ -223,7 +226,7 @@ export function MatchPage() {
               selectedSlug={effectiveHoverSlug}
               onSelectSlug={handleDraftHover}
               onDraftAction={handleDraftAction}
-              onSelectPickSlot={(side, pick) => setWeaponTarget({ side, pick })}
+              onSelectPickSlot={(side, pick) => setWeaponTarget({ side, slot: pick.slot })}
               onUndoStep={() => {
                 setDraftHover(null)
                 sendAction({ action: 'undo_draft_step' })
@@ -241,7 +244,7 @@ export function MatchPage() {
               onReorderLineup={(side, order) =>
                 sendAction({ action: 'reorder_lineup', side, order })
               }
-              onSelectWeaponSlot={(side, pick) => setWeaponTarget({ side, pick })}
+              onSelectWeaponSlot={(side, pick) => setWeaponTarget({ side, slot: pick.slot })}
               onLockWeapons={() => sendAction({ action: 'lock_weapons' })}
               onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
               onRequestUndo={() => sendAction({ action: 'request_undo' })}
@@ -265,23 +268,34 @@ export function MatchPage() {
 
       <WeaponPickerModal
         key={
-          weaponTarget
-            ? `${weaponTarget.side}-${weaponTarget.pick.slot}-${weaponTarget.pick.weaponSlug ?? 'none'}`
+          weaponTarget && activePick
+            ? `${weaponTarget.side}-${weaponTarget.slot}-${activePick.weaponSlug ?? 'none'}-${activePick.refinement}`
             : 'closed'
         }
-        open={Boolean(weaponTarget)}
+        open={Boolean(weaponTarget && activePick)}
         character={weaponModalCharacter}
+        pick={activePick}
         costRules={state.ruleset.costRules}
-        initialWeaponSlug={weaponTarget?.pick.weaponSlug ?? null}
-        initialRefinement={weaponTarget?.pick.refinement ?? 1}
-        onSelect={(weaponSlug, refinement) => {
-          if (!weaponTarget) return
+        initialWeaponSlug={activePick?.weaponSlug ?? null}
+        initialRefinement={activePick?.refinement ?? 1}
+        onSelectCharacterCustomCost={(customCostId) => {
+          if (!weaponTarget || !activePick) return
+          sendAction({
+            action: 'set_character_custom_cost',
+            side: weaponTarget.side,
+            slot: activePick.slot,
+            customCostId,
+          })
+        }}
+        onSelect={(weaponSlug, refinement, weaponCustomCostId) => {
+          if (!weaponTarget || !activePick) return
           sendAction({
             action: 'set_weapon',
             side: weaponTarget.side,
-            slot: weaponTarget.pick.slot,
+            slot: activePick.slot,
             weaponSlug,
             refinement,
+            weaponCustomCostId,
           })
         }}
         onClose={() => setWeaponTarget(null)}

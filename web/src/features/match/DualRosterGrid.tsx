@@ -12,7 +12,7 @@ import {
   type WeaponType,
 } from '@/domain/character'
 import { CHARACTERS } from '@/domain/characters'
-import { calcCharacterCost, formatCost } from '@/domain/cost'
+import { calcCharacterCost, formatCost, getCharacterCustomCosts } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchState, SideOwnedChar } from '@/services'
@@ -253,6 +253,10 @@ export function DualRosterGrid({
               const costPreview = owned
                 ? calcCharacterCost(c.slug, owned.constellation, state.ruleset.costRules)
                 : null
+              const customCosts = getCharacterCustomCosts(c.slug, state.ruleset.costRules)
+              const customNoteSummary = customCosts.length
+                ? ` · Có ${customCosts.length} ĐK Custom Cost (${customCosts.map((cc) => cc.note).join('; ')})`
+                : ''
 
               return (
                 <button
@@ -265,7 +269,7 @@ export function DualRosterGrid({
                     owned
                       ? ` · Lv${owned.level} · C${owned.constellation} (+${formatCost(costPreview ?? 0)} cost)`
                       : ' · Chưa sở hữu'
-                  }${lockedInGame ? ` · Đã pick ở Ván ${lockedInGame} (không thể pick lại)` : ''}`}
+                  }${customNoteSummary}${lockedInGame ? ` · Đã pick ở Ván ${lockedInGame} (không thể pick lại)` : ''}`}
                   className={cn(
                     'group relative flex flex-col overflow-hidden rounded border text-left transition',
                     selectable
@@ -297,6 +301,16 @@ export function DualRosterGrid({
                     {costPreview !== null && costPreview > 0 && (
                       <span className="absolute top-0.5 right-0.5 rounded bg-black/80 px-1 py-0.2 font-mono text-[9px] font-bold text-gold-strong">
                         {formatCost(costPreview)}
+                      </span>
+                    )}
+                    {customCosts.length > 0 && (
+                      <span
+                        className={cn(
+                          'absolute right-0.5 rounded bg-hydro/90 px-1 py-0.2 text-[8px] font-black text-bg',
+                          costPreview !== null && costPreview > 0 ? 'top-4' : 'top-0.5',
+                        )}
+                      >
+                        ĐK
                       </span>
                     )}
                     {owned && (

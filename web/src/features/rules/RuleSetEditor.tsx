@@ -3,44 +3,124 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/toast'
+import { CHARACTER_BY_SLUG } from '@/domain/characters'
 import {
   createDefaultRuleSetConfig,
   TIE_BREAK_OPTIONS,
+  type CharacterCustomCost,
   type RuleSet,
   type RuleSetConfig,
   type TieBreakRule,
+  type WeaponCustomCost,
 } from '@/domain/ruleset'
 import { WEAPON_BY_SLUG } from '@/domain/weapons'
 import { errorMessage } from '@/features/auth/authStore'
 import { rulesetService } from '@/services'
 import { CharacterCostOverrides } from './CharacterCostOverrides'
+import { CopyRuleSetDialog, type CopyScope } from './CopyRuleSetDialog'
 import { CostMilestonesEditor } from './CostMilestonesEditor'
 import { DraftStepsEditor } from './DraftStepsEditor'
 import { WeaponCostOverrides } from './WeaponCostOverrides'
 
 interface Props {
   initial: RuleSet | null
+  template?: RuleSet | null
+  existingRulesets?: RuleSet[]
   onCancel: () => void
   onSaved: (saved: RuleSet) => void
 }
 
-export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
-  const [name, setName] = useState(initial?.name ?? 'Bộ luật mới')
-  const [description, setDescription] = useState(initial?.description ?? '')
-  const [isActive, setIsActive] = useState(initial?.isActive ?? true)
-  const [isDefault, setIsDefault] = useState(initial?.isDefault ?? false)
+export function RuleSetEditor({
+  initial,
+  template = null,
+  existingRulesets = [],
+  onCancel,
+  onSaved,
+}: Props) {
+  const seed = initial ?? template
+  const [name, setName] = useState(
+    initial ? initial.name : template ? `${template.name} (Bản sao)` : 'Bộ luật mới',
+  )
+  const [description, setDescription] = useState(seed?.description ?? '')
+  const [isActive, setIsActive] = useState(initial ? initial.isActive : true)
+  const [isDefault, setIsDefault] = useState(initial ? initial.isDefault : false)
   const [config, setConfig] = useState<RuleSetConfig>(() =>
-    initial ? structuredClone(initial.config) : createDefaultRuleSetConfig(),
+    seed ? structuredClone(seed.config) : createDefaultRuleSetConfig(),
   )
   const [saving, setSaving] = useState(false)
+  const [copyOpen, setCopyOpen] = useState(false)
+
+  const handleApplyCopy = (source: RuleSet, scope: CopyScope) => {
+    const srcConfig = structuredClone(source.config)
+    if (scope === 'full_config') {
+      setConfig(srcConfig)
+    } else if (scope === 'cost_all') {
+      setConfig((prev) => ({ ...prev, costRules: srcConfig.costRules }))
+    } else if (scope === 'cost_characters') {
+      setConfig((prev) => ({
+        ...prev,
+        costRules: {
+          ...prev.costRules,
+          defaultChar5Costs: srcConfig.costRules.defaultChar5Costs,
+          defaultChar4Costs: srcConfig.costRules.defaultChar4Costs,
+          characterOverrides: srcConfig.costRules.characterOverrides,
+          characterCustomCosts: srcConfig.costRules.characterCustomCosts ?? {},
+        },
+      }))
+    } else if (scope === 'cost_weapons') {
+      setConfig((prev) => ({
+        ...prev,
+        costRules: {
+          ...prev.costRules,
+          defaultWeapon5Cost: srcConfig.costRules.defaultWeapon5Cost,
+          defaultWeapon4Cost: srcConfig.costRules.defaultWeapon4Cost,
+          defaultWeapon5RefinementSeconds: srcConfig.costRules.defaultWeapon5RefinementSeconds,
+          defaultWeapon4RefinementSeconds: srcConfig.costRules.defaultWeapon4RefinementSeconds,
+          weaponCostOverrides: srcConfig.costRules.weaponCostOverrides,
+          weaponRefinementOverrides: srcConfig.costRules.weaponRefinementOverrides,
+          weaponCustomCosts: srcConfig.costRules.weaponCustomCosts ?? {},
+        },
+      }))
+    }
+    toast.success(`Đã sao chép cấu hình từ "${source.name}".`)
+  }
 
   const handleSave = async () => {
     if (name.trim().length < 2) {
       toast.error('Tên bộ luật tối thiểu 2 ký tự.')
       return
     }
+
+    for (const [slug, items] of Object.entries(config.costRules.characterCustomCosts ?? {})) {
+      if (items.some((item) => !item.note.trim())) {
+        const charName = CHARACTER_BY_SLUG.get(slug)?.name ?? slug
+        toast.error(`Nhân vật "${charName}" có Custom Cost chưa nhập ghi chú điều kiện kích hoạt.`)
+        return
+      }
+    }
+    for (const [slug, items] of Object.entries(config.costRules.weaponCustomCosts ?? {})) {
+      if (items.some((item) => !item.note.trim())) {
+        const weaponName = WEAPON_BY_SLUG.get(slug)?.name ?? slug
+        toast.error(`Vũ khí "${weaponName}" có Custom Cost chưa nhập ghi chú điều kiện kích hoạt.`)
+        return
+      }
+    }
+
     setSaving(true)
     try {
+      const prunedCharOverrides = Object.fromEntries(
+        Object.entries(config.costRules.characterOverrides).filter(([slug]) =>
+          CHARACTER_BY_SLUG.has(slug),
+        ),
+      )
+      const prunedCharCustom: Record<string, CharacterCustomCost[]> = Object.fromEntries(
+        Object.entries(config.costRules.characterCustomCosts ?? {})
+          .filter(([slug, items]) => CHARACTER_BY_SLUG.has(slug) && items.length > 0)
+          .map(([slug, items]) => [
+            slug,
+            items.map((item) => ({ ...item, note: item.note.trim() })),
+          ]),
+      )
       const prunedCostOverrides = Object.fromEntries(
         Object.entries(config.costRules.weaponCostOverrides).filter(([slug]) =>
           WEAPON_BY_SLUG.has(slug),
@@ -51,12 +131,23 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
           WEAPON_BY_SLUG.has(slug),
         ),
       )
+      const prunedWeaponCustom: Record<string, WeaponCustomCost[]> = Object.fromEntries(
+        Object.entries(config.costRules.weaponCustomCosts ?? {})
+          .filter(([slug, items]) => WEAPON_BY_SLUG.has(slug) && items.length > 0)
+          .map(([slug, items]) => [
+            slug,
+            items.map((item) => ({ ...item, note: item.note.trim() })),
+          ]),
+      )
       const cleanedConfig: RuleSetConfig = {
         ...config,
         costRules: {
           ...config.costRules,
+          characterOverrides: prunedCharOverrides,
+          characterCustomCosts: prunedCharCustom,
           weaponCostOverrides: prunedCostOverrides,
           weaponRefinementOverrides: prunedRefOverrides,
+          weaponCustomCosts: prunedWeaponCustom,
         },
       }
       const payload = {
@@ -83,13 +174,22 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <div>
           <h2 className="text-lg font-bold text-gold-strong">
-            {initial ? `Chỉnh sửa bộ luật: ${initial.name}` : 'Tạo bộ luật mới (Admin)'}
+            {initial
+              ? `Chỉnh sửa bộ luật: ${initial.name}`
+              : template
+                ? `Nhân bản bộ luật từ: ${template.name}`
+                : 'Tạo bộ luật mới (Admin)'}
           </h2>
           <p className="text-xs text-muted">
-            Thay đổi thứ tự Ban/Pick, bảng Cost nhân vật/vũ khí và các mốc quy đổi giây cho bộ luật này.
+            Thay đổi thứ tự Ban/Pick, bảng Cost nhân vật/vũ khí, Custom Cost điều kiện đặc biệt và các mốc quy đổi giây.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {existingRulesets.length > 0 && (
+            <Button variant="secondary" onClick={() => setCopyOpen(true)} disabled={saving}>
+              Sao chép từ luật đã có…
+            </Button>
+          )}
           <Button variant="ghost" onClick={onCancel} disabled={saving}>
             Hủy
           </Button>
@@ -304,6 +404,7 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
         <Tabs.Content value="characters">
           <CharacterCostOverrides
             costRules={config.costRules}
+            rulesetName={name}
             onChange={(costRules) => setConfig({ ...config, costRules })}
           />
         </Tabs.Content>
@@ -311,10 +412,19 @@ export function RuleSetEditor({ initial, onCancel, onSaved }: Props) {
         <Tabs.Content value="weapons">
           <WeaponCostOverrides
             costRules={config.costRules}
+            rulesetName={name}
             onChange={(costRules) => setConfig({ ...config, costRules })}
           />
         </Tabs.Content>
       </Tabs.Root>
+
+      <CopyRuleSetDialog
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        rulesets={existingRulesets}
+        currentId={initial?.id}
+        onApply={handleApplyCopy}
+      />
     </section>
   )
 }

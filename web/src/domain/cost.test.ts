@@ -61,4 +61,39 @@ describe('domain/cost', () => {
     expect(calcChamberDiff(9, 0)).toBe(0)
     expect(calcChamberDiff(9, 1)).toBeNull()
   })
+
+  it('tính chính xác Custom Cost nhân vật và vũ khí theo customCostId', () => {
+    const { costRules } = createDefaultRuleSetConfig()
+    const withCustom = {
+      ...costRules,
+      characterCustomCosts: {
+        bennett: [
+          {
+            id: 'cc-1',
+            costs: [0.5, 0.5, 0.5, 0.5, 0.5, 1, 1.5],
+            note: 'Đi cùng Mavuika',
+          },
+        ],
+      },
+      weaponCustomCosts: {
+        'favonius-warbow': [
+          {
+            id: 'wc-1',
+            cost: 0.5,
+            refinementSeconds: [0, 2, 4, 6, 8],
+            note: 'Cầm cho Yelan',
+          },
+        ],
+      },
+    }
+
+    expect(calcCharacterCost('bennett', 6, withCustom)).toBe(0)
+    expect(calcCharacterCost('bennett', 6, withCustom, 'cc-1')).toBe(1.5)
+    expect(calcCharacterCost('bennett', 6, withCustom, 'missing')).toBe(0)
+
+    expect(calcWeaponCost('favonius-warbow', withCustom)).toBe(0)
+    expect(calcWeaponCost('favonius-warbow', withCustom, 'wc-1')).toBe(0.5)
+    expect(calcWeaponRefinementSeconds('favonius-warbow', 4, withCustom)).toBe(0)
+    expect(calcWeaponRefinementSeconds('favonius-warbow', 4, withCustom, 'wc-1')).toBe(6)
+  })
 })

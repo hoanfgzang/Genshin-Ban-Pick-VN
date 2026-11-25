@@ -43,6 +43,19 @@ export interface CostMilestone {
   bonusSeconds: number
 }
 
+export interface CharacterCustomCost {
+  id: string
+  costs: number[]
+  note: string
+}
+
+export interface WeaponCustomCost {
+  id: string
+  cost: number
+  refinementSeconds: number[]
+  note: string
+}
+
 export interface CostRules {
   defaultChar5Costs: number[]
   defaultChar4Costs: number[]
@@ -51,8 +64,10 @@ export interface CostRules {
   defaultWeapon5RefinementSeconds: number[]
   defaultWeapon4RefinementSeconds: number[]
   characterOverrides: Record<string, number[]>
+  characterCustomCosts?: Record<string, CharacterCustomCost[]>
   weaponCostOverrides: Record<string, number>
   weaponRefinementOverrides: Record<string, number[]>
+  weaponCustomCosts?: Record<string, WeaponCustomCost[]>
   baseSecondsPerCost: number
   milestones: CostMilestone[]
   draftBonusSecondsPerCost: number
@@ -146,8 +161,10 @@ export function createDefaultRuleSetConfig(): RuleSetConfig {
       defaultWeapon5RefinementSeconds: [0, 5, 10, 15, 20],
       defaultWeapon4RefinementSeconds: [0, 0, 0, 0, 0],
       characterOverrides: {},
+      characterCustomCosts: {},
       weaponCostOverrides: {},
       weaponRefinementOverrides: {},
+      weaponCustomCosts: {},
       baseSecondsPerCost: 5,
       milestones: [
         { minCost: 0, maxCost: 6, secondsPerCost: 5, bonusSeconds: 0 },

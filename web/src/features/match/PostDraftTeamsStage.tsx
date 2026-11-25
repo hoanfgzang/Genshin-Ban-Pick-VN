@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import type { MatchSide } from '@/domain/ruleset'
 import { getCharacter } from '@/domain/characters'
+import { formatCost } from '@/domain/cost'
+import { getWeapon } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
 import { DualRosterGrid } from './DualRosterGrid'
@@ -162,6 +164,7 @@ export function PostDraftTeamsStage({
                         key={pick.slot}
                         pick={pick}
                         slotInTeam={posInTeam + 1}
+                        costRules={state.ruleset.costRules}
                         canReorder={canReorder}
                         canEditWeapon={canEditWeapon}
                         isSelectedForSwap={isSelectedForSwap}
@@ -201,6 +204,30 @@ export function PostDraftTeamsStage({
             )
           })}
         </div>
+
+        {sideState.picks.some((p) => p.characterCustomCostNote || p.weaponCustomCostNote) && (
+          <div className="rounded-lg border border-hydro/35 bg-hydro/5 px-3 py-2 text-[11px]">
+            <div className="mb-1 font-bold text-hydro">Custom Cost đang áp dụng:</div>
+            <ul className="space-y-0.5 text-text">
+              {sideState.picks.flatMap((p) => {
+                const items: string[] = []
+                if (p.characterCustomCostNote) {
+                  const chName = getCharacter(p.characterSlug)?.name ?? p.characterSlug
+                  items.push(
+                    `• ${chName} (C${p.constellation} · ${formatCost(p.characterCost)} cost): ${p.characterCustomCostNote}`,
+                  )
+                }
+                if (p.weaponCustomCostNote && p.weaponSlug) {
+                  const wpName = getWeapon(p.weaponSlug)?.name ?? p.weaponSlug
+                  items.push(
+                    `• ${wpName} (R${p.refinement} · ${formatCost(p.weaponCost)} cost): ${p.weaponCustomCostNote}`,
+                  )
+                }
+                return items.map((line, i) => <li key={`${p.slot}-${i}`}>{line}</li>)
+              })}
+            </ul>
+          </div>
+        )}
       </section>
     )
   }

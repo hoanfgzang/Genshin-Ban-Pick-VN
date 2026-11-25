@@ -981,3 +981,178 @@ def test_draft_hover_ws_sync_and_clears_on_lock(test_client: TestClient) -> None
         assert state["sides"]["blue"]["bans"] == [hover_slug]
 
 
+def test_custom_cost_activation_in_match_ws_and_admin_override(test_client: TestClient) -> None:
+    all_chars, weapon4_by_type, _ = _load_sample_catalog()
+    blue_chars = all_chars[:16]
+    red_chars = all_chars[16:32]
+
+    token_a, _ = _register_and_seed_inventory(
+        test_client, "888888801", "Custom Blue", blue_chars, constellation=0, level=90
+    )
+    token_b, _ = _register_and_seed_inventory(
+        test_client, "888888802", "Custom Red", red_chars, constellation=0, level=90
+    )
+
+    settings = get_settings()
+    admin_token = test_client.post(
+        "/api/auth/login",
+        json={
+            "uid": settings.SEED_ADMIN_UID,
+            "password": settings.SEED_ADMIN_PASSWORD,
+            "remember": True,
+        },
+    ).json()["token"]
+
+    target_blue_char = blue_chars[0]
+    target_blue_weapon = weapon4_by_type[target_blue_char["weapon"]]
+
+    cfg = default_ruleset_config().model_dump(by_alias=True)
+    # Gọn nhẹ 2 lượt pick để test nhanh luồng weapon_phase & scoring
+    cfg["draftSteps"] = [
+        {"step": 1, "side": "blue", "action": "pick"},
+        {"step": 2, "side": "red", "action": "pick"},
+    ]
+    cfg["costRules"]["characterCustomCosts"] = {
+        target_blue_char["slug"]: [
+            {
+                "id": "cc-special",
+                "costs": [3.5, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+                "note": "Đi cùng đội hình đặc biệt",
+            }
+        ]
+    }
+    cfg["costRules"]["weaponCustomCosts"] = {
+        target_blue_weapon: [
+            {
+                "id": "wc-special",
+                "cost": 1.5,
+                "refinementSeconds": [0.0, 5.0, 10.0, 15.0, 20.0],
+                "note": "Kích hoạt hiệu ứng đặc biệt",
+            }
+        ]
+    }
+
+    rs_res = test_client.post(
+        "/api/rulesets",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "name": "Luật Custom Cost Test",
+            "description": "Test custom cost",
+            "isActive": True,
+            "isDefault": False,
+            "config": cfg,
+        },
+    )
+    assert rs_res.status_code == 200
+    rs_id = rs_res.json()["id"]
+
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={admin_token}") as ws_admin,
+    ):
+        for ws in (ws_a, ws_b, ws_admin):
+            ws.receive_json()
+
+        def recv_all() -> dict:
+            st = ws_a.receive_json()
+            ws_b.receive_json()
+            ws_admin.receive_json()
+            return st
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_all()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_all()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": target_blue_char["slug"]})
+        recv_all()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[0]["slug"]})
+        state = recv_all()["state"]
+        assert state["status"] == "weapon_phase"
+
+        base_char_cost = state["sides"]["blue"]["picks"][0]["characterCost"]
+
+        # Player Blue bật Custom Cost nhân vật
+        ws_a.send_json({"action": "set_character_custom_cost", "slot": 0, "customCostId": "cc-special"})
+        state = recv_all()["state"]
+        blue_pick0 = state["sides"]["blue"]["picks"][0]
+        assert blue_pick0["characterCustomCostId"] == "cc-special"
+        assert blue_pick0["characterCustomCostNote"] == "Đi cùng đội hình đặc biệt"
+        assert blue_pick0["characterCost"] == 3.5
+
+        # Player Blue chọn vũ khí kèm Custom Cost vũ khí
+        ws_a.send_json(
+            {
+                "action": "set_weapon",
+                "slot": 0,
+                "weaponSlug": target_blue_weapon,
+                "refinement": 3,
+                "weaponCustomCostId": "wc-special",
+            }
+        )
+        state = recv_all()["state"]
+        blue_pick0 = state["sides"]["blue"]["picks"][0]
+        assert blue_pick0["weaponCustomCostId"] == "wc-special"
+        assert blue_pick0["weaponCustomCostNote"] == "Kích hoạt hiệu ứng đặc biệt"
+        assert blue_pick0["weaponCost"] == 1.5
+        assert blue_pick0["weaponRefinementSeconds"] == 10.0
+        assert blue_pick0["totalSlotCost"] == 5.0
+        assert state["sides"]["blue"]["totalCost"] == 5.0
+
+        # Red chọn vũ khí thường và cả 2 khóa
+        red_weapon = weapon4_by_type[red_chars[0]["weapon"]]
+        ws_b.send_json(
+            {
+                "action": "set_weapon",
+                "slot": 0,
+                "weaponSlug": red_weapon,
+                "refinement": 1,
+            }
+        )
+        recv_all()
+
+        ws_a.send_json({"action": "lock_weapons"})
+        recv_all()
+
+        # Khi đã khóa vũ khí, Player Blue không thể đổi Custom Cost nữa
+        ws_a.send_json({"action": "set_character_custom_cost", "slot": 0, "customCostId": None})
+        err_locked = ws_a.receive_json()
+        assert err_locked["type"] == "match:error"
+        assert err_locked["code"] == "WEAPONS_LOCKED"
+
+        ws_b.send_json({"action": "lock_weapons"})
+        state = recv_all()["state"]
+        assert state["status"] == "scoring"
+
+        # Blue nộp điểm 3 ải (8:00 mỗi ải => 60*3 = 180s)
+        ws_a.send_json({"action": "submit_scores", "chambers": [{"minutes": 8, "seconds": 0}] * 3})
+        state = recv_all()["state"]
+        score_before_admin = state["sides"]["blue"]["finalScore"]
+
+        # Admin tắt Custom Cost nhân vật cho Blue ngay trong pha scoring -> điểm tự tính lại
+        ws_admin.send_json(
+            {
+                "action": "set_character_custom_cost",
+                "side": "blue",
+                "slot": 0,
+                "customCostId": None,
+            }
+        )
+        state = recv_all()["state"]
+        assert state["sides"]["blue"]["picks"][0]["characterCustomCostId"] is None
+        assert state["sides"]["blue"]["picks"][0]["characterCost"] == base_char_cost
+        assert state["sides"]["blue"]["finalScore"] < score_before_admin
+
+
+

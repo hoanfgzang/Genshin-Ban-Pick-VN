@@ -59,12 +59,12 @@ export function CharacterCard({ character: c, owned, mode, onClick }: CharacterC
 
         {owned && (
           <>
-            <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[11px] leading-none font-bold text-gold-strong">
+            <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[11.55px] leading-none font-bold text-gold-strong">
               C{owned.constellation}
             </span>
             <span
               className={cn(
-                'absolute right-1 bottom-1 rounded px-1.5 py-0.5 text-[11px] leading-none font-bold',
+                'absolute right-1 bottom-1 rounded px-1.5 py-0.5 text-[11.55px] leading-none font-bold',
                 LEVEL_STYLE[owned.level],
               )}
             >
@@ -84,7 +84,7 @@ export function CharacterCard({ character: c, owned, mode, onClick }: CharacterC
           </span>
         )}
       </div>
-      <span className="truncate bg-white px-1.5 py-1 text-center text-[11px] font-semibold text-black">
+      <span className="truncate bg-white px-1.5 py-1 text-center text-[12.1px] font-semibold text-black">
         {c.name}
       </span>
     </button>
