@@ -212,8 +212,8 @@ export function TeamSlotCard({
           weapon
             ? `${weapon.name} (R${pick.refinement} · +${formatCost(pick.weaponCost)} cost${weaponRefSec > 0 ? ` · +${formatSeconds(weaponRefSec)}` : ''}${hasWeaponCustomActive ? ` · ĐK VK: ${pick.weaponCustomCostNote}` : ''})`
             : canEditWeapon
-              ? 'Bấm để chọn vũ khí'
-              : 'Chưa gắn vũ khí'
+              ? 'Mặc định: Vũ khí 4★ (0 cost) · Bấm để chọn vũ khí khác'
+              : 'Vũ khí 4★ (Mặc định · 0 cost)'
         }
         className={cn(
           'relative flex h-24 flex-col overflow-hidden rounded-lg border transition',
@@ -222,7 +222,7 @@ export function TeamSlotCard({
             ? 'border-line/80 bg-panel-2/80'
             : canEditWeapon
               ? 'border-dashed border-gold/65 bg-gold/10 hover:bg-gold/15'
-              : 'border-dashed border-line/50 bg-bg/40',
+              : 'border-line/60 bg-panel-2/50',
         )}
       >
         {weapon ? (
@@ -262,13 +262,23 @@ export function TeamSlotCard({
               <span className="text-gold-strong">R{pick.refinement}</span>
             </div>
           </>
-        ) : (
+        ) : canEditWeapon ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center">
-            <span className={cn('text-xs font-bold', canEditWeapon ? 'text-gold-strong' : 'text-muted/60')}>
-              {canEditWeapon ? '+ Vũ khí' : '—'}
-            </span>
-            {canEditWeapon && <span className="text-[9px] text-muted">Bấm để chọn</span>}
+            <span className="text-xs font-bold text-gold-strong">+ Vũ khí</span>
+            <span className="text-[9px] text-muted">Mặc định 4★ · 0 cost</span>
           </div>
+        ) : (
+          <>
+            <div className="relative flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-r4-from/45 to-r4-to/45 px-1 text-center">
+              <span className="rounded bg-black/55 px-1.5 py-0.5 font-mono text-xs font-extrabold text-text">
+                4★
+              </span>
+              <span className="mt-1 text-[9px] font-medium text-muted">0 cost</span>
+            </div>
+            <div className="bg-black/85 px-1 py-0.5 text-center text-[10px] font-semibold text-muted">
+              Vũ khí 4★
+            </div>
+          </>
         )}
       </button>
     </div>

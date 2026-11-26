@@ -799,12 +799,14 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
                 refinement=1,
             )
 
-    # Blue khóa trước deadline -> không phạt thêm; Red khóa trễ 12.1s -> cộng +12s (tổng 17s)
+    # Blue khóa trước deadline -> không phạt thêm; Red khóa sau deadline -> tự động khóa cả 2 bên, không phạt thêm (vẫn giữ 5s từ pha draft)
     wp_dl = datetime.fromisoformat(state.turn_deadline_at or "")
     state = draft_engine.lock_weapons(state, user_id="u-blue", now=wp_dl - timedelta(seconds=5))
     assert state.sides["blue"].overtime_penalty_seconds == 3.0
     state = draft_engine.lock_weapons(state, user_id="u-red", now=wp_dl + timedelta(seconds=12.1))
-    assert state.sides["red"].overtime_penalty_seconds == 17.0
+    assert state.sides["red"].overtime_penalty_seconds == 5.0
+    assert state.sides["red"].weapons_locked is True
+    assert state.turn_deadline_at is None
     assert state.status == "scoring"
 
     chambers = [{"minutes": 8, "seconds": 0}] * 3  # 180s
@@ -822,7 +824,7 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
     assert state.sides["red"].final_score == round(
         state.sides["red"].cost_penalty_seconds
         + state.sides["red"].weapon_refinement_seconds
-        + 17.0
+        + 5.0
         + 180,
         2,
     )
@@ -844,7 +846,7 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
     assert updated_scoring.sides["red"].final_score == round(
         updated_scoring.sides["red"].cost_penalty_seconds
         + updated_scoring.sides["red"].weapon_refinement_seconds
-        + 17.0
+        + 5.0
         + 180,
         2,
     )
@@ -1153,6 +1155,269 @@ def test_custom_cost_activation_in_match_ws_and_admin_override(test_client: Test
         assert state["sides"]["blue"]["picks"][0]["characterCustomCostId"] is None
         assert state["sides"]["blue"]["picks"][0]["characterCost"] == base_char_cost
         assert state["sides"]["blue"]["finalScore"] < score_before_admin
+
+
+def test_lock_weapons_without_filling_and_clear_weapon(test_client: TestClient) -> None:
+    all_chars, _, weapon5_by_type = _load_sample_catalog()
+    blue_chars = all_chars[:8]
+    red_chars = all_chars[8:16]
+
+    token_a, _ = _register_and_seed_inventory(
+        test_client, "891111101", "Empty Wep Blue", blue_chars, constellation=0, level=90
+    )
+    token_b, _ = _register_and_seed_inventory(
+        test_client, "891111102", "Empty Wep Red", red_chars, constellation=0, level=90
+    )
+
+    settings = get_settings()
+    admin_token = test_client.post(
+        "/api/auth/login",
+        json={
+            "uid": settings.SEED_ADMIN_UID,
+            "password": settings.SEED_ADMIN_PASSWORD,
+            "remember": True,
+        },
+    ).json()["token"]
+
+    cfg = default_ruleset_config().model_dump(by_alias=True)
+    cfg["draftSteps"] = [
+        {"step": 1, "side": "blue", "action": "pick"},
+        {"step": 2, "side": "red", "action": "pick"},
+        {"step": 3, "side": "blue", "action": "pick"},
+        {"step": 4, "side": "red", "action": "pick"},
+    ]
+    rs_id = test_client.post(
+        "/api/rulesets",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "name": "Luật Khóa Vũ Khí Trống",
+            "description": "Test empty weapon = 4 star",
+            "isActive": True,
+            "isDefault": False,
+            "config": cfg,
+        },
+    ).json()["id"]
+
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+    ):
+        ws_a.receive_json()
+        ws_b.receive_json()
+
+        def recv_both() -> dict:
+            m_a = ws_a.receive_json()
+            ws_b.receive_json()
+            return m_a
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_both()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_both()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": blue_chars[0]["slug"]})
+        recv_both()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[0]["slug"]})
+        recv_both()
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": blue_chars[1]["slug"]})
+        recv_both()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[1]["slug"]})
+        state = recv_both()["state"]
+        assert state["status"] == "weapon_phase"
+
+        # Blue chọn vũ khí 5★ cho slot 0 rồi xóa về mặc định 4★ (weaponSlug=None), slot 1 để trống
+        blue_char0 = next(c for c in all_chars if c["slug"] == state["sides"]["blue"]["picks"][0]["characterSlug"])
+        ws_a.send_json(
+            {
+                "action": "set_weapon",
+                "slot": 0,
+                "weaponSlug": weapon5_by_type[blue_char0["weapon"]],
+                "refinement": 3,
+            }
+        )
+        state = recv_both()["state"]
+        assert state["sides"]["blue"]["picks"][0]["weaponCost"] == 1.0
+        assert state["sides"]["blue"]["picks"][0]["weaponRefinementSeconds"] == 10.0
+
+        ws_a.send_json(
+            {
+                "action": "set_weapon",
+                "slot": 0,
+                "weaponSlug": None,
+                "refinement": 1,
+            }
+        )
+        state = recv_both()["state"]
+        assert state["sides"]["blue"]["picks"][0]["weaponSlug"] is None
+        assert state["sides"]["blue"]["picks"][0]["weaponCost"] == 0.0
+        assert state["sides"]["blue"]["picks"][0]["weaponRefinementSeconds"] == 0.0
+        assert state["sides"]["blue"]["weaponRefinementSeconds"] == 0.0
+
+        # Cả 2 bên không điền bất kỳ vũ khí nào vẫn khóa thành công -> sang scoring
+        ws_a.send_json({"action": "lock_weapons"})
+        state = recv_both()["state"]
+        assert state["sides"]["blue"]["weaponsLocked"] is True
+
+        ws_b.send_json({"action": "lock_weapons"})
+        state = recv_both()["state"]
+        assert state["status"] == "scoring"
+        assert state["sides"]["red"]["weaponsLocked"] is True
+        for s_key in ("blue", "red"):
+            for p in state["sides"][s_key]["picks"]:
+                assert p["weaponSlug"] is None
+                assert p["weaponCost"] == 0.0
+                assert p["weaponRefinementSeconds"] == 0.0
+
+
+def test_weapon_phase_auto_lock_on_timeout_ws(test_client: TestClient) -> None:
+    import time
+
+    all_chars, _, _ = _load_sample_catalog()
+    blue_chars = all_chars[:6]
+    red_chars = all_chars[6:12]
+
+    token_a, _ = _register_and_seed_inventory(
+        test_client, "892222201", "Timeout Blue", blue_chars, constellation=0, level=90
+    )
+    token_b, _ = _register_and_seed_inventory(
+        test_client, "892222202", "Timeout Red", red_chars, constellation=0, level=90
+    )
+
+    settings = get_settings()
+    admin_token = test_client.post(
+        "/api/auth/login",
+        json={
+            "uid": settings.SEED_ADMIN_UID,
+            "password": settings.SEED_ADMIN_PASSWORD,
+            "remember": True,
+        },
+    ).json()["token"]
+
+    cfg = default_ruleset_config().model_dump(by_alias=True)
+    cfg["draftSteps"] = [
+        {"step": 1, "side": "blue", "action": "pick"},
+        {"step": 2, "side": "red", "action": "pick"},
+    ]
+    cfg["weaponPhaseSeconds"] = 1
+    cfg["costRules"]["draftBonusSecondsPerCost"] = 0
+
+    rs_id = test_client.post(
+        "/api/rulesets",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "name": "Luật Auto Lock Weapon 1s",
+            "description": "Test weapon phase auto lock",
+            "isActive": True,
+            "isDefault": False,
+            "config": cfg,
+        },
+    ).json()["id"]
+
+    # 1) Kiểm tra Admin undo từ weapon_phase về drafting hủy timer cũ (không tự động nhảy sang scoring)
+    code_undo = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code_undo}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code_undo}?token={token_b}") as ws_b,
+        test_client.websocket_connect(f"/ws/matches/{code_undo}?token={admin_token}") as ws_admin,
+    ):
+        for ws in (ws_a, ws_b, ws_admin):
+            ws.receive_json()
+
+        def recv_all() -> dict:
+            m = ws_a.receive_json()
+            ws_b.receive_json()
+            ws_admin.receive_json()
+            return m
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_all()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_all()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": blue_chars[0]["slug"]})
+        recv_all()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[0]["slug"]})
+        state = recv_all()["state"]
+        assert state["status"] == "weapon_phase"
+
+        ws_admin.send_json({"action": "undo_draft_step"})
+        state = recv_all()["state"]
+        assert state["status"] == "drafting"
+
+        time.sleep(1.2)
+        fetched = test_client.get(f"/api/matches/{code_undo}").json()
+        assert fetched["status"] == "drafting"
+
+    # 2) Kiểm tra hết thời gian weapon_phase -> tự động khóa cả 2 bên và broadcast sang scoring
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+    ):
+        ws_a.receive_json()
+        ws_b.receive_json()
+
+        def recv_both() -> dict:
+            m_a = ws_a.receive_json()
+            ws_b.receive_json()
+            return m_a
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_both()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_both()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": blue_chars[0]["slug"]})
+        recv_both()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[0]["slug"]})
+        state = recv_both()["state"]
+        assert state["status"] == "weapon_phase"
+
+        # Không điền vũ khí và không bấm lock_weapons -> chờ >1s để timer tự khóa và broadcast
+        time.sleep(1.3)
+        msg_a = ws_a.receive_json()
+        msg_b = ws_b.receive_json()
+        assert msg_a["type"] == "match:state"
+        assert msg_b["type"] == "match:state"
+        auto_state = msg_a["state"]
+        assert auto_state["status"] == "scoring"
+        assert auto_state["turnDeadlineAt"] is None
+        assert auto_state["sides"]["blue"]["weaponsLocked"] is True
+        assert auto_state["sides"]["red"]["weaponsLocked"] is True
+        assert auto_state["sides"]["blue"]["overtimePenaltySeconds"] == 0.0
+        assert auto_state["sides"]["red"]["overtimePenaltySeconds"] == 0.0
+        assert auto_state["sides"]["blue"]["picks"][0]["weaponSlug"] is None
+        assert auto_state["sides"]["blue"]["picks"][0]["weaponCost"] == 0.0
+        assert auto_state["sides"]["red"]["picks"][0]["weaponSlug"] is None
+        assert auto_state["sides"]["red"]["picks"][0]["weaponCost"] == 0.0
 
 
 

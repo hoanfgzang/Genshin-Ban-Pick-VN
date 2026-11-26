@@ -6,7 +6,7 @@ import random
 from typing import Any
 
 from ..core.errors import AppError, bad_request, forbidden
-from ..data_loader import get_character, get_character_map, get_weapon, get_weapons
+from ..data_loader import get_character, get_character_map, get_weapon
 from ..schemas.match import (
     ChamberTimeInput,
     CompletedGameRecord,
@@ -127,6 +127,21 @@ def _calc_overtime_seconds(deadline_iso: str | None, now: datetime | None = None
     if elapsed < 1.0:
         return 0
     return int(math.floor(elapsed))
+
+
+def is_deadline_expired(deadline_iso: str | None, now: datetime | None = None) -> bool:
+    if not deadline_iso:
+        return False
+    try:
+        deadline = datetime.fromisoformat(deadline_iso)
+    except ValueError:
+        return False
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    ref = now or utc_now()
+    if ref.tzinfo is None:
+        ref = ref.replace(tzinfo=timezone.utc)
+    return ref >= deadline
 
 
 def _consume_draft_turn_overtime(
@@ -912,7 +927,7 @@ def set_pick_weapon(
     user_role: str = "player",
     target_side: SideName | None = None,
     slot: int,
-    weapon_slug: str,
+    weapon_slug: str | None,
     refinement: int,
     weapon_custom_cost_id: str | None = None,
 ) -> MatchState:
@@ -929,12 +944,29 @@ def set_pick_weapon(
         raise bad_request("WEAPONS_LOCKED", "Bạn đã khóa đội hình vũ khí.")
     if slot < 0 or slot >= len(side_state.picks):
         raise bad_request("INVALID_SLOT", "Vị trí nhân vật không hợp lệ.")
+
+    cleaned_slug = weapon_slug.strip() if isinstance(weapon_slug, str) and weapon_slug.strip() else None
+    if cleaned_slug is None:
+        next_state = state.model_copy(deep=True)
+        next_side_state = next_state.sides[side]
+        target_pick = next_side_state.picks[slot]
+        target_pick.weapon_slug = None
+        target_pick.refinement = 1
+        target_pick.weapon_custom_cost_id = None
+        target_pick.weapon_custom_cost_note = None
+        target_pick.weapon_cost = 0.0
+        target_pick.weapon_refinement_seconds = 0.0
+        _recalculate_side_costs(next_side_state, next_state.ruleset)
+        if next_side_state.score_submitted and next_side_state.chamber_total_seconds is not None:
+            next_side_state.final_score = _compute_final_score(next_side_state)
+        return next_state
+
     if refinement < 1 or refinement > 5:
         raise bad_request("INVALID_REFINEMENT", "Tinh luyện phải từ R1 đến R5.")
 
     pick = side_state.picks[slot]
     char_info = get_character(pick.character_slug)
-    weapon_info = get_weapon(weapon_slug)
+    weapon_info = get_weapon(cleaned_slug)
     if not weapon_info:
         raise bad_request("UNKNOWN_WEAPON", "Vũ khí không tồn tại.")
     if char_info and weapon_info["weaponType"] != char_info["weapon"]:
@@ -953,7 +985,7 @@ def set_pick_weapon(
         matched_wcc = next(
             (
                 item
-                for item in state.ruleset.cost_rules.weapon_custom_costs.get(weapon_slug, [])
+                for item in state.ruleset.cost_rules.weapon_custom_costs.get(cleaned_slug, [])
                 if item.id == w_cid
             ),
             None,
@@ -965,17 +997,17 @@ def set_pick_weapon(
     next_state = state.model_copy(deep=True)
     next_side_state = next_state.sides[side]
     target_pick = next_side_state.picks[slot]
-    target_pick.weapon_slug = weapon_slug
+    target_pick.weapon_slug = cleaned_slug
     target_pick.refinement = refinement
     target_pick.weapon_custom_cost_id = w_cid
     target_pick.weapon_custom_cost_note = w_note
     target_pick.weapon_cost = calc_weapon_cost(
-        weapon_slug,
+        cleaned_slug,
         next_state.ruleset.cost_rules,
         w_cid,
     )
     target_pick.weapon_refinement_seconds = calc_weapon_refinement_seconds(
-        weapon_slug,
+        cleaned_slug,
         refinement,
         next_state.ruleset.cost_rules,
         w_cid,
@@ -1098,21 +1130,22 @@ def lock_weapons(
     if not side:
         raise forbidden("Bạn không phải người chơi trong trận này.")
 
+    if is_deadline_expired(state.turn_deadline_at, now):
+        timed_out = auto_handle_timeout(state)
+        if timed_out is not None:
+            return timed_out
+
     next_state = state.model_copy(deep=True)
     side_state = next_state.sides[side]
-    missing = [p.slot + 1 for p in side_state.picks if not p.weapon_slug]
-    if missing:
-        raise bad_request(
-            "MISSING_WEAPONS",
-            f"Vui lòng điền đủ vũ khí cho nhân vật (còn thiếu ô: {', '.join(map(str, missing))}).",
-        )
-
-    if not side_state.weapons_locked:
-        overtime = _calc_overtime_seconds(state.turn_deadline_at, now)
-        if overtime > 0:
-            side_state.overtime_penalty_seconds = round(
-                side_state.overtime_penalty_seconds + overtime, 2
-            )
+    for p in side_state.picks:
+        if not p.weapon_slug:
+            p.weapon_slug = None
+            p.refinement = 1
+            p.weapon_cost = 0.0
+            p.weapon_refinement_seconds = 0.0
+            p.weapon_custom_cost_id = None
+            p.weapon_custom_cost_note = None
+    _recalculate_side_costs(side_state, next_state.ruleset)
 
     side_state.weapons_locked = True
     if next_state.sides["blue"].weapons_locked and next_state.sides["red"].weapons_locked:
@@ -1290,33 +1323,23 @@ def auto_handle_timeout(state: MatchState) -> MatchState | None:
 
     if state.status == "weapon_phase":
         next_state = state.model_copy(deep=True)
-        weapons = get_weapons()
-        fallback_by_type: dict[str, str] = {}
-        for w in sorted(weapons, key=lambda x: (x["rarity"], x["name"])):
-            fallback_by_type.setdefault(w["weaponType"], w["slug"])
-
         for side_key in ("blue", "red"):
             s_key: SideName = side_key
             side_state = next_state.sides[s_key]
             for pick in side_state.picks:
                 if not pick.weapon_slug:
-                    char = get_character(pick.character_slug)
-                    w_type = char["weapon"] if char else "sword"
-                    w_slug = fallback_by_type.get(w_type)
-                    if w_slug:
-                        pick.weapon_slug = w_slug
-                        pick.refinement = 1
-                        pick.weapon_cost = calc_weapon_cost(
-                            w_slug, next_state.ruleset.cost_rules
-                        )
-                        pick.weapon_refinement_seconds = calc_weapon_refinement_seconds(
-                            w_slug, 1, next_state.ruleset.cost_rules
-                        )
+                    pick.weapon_slug = None
+                    pick.refinement = 1
+                    pick.weapon_cost = 0.0
+                    pick.weapon_refinement_seconds = 0.0
+                    pick.weapon_custom_cost_id = None
+                    pick.weapon_custom_cost_note = None
             _recalculate_side_costs(side_state, next_state.ruleset)
             side_state.weapons_locked = True
 
         next_state.status = "scoring"
         next_state.turn_deadline_at = None
+        next_state.undo_request = None
         return next_state
 
     return None

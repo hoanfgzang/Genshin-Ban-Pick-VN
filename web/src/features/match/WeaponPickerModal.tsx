@@ -26,7 +26,7 @@ interface Props {
   initialWeaponSlug: string | null
   initialRefinement: number
   onSelectCharacterCustomCost?: (customCostId: string | null) => void
-  onSelect: (weaponSlug: string, refinement: Refinement, weaponCustomCostId: string | null) => void
+  onSelect: (weaponSlug: string | null, refinement: Refinement, weaponCustomCostId: string | null) => void
   onClose: () => void
 }
 
@@ -152,6 +152,23 @@ export function WeaponPickerModal({
           placeholder="Tìm tên vũ khí…"
           className="h-9 w-full rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
         />
+
+        <button
+          type="button"
+          onClick={() => {
+            onSelect(null, 1, null)
+            onClose()
+          }}
+          className={cn(
+            'flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-xs transition',
+            !initialWeaponSlug
+              ? 'border-gold bg-gold/15 font-semibold text-gold-strong'
+              : 'border-dashed border-line bg-bg/40 text-muted hover:border-gold/60 hover:text-text',
+          )}
+        >
+          <span>Dùng vũ khí 4★ mặc định (Không tính cost)</span>
+          <span className="font-mono text-[11px] font-bold">0 cost · 0s</span>
+        </button>
 
         <div className="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
           {candidates.map((w) => {

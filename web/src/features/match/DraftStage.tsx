@@ -185,7 +185,7 @@ export function DraftStage({
                             <div>
                               <div className="font-semibold text-text">{ch?.name ?? p.characterSlug}</div>
                               <div className={wp ? 'text-[10px] text-gold-strong' : 'text-[10px] text-muted'}>
-                                {wp ? `${wp.name} (R${p.refinement})` : '+ Gắn vũ khí'}
+                                {wp ? `${wp.name} (R${p.refinement})` : 'Mặc định 4★ (0 cost)'}
                               </div>
                             </div>
                           </button>

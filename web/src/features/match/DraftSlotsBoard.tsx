@@ -147,7 +147,7 @@ export function DraftSlotsBoard({
               )}
               {cell.pickSlot && (
                 <span
-                  title={cell.pickSlot.weaponSlug ? 'Đã gắn vũ khí' : 'Chưa gắn vũ khí'}
+                  title={cell.pickSlot.weaponSlug ? 'Đã gắn vũ khí' : 'Mặc định vũ khí 4★ (0 cost)'}
                   className={cn(
                     'absolute top-1 right-1 size-2 rounded-full ring-1 ring-black/60',
                     cell.pickSlot.weaponSlug ? 'bg-success' : 'bg-gold',

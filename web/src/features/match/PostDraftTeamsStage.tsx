@@ -264,7 +264,7 @@ export function PostDraftTeamsStage({
   const mySideState = mySide ? state.sides[mySide] : null
   const totalPicks = mySideState?.picks.length ?? 0
   const filledWeapons = mySideState?.picks.filter((p) => Boolean(p.weaponSlug)).length ?? 0
-  const canLock = Boolean(mySideState && !mySideState.weaponsLocked && filledWeapons === totalPicks)
+  const canLock = Boolean(mySideState && !mySideState.weaponsLocked)
 
   return (
     <div className="flex flex-col gap-3">
@@ -295,10 +295,13 @@ export function PostDraftTeamsStage({
           {state.status === 'weapon_phase' ? (
             mySideState ? (
               <span>
-                Vũ khí của bạn:{' '}
+                Vũ khí đã chọn:{' '}
                 <strong className={filledWeapons === totalPicks ? 'text-success' : 'text-gold-strong'}>
                   {filledWeapons} / {totalPicks}
-                </strong>
+                </strong>{' '}
+                <span className="text-muted">
+                  (ô trống tự tính vũ khí 4★ · 0 cost, có thể khóa ngay)
+                </span>
                 {isAdmin && ' · Admin có thể chỉnh vũ khí & vị trí cho cả 2 bên.'}
               </span>
             ) : (

@@ -71,7 +71,10 @@ def create_app(
         async with db_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         await seed_initial_data(session_factory)
-        yield
+        try:
+            yield
+        finally:
+            room_manager.cancel_all_timers()
 
     application = FastAPI(
         title="Genshin Ban/Pick VN API",

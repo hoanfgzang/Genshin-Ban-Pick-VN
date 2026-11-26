@@ -116,11 +116,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
         consumingReserve: false,
       }
     }
-    if (state.status === 'weapon_phase' && !state.sides[side].weaponsLocked) {
+    if (state.status === 'weapon_phase') {
       return {
-        turnDisplay: countdown,
+        turnDisplay: Math.max(0, countdown),
         liveReserve: savedReserve,
-        liveOvertime: elapsedOver,
+        liveOvertime: 0,
         consumingReserve: false,
       }
     }
@@ -163,7 +163,7 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
       : state.status === 'weapon_phase'
         ? state.sides.blue.weaponsLocked
           ? 'Đã khóa'
-          : formatClock(countdown)
+          : formatClock(blueTiming.turnDisplay)
         : state.sides.blue.finalScore !== null
           ? formatSeconds(state.sides.blue.finalScore)
           : '—'
@@ -178,7 +178,7 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
       : state.status === 'weapon_phase'
         ? state.sides.red.weaponsLocked
           ? 'Đã khóa'
-          : formatClock(countdown)
+          : formatClock(redTiming.turnDisplay)
         : state.sides.red.finalScore !== null
           ? formatSeconds(state.sides.red.finalScore)
           : '—'

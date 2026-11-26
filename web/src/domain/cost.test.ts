@@ -5,6 +5,8 @@ import {
   calcCostPenaltySeconds,
   calcWeaponCost,
   calcWeaponRefinementSeconds,
+  findActiveCostMilestone,
+  formatCostMilestoneSummary,
 } from './cost'
 import { createDefaultRuleSetConfig } from './ruleset'
 import { getWeapon, WEAPONS_LIST } from './weapons'
@@ -117,5 +119,38 @@ describe('domain/cost', () => {
     expect(calcWeaponCost('favonius-warbow', withCustom, 'wc-1')).toBe(0.5)
     expect(calcWeaponRefinementSeconds('favonius-warbow', 4, withCustom)).toBe(0)
     expect(calcWeaponRefinementSeconds('favonius-warbow', 4, withCustom, 'wc-1')).toBe(6)
+  })
+
+  it('xác định mốc cost hiện tại và tóm tắt mốc chính xác', () => {
+    const { costRules } = createDefaultRuleSetConfig()
+    costRules.milestones = [
+      { minCost: 0, maxCost: 6, secondsPerCost: 5, bonusSeconds: 0 },
+      { minCost: 6, maxCost: 12, secondsPerCost: 8, bonusSeconds: 10 },
+      { minCost: 12, maxCost: null, secondsPerCost: 12, bonusSeconds: 0 },
+    ]
+
+    expect(findActiveCostMilestone(0, costRules)?.minCost).toBe(0)
+    expect(findActiveCostMilestone(6, costRules)?.minCost).toBe(6)
+    expect(findActiveCostMilestone(12, costRules)?.maxCost).toBeNull()
+
+    expect(formatCostMilestoneSummary(0, costRules)).toEqual({
+      rangeLabel: '0 cost',
+      rateLabel: 'Chưa phát sinh phạt',
+    })
+    expect(formatCostMilestoneSummary(7.5, costRules)).toEqual({
+      rangeLabel: '6 → 12',
+      rateLabel: '8s/cost + 10s',
+    })
+    expect(formatCostMilestoneSummary(14, costRules)).toEqual({
+      rangeLabel: '12 → ∞',
+      rateLabel: '12s/cost',
+    })
+
+    const noMilestoneRules = { ...costRules, baseSecondsPerCost: 4.5, milestones: [] }
+    expect(findActiveCostMilestone(5, noMilestoneRules)).toBeNull()
+    expect(formatCostMilestoneSummary(5, noMilestoneRules)).toEqual({
+      rangeLabel: 'Hệ số cơ bản',
+      rateLabel: '4.5s/cost',
+    })
   })
 })

@@ -90,12 +90,13 @@ export function calcWeaponRefinementSeconds(
   return round2(table[idx] ?? 0)
 }
 
-export function calcCostPenaltySeconds(totalCost: number, costRules: CostRules): number {
+export function findActiveCostMilestone(
+  totalCost: number,
+  costRules: CostRules,
+): CostMilestone | null {
   const cost = Math.max(0, totalCost)
-  if (cost <= 0) return 0
-
   if (!costRules.milestones.length) {
-    return round2(cost * costRules.baseSecondsPerCost)
+    return null
   }
 
   const milestones = [...costRules.milestones].sort((a, b) => a.minCost - b.minCost)
@@ -116,11 +117,46 @@ export function calcCostPenaltySeconds(totalCost: number, costRules: CostRules):
     }
   }
 
+  return active
+}
+
+export function calcCostPenaltySeconds(totalCost: number, costRules: CostRules): number {
+  const cost = Math.max(0, totalCost)
+  if (cost <= 0) return 0
+
+  const active = findActiveCostMilestone(cost, costRules)
   if (!active) {
     return round2(cost * costRules.baseSecondsPerCost)
   }
 
   return round2(cost * active.secondsPerCost + active.bonusSeconds)
+}
+
+export function formatCostMilestoneSummary(
+  totalCost: number,
+  costRules: CostRules,
+): { rangeLabel: string; rateLabel: string } {
+  const cost = Math.max(0, totalCost)
+  const active = findActiveCostMilestone(cost, costRules)
+
+  if (cost <= 0 && (!active || active.bonusSeconds <= 0)) {
+    return { rangeLabel: '0 cost', rateLabel: 'Chưa phát sinh phạt' }
+  }
+
+  if (active) {
+    const maxLabel = active.maxCost === null ? '∞' : formatCost(active.maxCost)
+    return {
+      rangeLabel: `${formatCost(active.minCost)} → ${maxLabel}`,
+      rateLabel: `${formatSeconds(active.secondsPerCost)}/cost${
+        active.bonusSeconds > 0 ? ` + ${formatSeconds(active.bonusSeconds)}` : ''
+      }`,
+    }
+  }
+
+  return {
+    rangeLabel: 'Hệ số cơ bản',
+    rateLabel: `${formatSeconds(costRules.baseSecondsPerCost)}/cost`,
+  }
 }
 
 export function calcChamberDiff(minutes: number, seconds: number): number | null {
