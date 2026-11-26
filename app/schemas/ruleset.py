@@ -208,6 +208,31 @@ class CostRules(CamelModel):
         return v
 
 
+def split_draft_into_phases(steps: list[DraftStep]) -> list[dict[str, Any]]:
+    phases: list[dict[str, Any]] = []
+    for s in steps:
+        if not phases or (s.action == "ban" and len(phases[-1]["picks"]) > 0):
+            phases.append(
+                {
+                    "phase_number": len(phases) + 1,
+                    "bans": [],
+                    "picks": [],
+                    "blue_bans": 0,
+                    "red_bans": 0,
+                }
+            )
+        current = phases[-1]
+        if s.action == "ban":
+            current["bans"].append(s)
+            if s.side == "blue":
+                current["blue_bans"] += 1
+            else:
+                current["red_bans"] += 1
+        else:
+            current["picks"].append(s)
+    return phases
+
+
 def default_draft_steps() -> list[DraftStep]:
     # Mỗi bên 3 Ban + 8 Pick (tổng 22 bước). Bên Trái (Blue) Ban trước & Pick trước.
     pattern: list[tuple[Literal["blue", "red"], Literal["ban", "pick"]]] = [
@@ -277,6 +302,11 @@ class RuleSetConfig(CamelModel):
         red_picks = sum(1 for s in steps if s.side == "red" and s.action == "pick")
         if blue_picks == 0 or red_picks == 0:
             raise ValueError("Mỗi bên phải có ít nhất 1 lượt pick.")
+        for phase in split_draft_into_phases(steps):
+            if phase["blue_bans"] != phase["red_bans"]:
+                raise ValueError(
+                    f"Phase {phase['phase_number']}: số lượt Ban của đội Xanh ({phase['blue_bans']}) và đội Đỏ ({phase['red_bans']}) phải bằng nhau."
+                )
         return [
             DraftStep(step=idx + 1, side=s.side, action=s.action, seconds=s.seconds)
             for idx, s in enumerate(steps)

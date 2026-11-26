@@ -12,7 +12,12 @@ import {
   formatCost,
   formatSeconds,
 } from '@/domain/cost'
-import { getStepBaseSeconds, TIE_BREAK_OPTIONS, type RuleSet } from '@/domain/ruleset'
+import {
+  getStepBaseSeconds,
+  splitDraftIntoPhases,
+  TIE_BREAK_OPTIONS,
+  type RuleSet,
+} from '@/domain/ruleset'
 import { REFINEMENTS, type WeaponRarity } from '@/domain/weapon'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
@@ -53,6 +58,10 @@ export function RuleSetViewer({ ruleset }: Props) {
   const bluePicks = config.draftSteps.filter((s) => s.side === 'blue' && s.action === 'pick').length
   const redBans = config.draftSteps.filter((s) => s.side === 'red' && s.action === 'ban').length
   const redPicks = config.draftSteps.filter((s) => s.side === 'red' && s.action === 'pick').length
+  const draftPhases = useMemo(
+    () => splitDraftIntoPhases(config.draftSteps),
+    [config.draftSteps],
+  )
   const tieBreak =
     TIE_BREAK_OPTIONS.find((o) => o.value === (config.tieBreakRule ?? 'none')) ??
     TIE_BREAK_OPTIONS[0]
@@ -190,28 +199,38 @@ export function RuleSetViewer({ ruleset }: Props) {
 
         <div className="mt-5">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
-            Thứ tự Ban / Pick ({config.draftSteps.length} lượt — Xanh Dương bên trái đi trước)
+            Thứ tự Ban / Pick ({config.draftSteps.length} lượt · {draftPhases.length} Phase — Xanh Dương bên trái đi trước)
           </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {config.draftSteps.map((s) => {
-              const stepSec = getStepBaseSeconds(config, s)
-              return (
-                <span
-                  key={s.step}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold',
-                    s.side === 'blue'
-                      ? 'border-hydro/40 bg-hydro/10 text-hydro'
-                      : 'border-danger/40 bg-danger/10 text-danger',
-                  )}
-                >
-                  <span className="opacity-70">#{s.step}</span>
-                  <span>{s.side === 'blue' ? 'Xanh' : 'Đỏ'}</span>
-                  <span className="rounded bg-black/30 px-1 text-[10px] uppercase">{s.action}</span>
-                  <span className="font-mono text-[10px] opacity-80">{stepSec > 0 ? `${stepSec}s` : '∞'}</span>
+          <div className="flex flex-col gap-2">
+            {draftPhases.map((phase) => (
+              <div
+                key={phase.phaseNumber}
+                className="flex flex-wrap items-center gap-1.5 rounded-lg border border-line/60 bg-bg/35 px-2.5 py-2"
+              >
+                <span className="mr-1 rounded bg-gold/15 px-2 py-0.5 text-[11px] font-bold text-gold-strong">
+                  Phase {phase.phaseNumber} ({phase.blueBans} Ban · {phase.bluePicks}-{phase.redPicks} Pick)
                 </span>
-              )
-            })}
+                {phase.steps.map((s) => {
+                  const stepSec = getStepBaseSeconds(config, s)
+                  return (
+                    <span
+                      key={s.step}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold',
+                        s.side === 'blue'
+                          ? 'border-hydro/40 bg-hydro/10 text-hydro'
+                          : 'border-danger/40 bg-danger/10 text-danger',
+                      )}
+                    >
+                      <span className="opacity-70">#{s.step}</span>
+                      <span>{s.side === 'blue' ? 'Xanh' : 'Đỏ'}</span>
+                      <span className="rounded bg-black/30 px-1 text-[10px] uppercase">{s.action}</span>
+                      <span className="font-mono text-[10px] opacity-80">{stepSec > 0 ? `${stepSec}s` : '∞'}</span>
+                    </span>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
       </section>

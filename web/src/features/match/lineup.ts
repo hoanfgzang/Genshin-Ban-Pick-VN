@@ -1,5 +1,10 @@
 import { round2 } from '@/domain/cost'
-import type { DraftActionType, DraftStep, MatchSide } from '@/domain/ruleset'
+import {
+  splitDraftIntoPhases,
+  type DraftActionType,
+  type DraftStep,
+  type MatchSide,
+} from '@/domain/ruleset'
 import type { MatchPickSlot, MatchStatus, SideState } from '@/services'
 
 export const TEAM_SIZE = 4
@@ -285,10 +290,10 @@ export function splitBanCellsIntoRows(bans: readonly DraftBoardCell[]): DraftBoa
 }
 
 /**
- * Chia danh sách bước Ban/Pick cho bên Trái (Blue) và Phải (Red):
+ * Chia danh sách bước Ban/Pick cho bên Trái (Blue) và Phải (Red) theo từng Phase Ban/Pick:
+ * - 1 Phase gồm chuỗi lượt Ban liên tiếp ở đầu phase nối tiếp bởi chuỗi lượt Pick cho đến lượt Ban tiếp theo.
  * - Pick tách thành khối riêng nằm xa Ban ở phía ngoài; Ban nằm phía gần tâm.
- * - Khi bộ luật có từ 3 lượt Pick liên tục trở lên, chia hàng Pick theo số lượt liên tục đó (vd 3-3-2 cho 8 Pick).
- * - Khi lượt Pick liên tục < 3, giữ 2 hàng (4-4 cho 8 Pick) như mặc định.
+ * - Mỗi dòng Pick (và mỗi dòng Ban) tương ứng với 1 Phase Ban/Pick.
  */
 export function buildDraftBoardRows(
   steps: readonly DraftStep[],
@@ -296,25 +301,32 @@ export function buildDraftBoardRows(
   currentStepIndex: number,
   matchStatus: MatchStatus,
 ): Record<MatchSide, DraftBoardSideLayout> {
-  const maxConsecutivePicks = getMaxConsecutivePicks(steps)
+  const phases = splitDraftIntoPhases(steps)
+  const banIdx: Record<MatchSide, number> = { blue: 0, red: 0 }
+  const pickIdx: Record<MatchSide, number> = { blue: 0, red: 0 }
+  const bluePickRows: DraftBoardCell[][] = []
+  const blueBanRows: DraftBoardCell[][] = []
+  const redPickRows: DraftBoardCell[][] = []
+  const redBanRows: DraftBoardCell[][] = []
 
-  const buildSide = (side: MatchSide): DraftBoardSideLayout => {
-    const sideState = sides[side]
-    const bans: DraftBoardCell[] = []
-    const picks: DraftBoardCell[] = []
-    let banIdx = 0
-    let pickIdx = 0
+  let flatIdx = 0
+  for (const phase of phases) {
+    const phaseBans: Record<MatchSide, DraftBoardCell[]> = { blue: [], red: [] }
+    const phasePicks: Record<MatchSide, DraftBoardCell[]> = { blue: [], red: [] }
 
-    steps.forEach((s, idx) => {
-      if (s.side !== side) return
+    for (const s of phase.steps) {
+      const idx = flatIdx++
+      const side = s.side
+      const sideState = sides[side]
       const isDone = matchStatus !== 'drafting' || idx < currentStepIndex
       const isActive = matchStatus === 'drafting' && idx === currentStepIndex
       const status: DraftBoardCell['status'] = isDone ? 'done' : isActive ? 'active' : 'upcoming'
 
       if (s.action === 'ban') {
-        const slug = banIdx < sideState.bans.length ? sideState.bans[banIdx] : null
+        const bIdx = banIdx[side]++
+        const slug = bIdx < sideState.bans.length ? sideState.bans[bIdx] : null
         const owned = slug ? sideState.ownedCharacters[slug] : undefined
-        bans.push({
+        phaseBans[side].push({
           step: s.step,
           side,
           action: 'ban',
@@ -323,10 +335,10 @@ export function buildDraftBoardRows(
           constellation: owned?.constellation ?? null,
           pickSlot: null,
         })
-        banIdx++
       } else {
-        const pick = pickIdx < sideState.picks.length ? sideState.picks[pickIdx] : null
-        picks.push({
+        const pIdx = pickIdx[side]++
+        const pick = pIdx < sideState.picks.length ? sideState.picks[pIdx] : null
+        phasePicks[side].push({
           step: s.step,
           side,
           action: 'pick',
@@ -335,32 +347,23 @@ export function buildDraftBoardRows(
           constellation: pick?.constellation ?? null,
           pickSlot: pick,
         })
-        pickIdx++
-      }
-    })
-
-    const isPostDraft = matchStatus !== 'drafting'
-    const pickRows = isPostDraft
-      ? chunkCellsIntoRows(picks, Math.ceil(picks.length / 2))
-      : splitPickCellsIntoRows(picks, maxConsecutivePicks)
-    const banRows = isPostDraft
-      ? chunkCellsIntoRows(bans, Math.ceil(bans.length / 2))
-      : splitBanCellsIntoRows(bans)
-
-    if (side === 'blue') {
-      return {
-        pickRows: pickRows.map((row) => [...row].reverse()),
-        banRows,
       }
     }
-    return {
-      pickRows,
-      banRows,
-    }
+
+    if (phaseBans.blue.length > 0) blueBanRows.push(phaseBans.blue)
+    if (phasePicks.blue.length > 0) bluePickRows.push([...phasePicks.blue].reverse())
+    if (phaseBans.red.length > 0) redBanRows.push(phaseBans.red)
+    if (phasePicks.red.length > 0) redPickRows.push(phasePicks.red)
   }
 
   return {
-    blue: buildSide('blue'),
-    red: buildSide('red'),
+    blue: {
+      pickRows: bluePickRows,
+      banRows: blueBanRows,
+    },
+    red: {
+      pickRows: redPickRows,
+      banRows: redBanRows,
+    },
   }
 }

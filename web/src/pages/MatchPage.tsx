@@ -202,6 +202,7 @@ export function MatchPage() {
 
           <DraftSlotsBoard
             state={state}
+            countdown={countdown}
             hoverCharacterSlug={effectiveHoverSlug}
             canEditWeaponsForSide={canEditWeaponsForSide}
             onSelectPickSlot={(side, pick) => setWeaponTarget({ side, slot: pick.slot })}

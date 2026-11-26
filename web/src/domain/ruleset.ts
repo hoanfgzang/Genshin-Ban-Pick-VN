@@ -36,6 +36,59 @@ export interface DraftStep {
   seconds?: number | null
 }
 
+export interface DraftPhase {
+  phaseNumber: number
+  steps: DraftStep[]
+  bans: DraftStep[]
+  picks: DraftStep[]
+  blueBans: number
+  redBans: number
+  bluePicks: number
+  redPicks: number
+}
+
+export function splitDraftIntoPhases(steps: readonly DraftStep[]): DraftPhase[] {
+  const phases: DraftPhase[] = []
+  for (const s of steps) {
+    if (phases.length === 0 || (s.action === 'ban' && phases[phases.length - 1].picks.length > 0)) {
+      phases.push({
+        phaseNumber: phases.length + 1,
+        steps: [],
+        bans: [],
+        picks: [],
+        blueBans: 0,
+        redBans: 0,
+        bluePicks: 0,
+        redPicks: 0,
+      })
+    }
+    const current = phases[phases.length - 1]
+    current.steps.push(s)
+    if (s.action === 'ban') {
+      current.bans.push(s)
+      if (s.side === 'blue') current.blueBans += 1
+      else current.redBans += 1
+    } else {
+      current.picks.push(s)
+      if (s.side === 'blue') current.bluePicks += 1
+      else current.redPicks += 1
+    }
+  }
+  return phases
+}
+
+export function validateDraftPhases(steps: readonly DraftStep[]): string[] {
+  const errors: string[] = []
+  for (const phase of splitDraftIntoPhases(steps)) {
+    if (phase.blueBans !== phase.redBans) {
+      errors.push(
+        `Phase ${phase.phaseNumber}: số lượt Ban của đội Xanh (${phase.blueBans}) và đội Đỏ (${phase.redBans}) phải bằng nhau.`,
+      )
+    }
+  }
+  return errors
+}
+
 export interface CostMilestone {
   minCost: number
   maxCost: number | null

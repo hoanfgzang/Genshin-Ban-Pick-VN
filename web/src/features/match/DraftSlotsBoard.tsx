@@ -1,12 +1,19 @@
 import { useMemo } from 'react'
 import { getCharacter } from '@/domain/characters'
+import { formatCost, formatCostMilestoneSummary, formatSeconds, round2 } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
-import { buildDraftBoardRows, getDraftHighlightSets, type DraftBoardCell } from './lineup'
+import {
+  buildDraftBoardRows,
+  computeCostBreakdown,
+  getDraftHighlightSets,
+  type DraftBoardCell,
+} from './lineup'
 
 interface Props {
   state: MatchState
+  countdown?: number | null
   hoverCharacterSlug?: string | null
   canEditWeaponsForSide: (side: MatchSide) => boolean
   onSelectPickSlot?: (side: MatchSide, pick: MatchPickSlot) => void
@@ -14,11 +21,128 @@ interface Props {
 
 export function DraftSlotsBoard({
   state,
+  countdown = null,
   hoverCharacterSlug = null,
   canEditWeaponsForSide,
   onSelectPickSlot,
 }: Props) {
   const isPostDraft = state.status !== 'drafting'
+  const activeStep =
+    state.status === 'drafting' ? state.ruleset.draftSteps[state.currentStepIndex] ?? null : null
+  const useReserveTime = Boolean(state.ruleset.useReserveTime)
+  const reserveDefault = state.ruleset.reserveTimeSeconds ?? 120
+  const maxOvertimeSeconds = state.ruleset.maxOvertimeSeconds ?? 600
+
+  const calcSideOvertime = (side: MatchSide): number => {
+    const sideState = state.sides[side]
+    const savedOvertime = sideState.overtimePenaltySeconds ?? 0
+    if (
+      countdown !== null &&
+      countdown < 0 &&
+      state.status === 'drafting' &&
+      activeStep?.side === side
+    ) {
+      const elapsedOver = -countdown
+      const savedReserve = sideState.reserveRemainingSeconds ?? reserveDefault
+      const rawOver = useReserveTime ? Math.max(0, elapsedOver - savedReserve) : elapsedOver
+      const liveOver =
+        maxOvertimeSeconds > 0
+          ? Math.min(rawOver, Math.max(0, maxOvertimeSeconds - savedOvertime))
+          : rawOver
+      return round2(savedOvertime + liveOver)
+    }
+    return round2(savedOvertime)
+  }
+
+  const renderSideStats = (side: MatchSide) => {
+    const isBlue = side === 'blue'
+    const sideState = state.sides[side]
+    const breakdown = computeCostBreakdown(sideState.picks)
+    const milestone = formatCostMilestoneSummary(sideState.totalCost, state.ruleset.costRules)
+    const refSec = sideState.weaponRefinementSeconds ?? breakdown.weaponRefinementSeconds
+    const addedSeconds = round2(sideState.costPenaltySeconds + refSec)
+    const overtimeSeconds = calcSideOvertime(side)
+    const totalAdded = round2(addedSeconds + overtimeSeconds)
+
+    return (
+      <div
+        aria-label={`Thông tin Cost và Thời gian đội ${isBlue ? 'Xanh' : 'Đỏ'}`}
+        className={cn(
+          'w-full max-w-md rounded-xl border bg-bg/80 p-3 text-xs xl:flex-1 xl:min-w-[184px] xl:max-w-[232px] 2xl:max-w-[268px] 2xl:p-3.5 2xl:text-[13px]',
+          isBlue ? 'border-hydro/35 xl:mr-auto' : 'border-danger/35 xl:ml-auto',
+        )}
+      >
+        <div className="mb-2 flex items-center justify-between gap-2 border-b border-line/60 pb-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span
+              className={cn(
+                'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold uppercase',
+                isBlue ? 'bg-hydro/15 text-hydro' : 'bg-danger/15 text-danger',
+              )}
+            >
+              {isBlue ? 'Xanh' : 'Đỏ'}
+            </span>
+            <span className="truncate text-xs font-bold text-text 2xl:text-sm">
+              {sideState.player?.displayName ?? 'Trống'}
+            </span>
+          </div>
+          <span className="shrink-0 font-mono text-xs font-extrabold text-gold-strong 2xl:text-sm">
+            +{formatSeconds(totalAdded)}
+          </span>
+        </div>
+
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-2 xl:grid-cols-1 xl:gap-y-2">
+          <div className="min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-muted">Cost</dt>
+              <dd className="font-mono text-sm font-extrabold text-gold-strong 2xl:text-[15px]">
+                {formatCost(sideState.totalCost)}
+              </dd>
+            </div>
+            <div className="truncate text-[11px] text-muted">
+              NV {formatCost(breakdown.characterCost)} · VK {formatCost(breakdown.weaponCost)}
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-muted">Mốc cost</dt>
+              <dd className="truncate font-mono text-sm font-bold text-text 2xl:text-[15px]">
+                {milestone.rangeLabel}
+              </dd>
+            </div>
+            <div className="truncate text-[11px] text-muted">{milestone.rateLabel}</div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-muted">Thời gian cộng thêm</dt>
+              <dd className="font-mono text-sm font-extrabold text-gold-strong 2xl:text-[15px]">
+                +{formatSeconds(addedSeconds)}
+              </dd>
+            </div>
+            {refSec > 0 && (
+              <div className="truncate text-[11px] text-muted">
+                Cost +{formatSeconds(sideState.costPenaltySeconds)} · TL +{formatSeconds(refSec)}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-baseline justify-between gap-2">
+            <dt className="text-muted">Thời gian bị phạt</dt>
+            <dd
+              className={cn(
+                'font-mono text-sm font-extrabold 2xl:text-[15px]',
+                overtimeSeconds > 0 ? 'text-danger' : 'text-text',
+              )}
+            >
+              {overtimeSeconds > 0 ? `+${formatSeconds(overtimeSeconds)}` : '0s'}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    )
+  }
 
   const board = useMemo(
     () =>
@@ -255,42 +379,46 @@ export function DraftSlotsBoard({
   return (
     <section
       aria-label="Bảng thứ tự Ban và Pick"
-      className="panel grid grid-cols-1 items-center gap-3 border-line/70 bg-bg/55 px-3 py-2.5 [--slot-w:2.5rem] sm:[--slot-w:3rem] md:grid-cols-[1fr_auto_1fr] md:[--slot-w:2.5rem] lg:[--slot-w:3rem] xl:[--slot-w:3.5rem] 2xl:[--slot-w:4rem]"
+      className="panel grid grid-cols-1 items-center gap-3 border-line/70 bg-bg/55 px-2 py-2.5 [--slot-w:2.5rem] sm:[--slot-w:3rem] md:grid-cols-[1fr_auto_1fr] md:[--slot-w:2.5rem] lg:[--slot-w:3rem] xl:[--slot-w:2.75rem] 2xl:[--slot-w:3.5rem]"
     >
-      {/* Blue: Khối Pick ở ngoài (trái), cách xa khối Ban ở gần tâm */}
-      <div
-        className={cn(
-          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-end',
-          isPostDraft
-            ? 'md:gap-3 lg:gap-6 xl:gap-10 2xl:gap-12'
-            : 'md:gap-5 lg:gap-9 xl:gap-12 2xl:gap-14',
-        )}
-      >
+      {/* Blue: Thông tin Cost sát viền trái + khối Pick ở ngoài + khối Ban ở gần tâm */}
+      <div className="flex flex-col items-center gap-3 md:items-end xl:flex-row xl:items-center xl:justify-end xl:gap-2.5 2xl:gap-4">
+        {renderSideStats('blue')}
+
         <div
           className={cn(
-            'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-end',
-            isPostDraft &&
-              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:4rem] 2xl:[--slot-w:4.5rem]',
+            'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-end',
+            isPostDraft
+              ? 'md:gap-3 lg:gap-5 xl:gap-3 2xl:gap-5'
+              : 'md:gap-5 lg:gap-7 xl:gap-3 2xl:gap-5',
           )}
         >
-          <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
-            PICK
-          </span>
-          <div className="flex flex-col gap-1.5">
-            {renderRows(board.blue.pickRows, 'end', true)}
-          </div>
-        </div>
-
-        {board.blue.banRows.length > 0 && (
-          <div className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/25 bg-danger/5 px-2 py-1.5 md:items-end">
-            <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
-              BAN
+          <div
+            className={cn(
+              'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-end',
+              isPostDraft &&
+                '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:3.125rem] 2xl:[--slot-w:3.75rem]',
+            )}
+          >
+            <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
+              PICK
             </span>
-            <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-              {renderRows(board.blue.banRows, 'end')}
+            <div className="flex flex-col gap-1.5">
+              {renderRows(board.blue.pickRows, 'end', true)}
             </div>
           </div>
-        )}
+
+          {board.blue.banRows.length > 0 && (
+            <div className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/25 bg-danger/5 px-2 py-1.5 md:items-end">
+              <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
+                BAN
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {renderRows(board.blue.banRows, 'end')}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Nhãn giữa */}
@@ -300,40 +428,44 @@ export function DraftSlotsBoard({
         </span>
       </div>
 
-      {/* Red: Khối Ban ở gần tâm, cách xa khối Pick ở ngoài (phải) */}
-      <div
-        className={cn(
-          'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-start',
-          isPostDraft
-            ? 'md:gap-3 lg:gap-6 xl:gap-10 2xl:gap-12'
-            : 'md:gap-5 lg:gap-9 xl:gap-12 2xl:gap-14',
-        )}
-      >
-        {board.red.banRows.length > 0 && (
-          <div className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/25 bg-danger/5 px-2 py-1.5 md:items-start">
-            <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
-              BAN
-            </span>
-            <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-              {renderRows(board.red.banRows, 'start')}
-            </div>
-          </div>
-        )}
-
+      {/* Red: Khối Ban ở gần tâm + khối Pick ở ngoài + thông tin Cost sát viền phải */}
+      <div className="flex flex-col items-center gap-3 md:items-start xl:flex-row xl:items-center xl:justify-start xl:gap-2.5 2xl:gap-4">
         <div
           className={cn(
-            'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-start',
-            isPostDraft &&
-              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:4rem] 2xl:[--slot-w:4.5rem]',
+            'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-start',
+            isPostDraft
+              ? 'md:gap-3 lg:gap-5 xl:gap-3 2xl:gap-5'
+              : 'md:gap-5 lg:gap-7 xl:gap-3 2xl:gap-5',
           )}
         >
-          <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
-            PICK
-          </span>
-          <div className="flex flex-col gap-1.5">
-            {renderRows(board.red.pickRows, 'start', true)}
+          {board.red.banRows.length > 0 && (
+            <div className="flex flex-col items-center gap-1.5 rounded-lg border border-danger/25 bg-danger/5 px-2 py-1.5 md:items-start">
+              <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
+                BAN
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {renderRows(board.red.banRows, 'start')}
+              </div>
+            </div>
+          )}
+
+          <div
+            className={cn(
+              'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-start',
+              isPostDraft &&
+                '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:3.125rem] 2xl:[--slot-w:3.75rem]',
+            )}
+          >
+            <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
+              PICK
+            </span>
+            <div className="flex flex-col gap-1.5">
+              {renderRows(board.red.pickRows, 'start', true)}
+            </div>
           </div>
         </div>
+
+        {renderSideStats('red')}
       </div>
     </section>
   )

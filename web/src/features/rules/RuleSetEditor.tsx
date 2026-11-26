@@ -7,6 +7,7 @@ import { CHARACTER_BY_SLUG } from '@/domain/characters'
 import {
   createDefaultRuleSetConfig,
   TIE_BREAK_OPTIONS,
+  validateDraftPhases,
   type CharacterCustomCost,
   type RuleSet,
   type RuleSetConfig,
@@ -88,6 +89,12 @@ export function RuleSetEditor({
   const handleSave = async () => {
     if (name.trim().length < 2) {
       toast.error('Tên bộ luật tối thiểu 2 ký tự.')
+      return
+    }
+
+    const phaseErrors = validateDraftPhases(config.draftSteps)
+    if (phaseErrors.length > 0) {
+      toast.error(phaseErrors[0])
       return
     }
 

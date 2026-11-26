@@ -1531,8 +1531,9 @@ def test_draft_forfeit_auto_timeout_ws(test_client: TestClient) -> None:
     cfg = default_ruleset_config().model_dump(by_alias=True)
     cfg["draftSteps"] = [
         {"step": 1, "side": "blue", "action": "ban"},
-        {"step": 2, "side": "blue", "action": "pick"},
-        {"step": 3, "side": "red", "action": "pick"},
+        {"step": 2, "side": "red", "action": "ban"},
+        {"step": 3, "side": "blue", "action": "pick"},
+        {"step": 4, "side": "red", "action": "pick"},
     ]
     cfg["banSeconds"] = 1
     cfg["pickSeconds"] = 1
@@ -1595,6 +1596,58 @@ def test_draft_forfeit_auto_timeout_ws(test_client: TestClient) -> None:
         assert forfeit_state["turnDeadlineAt"] is None
         assert forfeit_state["sides"]["blue"]["overtimePenaltySeconds"] == 1.0
         assert forfeit_state["sides"]["blue"]["player"]["userId"] == uid_a
+
+
+def test_ruleset_phase_equal_bans_validation() -> None:
+    import pytest
+    from pydantic import ValidationError
+    from app.schemas.ruleset import DraftStep, RuleSetConfig
+
+    def make_steps(pattern: list[tuple[str, str]]) -> list[DraftStep]:
+        return [DraftStep(step=i + 1, side=side, action=action) for i, (side, action) in enumerate(pattern)]  # type: ignore[arg-type]
+
+    # Hợp lệ: chuẩn 22 bước (Phase 1: 2-2 Ban, Phase 2: 1-1 Ban)
+    cfg_default = default_ruleset_config()
+    assert len(cfg_default.draft_steps) == 22
+
+    # Hợp lệ: Luật Brox 24 bước (Phase 1: 2-2 Ban, Phase 2: 1-1 Ban, Phase 3: 1-1 Ban)
+    brox_cfg = RuleSetConfig(
+        draft_steps=make_steps([
+            ("blue", "ban"), ("blue", "ban"), ("red", "ban"), ("red", "ban"),
+            ("blue", "pick"), ("red", "pick"), ("red", "pick"), ("blue", "pick"), ("blue", "pick"), ("red", "pick"),
+            ("red", "ban"), ("blue", "ban"),
+            ("red", "pick"), ("blue", "pick"), ("blue", "pick"), ("red", "pick"), ("red", "pick"), ("blue", "pick"),
+            ("blue", "ban"), ("red", "ban"),
+            ("blue", "pick"), ("red", "pick"), ("red", "pick"), ("blue", "pick"),
+        ])
+    )
+    assert len(brox_cfg.draft_steps) == 24
+
+    # Hợp lệ: 0 Ban cả 2 bên trong 1 phase
+    no_ban_cfg = RuleSetConfig(
+        draft_steps=make_steps([("blue", "pick"), ("red", "pick")])
+    )
+    assert len(no_ban_cfg.draft_steps) == 2
+
+    # Không hợp lệ: Phase 1 lệch Ban (2 Xanh vs 1 Đỏ)
+    with pytest.raises(ValidationError, match="Phase 1"):
+        RuleSetConfig(
+            draft_steps=make_steps([
+                ("blue", "ban"), ("blue", "ban"), ("red", "ban"),
+                ("blue", "pick"), ("red", "pick"),
+            ])
+        )
+
+    # Không hợp lệ: Phase 2 lệch Ban (1 Xanh vs 0 Đỏ)
+    with pytest.raises(ValidationError, match="Phase 2"):
+        RuleSetConfig(
+            draft_steps=make_steps([
+                ("blue", "ban"), ("red", "ban"),
+                ("blue", "pick"), ("red", "pick"),
+                ("blue", "ban"),
+                ("blue", "pick"), ("red", "pick"),
+            ])
+        )
 
 
 

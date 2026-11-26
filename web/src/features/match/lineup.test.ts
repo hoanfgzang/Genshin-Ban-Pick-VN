@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createDefaultDraftSteps, createDefaultRuleSetConfig, getStepBaseSeconds, type DraftStep } from '@/domain/ruleset'
+import {
+  createDefaultDraftSteps,
+  createDefaultRuleSetConfig,
+  getStepBaseSeconds,
+  splitDraftIntoPhases,
+  validateDraftPhases,
+  type DraftStep,
+} from '@/domain/ruleset'
 import type { MatchPickSlot, SideState } from '@/services'
 import {
   buildDraftBoardRows,
@@ -133,90 +140,107 @@ describe('features/match/lineup', () => {
     expect(rows.red.pickRows[0][1].status).toBe('active')
   })
 
-  it('buildDraftBoardRows chia hàng Pick theo chuỗi pick liên tục khi >= 3 lượt liên tục', () => {
+  it('buildDraftBoardRows chia hàng Pick và Ban theo từng Phase Ban/Pick (Luật chuẩn 4-4 và Luật Brox 3-3-2)', () => {
     const makeSteps = (pattern: Array<['blue' | 'red', 'ban' | 'pick']>): DraftStep[] =>
       pattern.map(([side, action], idx) => ({ step: idx + 1, side, action }))
 
-    // 3 lượt pick liên tục mỗi bên (8 pick mỗi bên -> 3 + 3 + 2)
-    const steps3 = makeSteps([
+    // Luật chuẩn 22 bước: 2 phase -> Pick [4, 4], Ban [2, 1]
+    const defaultSteps = createDefaultDraftSteps()
+    const defaultPhases = splitDraftIntoPhases(defaultSteps)
+    expect(defaultPhases).toHaveLength(2)
+    expect(validateDraftPhases(defaultSteps)).toEqual([])
+    const defaultBoard = buildDraftBoardRows(
+      defaultSteps,
+      { blue: emptySide(), red: emptySide() },
+      0,
+      'drafting',
+    )
+    expect(defaultBoard.blue.pickRows.map((r) => r.length)).toEqual([4, 4])
+    expect(defaultBoard.red.pickRows.map((r) => r.length)).toEqual([4, 4])
+    expect(defaultBoard.blue.banRows.map((r) => r.length)).toEqual([2, 1])
+    expect(defaultBoard.red.banRows.map((r) => r.length)).toEqual([2, 1])
+
+    // Luật Brox 24 bước: 3 phase -> Pick [3, 3, 2], Ban [2, 1, 1] ở cả drafting & weapon_phase
+    const broxSteps = makeSteps([
+      ['blue', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'ban'],
+      ['red', 'ban'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
       ['blue', 'ban'],
       ['red', 'ban'],
       ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
       ['red', 'pick'],
       ['red', 'pick'],
       ['blue', 'pick'],
-      ['blue', 'pick'],
+    ])
+
+    const broxPhases = splitDraftIntoPhases(broxSteps)
+    expect(broxPhases).toHaveLength(3)
+    expect(validateDraftPhases(broxSteps)).toEqual([])
+
+    for (const status of ['drafting', 'weapon_phase'] as const) {
+      const broxBoard = buildDraftBoardRows(
+        broxSteps,
+        { blue: emptySide(), red: emptySide() },
+        status === 'drafting' ? 0 : broxSteps.length,
+        status,
+      )
+      expect(broxBoard.blue.pickRows.map((r) => r.map((c) => c.step))).toEqual([
+        [9, 8, 5],
+        [18, 15, 14],
+        [24, 21],
+      ])
+      expect(broxBoard.red.pickRows.map((r) => r.map((c) => c.step))).toEqual([
+        [6, 7, 10],
+        [13, 16, 17],
+        [22, 23],
+      ])
+      expect(broxBoard.blue.banRows.map((r) => r.map((c) => c.step))).toEqual([[1, 2], [12], [19]])
+      expect(broxBoard.red.banRows.map((r) => r.map((c) => c.step))).toEqual([[3, 4], [11], [20]])
+    }
+
+    // Luật 1 phase không Ban -> 1 hàng duy nhất
+    const singlePhaseSteps = makeSteps([
       ['blue', 'pick'],
       ['red', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
       ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
       ['red', 'pick'],
     ])
-    expect(getMaxConsecutivePicks(steps3)).toBe(3)
-    const board3 = buildDraftBoardRows(
-      steps3,
+    expect(validateDraftPhases(singlePhaseSteps)).toEqual([])
+    const singleBoard = buildDraftBoardRows(
+      singlePhaseSteps,
       { blue: emptySide(), red: emptySide() },
       0,
       'drafting',
     )
-    expect(board3.blue.pickRows.map((r) => r.length)).toEqual([3, 3, 2])
-    expect(board3.red.pickRows.map((r) => r.length)).toEqual([3, 3, 2])
-    // Blue hàng 1 đảo ngược từ trong ra ngoài (step 5, 4, 3)
-    expect(board3.blue.pickRows[0].map((c) => c.step)).toEqual([5, 4, 3])
-    expect(board3.red.pickRows[0].map((c) => c.step)).toEqual([6, 7, 8])
+    expect(singleBoard.blue.pickRows.map((r) => r.length)).toEqual([2])
+    expect(singleBoard.red.pickRows.map((r) => r.length)).toEqual([2])
 
-    // 4 lượt pick liên tục (10 pick mỗi bên -> 4 + 4 + 2)
-    const steps4 = makeSteps([
+    // validateDraftPhases phát hiện phase lệch số Ban giữa Xanh và Đỏ
+    const invalidSteps = makeSteps([
+      ['blue', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'ban'],
       ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
       ['red', 'pick'],
     ])
-    expect(getMaxConsecutivePicks(steps4)).toBe(4)
-    const board4 = buildDraftBoardRows(
-      steps4,
-      { blue: emptySide(), red: emptySide() },
-      0,
-      'drafting',
-    )
-    expect(board4.blue.pickRows.map((r) => r.length)).toEqual([4, 4, 2])
-    expect(board4.red.pickRows.map((r) => r.length)).toEqual([4, 4, 2])
-
-    // 1 lượt pick luân phiên (< 3) -> vẫn 2 hàng 4 ô cho 8 pick
-    const steps1 = makeSteps(
-      Array.from({ length: 16 }, (_, i) => [i % 2 === 0 ? 'blue' : 'red', 'pick']),
-    )
-    expect(getMaxConsecutivePicks(steps1)).toBe(1)
-    const board1 = buildDraftBoardRows(
-      steps1,
-      { blue: emptySide(), red: emptySide() },
-      0,
-      'drafting',
-    )
-    expect(board1.blue.pickRows.map((r) => r.length)).toEqual([4, 4])
-    expect(board1.red.pickRows.map((r) => r.length)).toEqual([4, 4])
+    expect(validateDraftPhases(invalidSteps)).toEqual([
+      'Phase 1: số lượt Ban của đội Xanh (2) và đội Đỏ (1) phải bằng nhau.',
+    ])
   })
 
   it('groupConsecutiveCells gom các lượt liên tiếp cùng bên & hành động, tách lượt không liên tiếp', () => {
@@ -287,51 +311,6 @@ describe('features/match/lineup', () => {
     expect(board.red.pickRows.map((r) => r.length)).toEqual([4, 4])
     expect(board.blue.banRows.map((r) => r.length)).toEqual([2, 2])
     expect(board.red.banRows.map((r) => r.length)).toEqual([2, 2])
-  })
-
-  it('buildDraftBoardRows chia đều Pick 4-4 và Ban 2-2 ngay cả trong lúc drafting với mẫu 24 bước phòng 49D2GQ', () => {
-    const makeSteps = (pattern: Array<['blue' | 'red', 'ban' | 'pick']>): DraftStep[] =>
-      pattern.map(([side, action], idx) => ({ step: idx + 1, side, action }))
-
-    const steps = makeSteps([
-      ['blue', 'ban'],
-      ['blue', 'ban'],
-      ['red', 'ban'],
-      ['red', 'ban'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'ban'],
-      ['blue', 'ban'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-      ['blue', 'ban'],
-      ['red', 'ban'],
-      ['blue', 'pick'],
-      ['red', 'pick'],
-      ['red', 'pick'],
-      ['blue', 'pick'],
-    ])
-
-    for (const status of ['drafting', 'weapon_phase'] as const) {
-      const board = buildDraftBoardRows(
-        steps,
-        { blue: emptySide(), red: emptySide() },
-        status === 'drafting' ? 0 : steps.length,
-        status,
-      )
-      expect(board.blue.pickRows.map((r) => r.length)).toEqual([4, 4])
-      expect(board.red.pickRows.map((r) => r.length)).toEqual([4, 4])
-      expect(board.blue.banRows.map((r) => r.length)).toEqual([2, 2])
-      expect(board.red.banRows.map((r) => r.length)).toEqual([2, 2])
-    }
   })
 
   it('getDraftHighlightSets xác định đúng nhóm đang active (sáng vàng) và nhóm chuẩn bị kế tiếp (xanh dương)', () => {

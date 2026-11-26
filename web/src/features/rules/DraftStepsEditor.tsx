@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/Button'
 import {
   createDefaultDraftSteps,
+  splitDraftIntoPhases,
+  validateDraftPhases,
   type DraftActionType,
   type DraftStep,
   type MatchSide,
@@ -23,6 +25,14 @@ export function DraftStepsEditor({ steps, banSeconds, pickSeconds, onChange }: P
   const bluePicks = steps.filter((s) => s.side === 'blue' && s.action === 'pick').length
   const redBans = steps.filter((s) => s.side === 'red' && s.action === 'ban').length
   const redPicks = steps.filter((s) => s.side === 'red' && s.action === 'pick').length
+  const phases = splitDraftIntoPhases(steps)
+  const phaseErrors = validateDraftPhases(steps)
+  const stepToPhase = new Map<number, number>()
+  for (const phase of phases) {
+    for (const s of phase.steps) {
+      stepToPhase.set(s.step, phase.phaseNumber)
+    }
+  }
 
   const toggleSide = (idx: number) => {
     const nextSide: MatchSide = steps[idx].side === 'blue' ? 'red' : 'blue'
@@ -84,6 +94,45 @@ export function DraftStepsEditor({ steps, banSeconds, pickSeconds, onChange }: P
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <span className="font-semibold text-muted">Phân chia Phase:</span>
+        {phases.map((p) => {
+          const balanced = p.blueBans === p.redBans
+          return (
+            <span
+              key={p.phaseNumber}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium',
+                balanced
+                  ? 'border-line bg-bg/60 text-text'
+                  : 'border-danger/60 bg-danger/15 text-danger',
+              )}
+            >
+              <strong className={balanced ? 'text-gold-strong' : 'text-danger'}>
+                Phase {p.phaseNumber}
+              </strong>
+              <span>
+                Ban {p.blueBans}-{p.redBans} · Pick {p.bluePicks}-{p.redPicks}
+              </span>
+            </span>
+          )
+        })}
+      </div>
+
+      {phaseErrors.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-lg border border-danger/50 bg-danger/10 px-3 py-2 text-xs text-danger"
+        >
+          <div className="font-bold">Quy tắc Phase chưa hợp lệ (số lượt Ban 2 bên trong cùng 1 Phase phải bằng nhau):</div>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4">
+            {phaseErrors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
         {steps.map((s, idx) => (
           <div
@@ -94,6 +143,9 @@ export function DraftStepsEditor({ steps, banSeconds, pickSeconds, onChange }: P
             )}
           >
             <div className="flex items-center gap-1.5">
+              <span className="rounded bg-panel-2 px-1 py-0.5 font-mono text-[10px] font-bold text-gold-strong">
+                P{stepToPhase.get(s.step) ?? 1}
+              </span>
               <span className="w-6 font-mono text-muted">#{s.step}</span>
               <button
                 type="button"
