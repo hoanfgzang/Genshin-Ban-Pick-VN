@@ -3,7 +3,7 @@ import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
-import { buildDraftBoardRows, type DraftBoardCell } from './lineup'
+import { buildDraftBoardRows, getDraftHighlightSets, type DraftBoardCell } from './lineup'
 
 interface Props {
   state: MatchState
@@ -31,6 +31,16 @@ export function DraftSlotsBoard({
     [state.ruleset.draftSteps, state.sides, state.currentStepIndex, state.status],
   )
 
+  const highlights = useMemo(
+    () =>
+      getDraftHighlightSets(
+        state.ruleset.draftSteps,
+        state.currentStepIndex,
+        state.status,
+      ),
+    [state.ruleset.draftSteps, state.currentStepIndex, state.status],
+  )
+
   const lookupBanConstellation = (side: MatchSide, slug: string | null): number | null => {
     if (!slug) return null
     const opponent: MatchSide = side === 'blue' ? 'red' : 'blue'
@@ -43,6 +53,8 @@ export function DraftSlotsBoard({
 
   const renderCell = (cell: DraftBoardCell, positionInGroup: 'single' | 'first' | 'middle' | 'last') => {
     const isActive = cell.status === 'active'
+    const isInActiveGroup = highlights.activeGroupSteps.has(cell.step)
+    const isNextUp = !isInActiveGroup && highlights.nextGroupSteps.has(cell.step)
     const displaySlug =
       cell.status === 'done'
         ? cell.characterSlug
@@ -81,16 +93,20 @@ export function DraftSlotsBoard({
           'relative flex aspect-[3/4] w-[var(--slot-w)] shrink-0 flex-col overflow-hidden border transition',
           roundingCls,
           isActive
-            ? 'z-10 border-gold-strong bg-gold/15 ring-2 ring-gold-strong shadow-[0_0_16px_rgba(244,223,168,0.4)]'
-            : cell.status === 'upcoming'
-              ? isBlue
-                ? 'border-hydro/35 bg-hydro/10'
-                : 'border-danger/35 bg-danger/10'
-              : isBan
-                ? 'border-danger/80 bg-bg/80'
-                : isBlue
-                  ? 'border-hydro/65 bg-bg/80'
-                  : 'border-danger/65 bg-bg/80',
+            ? 'draft-slot-active-ring z-20 border-gold-strong/60 bg-gold/20 shadow-[0_0_16px_rgba(244,223,168,0.5)]'
+            : isInActiveGroup
+              ? 'z-10 border-gold-strong bg-gold/15 ring-1 ring-gold/70 shadow-[0_0_12px_rgba(244,223,168,0.35)]'
+              : isNextUp
+                ? 'z-10 border-blue-400 bg-blue-500/25 ring-1 ring-blue-400/80 shadow-[0_0_14px_rgba(96,165,250,0.45)]'
+                : cell.status === 'upcoming'
+                  ? isBlue
+                    ? 'border-hydro/30 bg-hydro/5'
+                    : 'border-danger/30 bg-danger/5'
+                  : isBan
+                    ? 'border-danger/80 bg-bg/80'
+                    : isBlue
+                      ? 'border-hydro/65 bg-bg/80'
+                      : 'border-danger/65 bg-bg/80',
           canClickPick && 'cursor-pointer hover:z-10 hover:-translate-y-0.5 hover:border-gold-strong',
         )}
         title={
@@ -98,16 +114,9 @@ export function DraftSlotsBoard({
             ? `${isBan ? 'BAN' : 'PICK'}${isActive ? ' (Đang chọn)' : ''}: ${char.name}${constellation !== null ? ` (C${constellation})` : ''}`
             : cell.status === 'done' && isBan
               ? 'Bỏ qua lượt Ban'
-              : `Bước ${cell.step} (${cell.action.toUpperCase()})`
+              : `Bước ${cell.step} (${cell.action.toUpperCase()})${isNextUp ? ' (Chuẩn bị lượt kế tiếp)' : ''}`
         }
       >
-        {isActive && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] ring-2 ring-gold-strong animate-pulse"
-          />
-        )}
-
         {char ? (
           <>
             <div
@@ -169,7 +178,11 @@ export function DraftSlotsBoard({
             <span
               className={cn(
                 'text-lg font-black leading-none',
-                isActive ? 'text-gold-strong' : 'text-text/45',
+                isActive || isInActiveGroup
+                  ? 'text-gold-strong'
+                  : isNextUp
+                    ? 'text-blue-200'
+                    : 'text-text/45',
               )}
             >
               {cell.step}
@@ -177,11 +190,13 @@ export function DraftSlotsBoard({
             <span
               className={cn(
                 'text-[9px] font-bold uppercase tracking-wider',
-                isActive
+                isActive || isInActiveGroup
                   ? 'text-gold-strong'
-                  : isBan
-                    ? 'text-danger/70'
-                    : 'text-hydro/70',
+                  : isNextUp
+                    ? 'text-blue-300'
+                    : isBan
+                      ? 'text-danger/70'
+                      : 'text-hydro/70',
               )}
             >
               {cell.action}
@@ -212,18 +227,20 @@ export function DraftSlotsBoard({
     return <div key={cell.step}>{inner}</div>
   }
 
-  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start') =>
+  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start', spaced = false) =>
     rows.map((row, rIdx) => (
       <div
         key={rIdx}
         className={cn(
-          'flex flex-wrap items-center justify-center gap-0',
+          'flex flex-wrap items-center justify-center',
+          spaced ? 'gap-[calc(var(--slot-w)/5)]' : 'gap-0',
           align === 'end' ? 'md:justify-end' : 'md:justify-start',
         )}
       >
         {row.map((cell, cIdx) => {
-          const pos =
-            row.length === 1
+          const pos = spaced
+            ? 'single'
+            : row.length === 1
               ? 'single'
               : cIdx === 0
                 ? 'first'
@@ -245,22 +262,22 @@ export function DraftSlotsBoard({
         className={cn(
           'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-end',
           isPostDraft
-            ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
-            : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
+            ? 'md:gap-3 lg:gap-6 xl:gap-10 2xl:gap-12'
+            : 'md:gap-5 lg:gap-9 xl:gap-12 2xl:gap-14',
         )}
       >
         <div
           className={cn(
             'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-end',
             isPostDraft &&
-              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
+              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:4rem] 2xl:[--slot-w:4.5rem]',
           )}
         >
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-            {renderRows(board.blue.pickRows, 'end')}
+          <div className="flex flex-col gap-1.5">
+            {renderRows(board.blue.pickRows, 'end', true)}
           </div>
         </div>
 
@@ -288,8 +305,8 @@ export function DraftSlotsBoard({
         className={cn(
           'flex flex-col items-center gap-4 sm:gap-6 md:flex-row md:items-center md:justify-start',
           isPostDraft
-            ? 'md:gap-4 lg:gap-8 xl:gap-12 2xl:gap-14'
-            : 'md:gap-6 lg:gap-10 xl:gap-14 2xl:gap-16',
+            ? 'md:gap-3 lg:gap-6 xl:gap-10 2xl:gap-12'
+            : 'md:gap-5 lg:gap-9 xl:gap-12 2xl:gap-14',
         )}
       >
         {board.red.banRows.length > 0 && (
@@ -307,14 +324,14 @@ export function DraftSlotsBoard({
           className={cn(
             'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-start',
             isPostDraft &&
-              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
+              '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.625rem] lg:[--slot-w:3.375rem] xl:[--slot-w:4rem] 2xl:[--slot-w:4.5rem]',
           )}
         >
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-            {renderRows(board.red.pickRows, 'start')}
+          <div className="flex flex-col gap-1.5">
+            {renderRows(board.red.pickRows, 'start', true)}
           </div>
         </div>
       </div>

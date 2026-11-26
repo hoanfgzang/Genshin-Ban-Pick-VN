@@ -112,6 +112,73 @@ export interface DraftBoardSideLayout {
   banRows: DraftBoardCell[][]
 }
 
+export interface DraftHighlightSets {
+  activeStep: number | null
+  activeGroupSteps: Set<number>
+  nextGroupSteps: Set<number>
+}
+
+export function getDraftHighlightSets(
+  steps: readonly DraftStep[],
+  currentStepIndex: number,
+  matchStatus: MatchStatus,
+): DraftHighlightSets {
+  const empty: DraftHighlightSets = {
+    activeStep: null,
+    activeGroupSteps: new Set(),
+    nextGroupSteps: new Set(),
+  }
+  if (matchStatus !== 'drafting' || currentStepIndex < 0 || currentStepIndex >= steps.length) {
+    return empty
+  }
+
+  const curr = steps[currentStepIndex]
+  let start = currentStepIndex
+  while (
+    start > 0 &&
+    steps[start - 1].side === curr.side &&
+    steps[start - 1].action === curr.action
+  ) {
+    start -= 1
+  }
+  let end = currentStepIndex
+  while (
+    end + 1 < steps.length &&
+    steps[end + 1].side === curr.side &&
+    steps[end + 1].action === curr.action
+  ) {
+    end += 1
+  }
+
+  const activeGroupSteps = new Set<number>()
+  for (let i = start; i <= end; i += 1) {
+    activeGroupSteps.add(steps[i].step)
+  }
+
+  const nextGroupSteps = new Set<number>()
+  const nextStart = end + 1
+  if (nextStart < steps.length) {
+    const nxt = steps[nextStart]
+    let nextEnd = nextStart
+    while (
+      nextEnd + 1 < steps.length &&
+      steps[nextEnd + 1].side === nxt.side &&
+      steps[nextEnd + 1].action === nxt.action
+    ) {
+      nextEnd += 1
+    }
+    for (let i = nextStart; i <= nextEnd; i += 1) {
+      nextGroupSteps.add(steps[i].step)
+    }
+  }
+
+  return {
+    activeStep: curr.step,
+    activeGroupSteps,
+    nextGroupSteps,
+  }
+}
+
 export function getMaxConsecutivePicks(steps: readonly DraftStep[]): number {
   let maxStreak = 0
   let currentStreak = 0

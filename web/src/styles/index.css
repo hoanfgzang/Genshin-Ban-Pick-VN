@@ -72,6 +72,50 @@
   .team-card-reveal-red {
     animation: team-card-reveal-right 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  .draft-slot-active-ring {
+    position: relative;
+  }
+
+  .draft-slot-active-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2.5px;
+    border-radius: inherit;
+    background: conic-gradient(
+      from var(--draft-border-angle),
+      rgb(244 223 168 / 0.25) 0deg,
+      #f4dfa8 70deg,
+      #fab632 140deg,
+      rgb(244 223 168 / 0.2) 220deg,
+      #f4dfa8 300deg,
+      rgb(244 223 168 / 0.25) 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: draft-border-spin 2.2s linear infinite;
+    pointer-events: none;
+    z-index: 30;
+  }
+}
+
+@property --draft-border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes draft-border-spin {
+  to {
+    --draft-border-angle: 360deg;
+  }
 }
 
 @keyframes team-card-reveal-left {
@@ -99,6 +143,10 @@
 @media (prefers-reduced-motion: reduce) {
   .team-card-reveal-blue,
   .team-card-reveal-red {
+    animation: none;
+  }
+
+  .draft-slot-active-ring::before {
     animation: none;
   }
 }

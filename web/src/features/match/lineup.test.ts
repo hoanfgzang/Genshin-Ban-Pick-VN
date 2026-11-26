@@ -4,6 +4,7 @@ import type { MatchPickSlot, SideState } from '@/services'
 import {
   buildDraftBoardRows,
   computeCostBreakdown,
+  getDraftHighlightSets,
   getMaxConsecutivePicks,
   groupConsecutiveCells,
   normalizeLineup,
@@ -331,6 +332,47 @@ describe('features/match/lineup', () => {
       expect(board.blue.banRows.map((r) => r.length)).toEqual([2, 2])
       expect(board.red.banRows.map((r) => r.length)).toEqual([2, 2])
     }
+  })
+
+  it('getDraftHighlightSets xác định đúng nhóm đang active (sáng vàng) và nhóm chuẩn bị kế tiếp (xanh dương)', () => {
+    const makeSteps = (pattern: Array<['blue' | 'red', 'ban' | 'pick']>): DraftStep[] =>
+      pattern.map(([side, action], idx) => ({ step: idx + 1, side, action }))
+
+    const steps = makeSteps([
+      ['blue', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'ban'],
+      ['red', 'ban'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'pick'],
+    ])
+
+    // Đang ở bước 1 (Blue Ban 1-2 liền kề) -> 1 & 2 sáng vàng, 3 & 4 (Red Ban) chuẩn bị xanh dương
+    const h0 = getDraftHighlightSets(steps, 0, 'drafting')
+    expect(h0.activeStep).toBe(1)
+    expect([...h0.activeGroupSteps]).toEqual([1, 2])
+    expect([...h0.nextGroupSteps]).toEqual([3, 4])
+
+    // Đang ở bước 5 (Blue Pick đơn) -> chỉ 5 sáng vàng, cặp 6 & 7 (Red Pick) chuẩn bị xanh dương
+    const h4 = getDraftHighlightSets(steps, 4, 'drafting')
+    expect(h4.activeStep).toBe(5)
+    expect([...h4.activeGroupSteps]).toEqual([5])
+    expect([...h4.nextGroupSteps]).toEqual([6, 7])
+
+    // Đang ở bước 7 (ô thứ 2 trong cặp Red Pick 6-7) -> cả 6 & 7 sáng vàng, cặp 8 & 9 chuẩn bị
+    const h6 = getDraftHighlightSets(steps, 6, 'drafting')
+    expect(h6.activeStep).toBe(7)
+    expect([...h6.activeGroupSteps]).toEqual([6, 7])
+    expect([...h6.nextGroupSteps]).toEqual([8, 9])
+
+    // Sau khi xong draft -> rỗng
+    const hPost = getDraftHighlightSets(steps, 0, 'weapon_phase')
+    expect(hPost.activeStep).toBeNull()
+    expect(hPost.activeGroupSteps.size).toBe(0)
+    expect(hPost.nextGroupSteps.size).toBe(0)
   })
 
   it('getStepBaseSeconds trả thời gian riêng của bước, hoặc mặc định Ban/Pick', () => {
