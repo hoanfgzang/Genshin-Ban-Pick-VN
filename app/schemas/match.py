@@ -12,7 +12,7 @@ SideName = Literal["blue", "red"]
 MatchFormat = Literal["bo1", "bo3"]
 MatchStatus = Literal["lobby", "drafting", "weapon_phase", "scoring", "between_games", "finished"]
 WinnerSide = Literal["blue", "red", "draw"]
-WinReason = Literal["score", "lower_cost", "fewer_4star", "draw"]
+WinReason = Literal["score", "lower_cost", "fewer_4star", "forfeit_timeout", "draw"]
 
 
 class CreateMatchRequest(CamelModel):

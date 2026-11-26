@@ -551,6 +551,156 @@ def _all_picked_slugs(state: MatchState, side: SideName | None = None) -> set[st
     return picked
 
 
+def _finalize_game_result(
+    next_state: MatchState,
+    game_winner_side: WinnerSide,
+    win_reason: WinReason,
+) -> None:
+    blue = next_state.sides["blue"]
+    red = next_state.sides["red"]
+    next_state.last_game_win_reason = win_reason
+    b_uid = blue.player.user_id if blue.player else ""
+    r_uid = red.player.user_id if red.player else ""
+    game_winner_uid = (
+        b_uid if game_winner_side == "blue" else (r_uid if game_winner_side == "red" else None)
+    )
+
+    if next_state.format == "bo1":
+        next_state.status = "finished"
+        next_state.finished_at = utc_now().isoformat()
+        next_state.winner_side = game_winner_side
+        next_state.winner_user_id = game_winner_uid
+        return
+
+    record = CompletedGameRecord(
+        game_number=next_state.current_game,
+        blue=_build_side_summary("blue", blue),
+        red=_build_side_summary("red", red),
+        winner_side=game_winner_side,
+        winner_user_id=game_winner_uid,
+        win_reason=win_reason,
+        finished_at=utc_now().isoformat(),
+    )
+    next_state.game_history = [
+        g for g in next_state.game_history if g.game_number != next_state.current_game
+    ] + [record]
+
+    if b_uid and b_uid not in next_state.series_scores:
+        next_state.series_scores[b_uid] = 0
+    if r_uid and r_uid not in next_state.series_scores:
+        next_state.series_scores[r_uid] = 0
+    if game_winner_uid:
+        next_state.series_scores[game_winner_uid] = (
+            next_state.series_scores.get(game_winner_uid, 0) + 1
+        )
+
+    b_wins = next_state.series_scores.get(b_uid, 0)
+    r_wins = next_state.series_scores.get(r_uid, 0)
+    series_done = (
+        b_wins >= next_state.wins_to_win
+        or r_wins >= next_state.wins_to_win
+        or next_state.current_game >= next_state.max_games
+    )
+
+    if series_done:
+        next_state.status = "finished"
+        next_state.finished_at = utc_now().isoformat()
+        next_state.next_game_setup = None
+        if b_wins > r_wins:
+            next_state.winner_side = "blue"
+            next_state.winner_user_id = b_uid
+        elif r_wins > b_wins:
+            next_state.winner_side = "red"
+            next_state.winner_user_id = r_uid
+        else:
+            next_state.winner_side = "draw"
+            next_state.winner_user_id = None
+    else:
+        next_state.status = "between_games"
+        next_state.winner_side = None
+        next_state.winner_user_id = None
+        if game_winner_side == "draw":
+            next_state.next_game_setup = NextGameSetup(
+                game_number=next_state.current_game + 1,
+                side_picker_user_id=None,
+                auto_swapped=True,
+                blue_user_id=r_uid,
+                red_user_id=b_uid,
+                ready_user_ids=[],
+            )
+        else:
+            loser_uid = r_uid if game_winner_side == "blue" else b_uid
+            next_state.next_game_setup = NextGameSetup(
+                game_number=next_state.current_game + 1,
+                side_picker_user_id=loser_uid,
+                auto_swapped=False,
+                blue_user_id=None,
+                red_user_id=None,
+                ready_user_ids=[],
+            )
+
+
+def get_draft_forfeit_deadline(state: MatchState) -> datetime | None:
+    if (
+        state.status != "drafting"
+        or not state.turn_deadline_at
+        or state.ruleset.max_overtime_seconds <= 0
+    ):
+        return None
+    step = get_current_step(state)
+    if not step:
+        return None
+    try:
+        deadline = datetime.fromisoformat(state.turn_deadline_at)
+    except ValueError:
+        return None
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    side_state = state.sides[step.side]
+    reserve_sec = (
+        max(0.0, side_state.reserve_remaining_seconds)
+        if state.ruleset.use_reserve_time
+        else 0.0
+    )
+    remaining_budget = max(
+        0.0,
+        float(state.ruleset.max_overtime_seconds) - max(0.0, side_state.overtime_penalty_seconds),
+    )
+    return deadline + timedelta(seconds=reserve_sec + remaining_budget)
+
+
+def is_draft_forfeit_expired(state: MatchState, now: datetime | None = None) -> bool:
+    forfeit_at = get_draft_forfeit_deadline(state)
+    if forfeit_at is None:
+        return False
+    ref = now or utc_now()
+    if ref.tzinfo is None:
+        ref = ref.replace(tzinfo=timezone.utc)
+    return ref >= forfeit_at
+
+
+def forfeit_draft_timeout(state: MatchState) -> MatchState | None:
+    if state.status != "drafting" or state.ruleset.max_overtime_seconds <= 0:
+        return None
+    step = get_current_step(state)
+    if not step:
+        return None
+
+    next_state = state.model_copy(deep=True)
+    losing_side: SideName = step.side
+    winning_side: SideName = "red" if losing_side == "blue" else "blue"
+    losing_side_state = next_state.sides[losing_side]
+    if next_state.ruleset.use_reserve_time:
+        losing_side_state.reserve_remaining_seconds = 0.0
+    losing_side_state.overtime_penalty_seconds = float(next_state.ruleset.max_overtime_seconds)
+
+    next_state.turn_deadline_at = None
+    next_state.undo_request = None
+    next_state.hover_character_slug = None
+    _finalize_game_result(next_state, winning_side, "forfeit_timeout")
+    return next_state
+
+
 def apply_draft_action(
     state: MatchState,
     *,
@@ -568,6 +718,11 @@ def apply_draft_action(
     actor_side = _find_user_side(state, user_id)
     if actor_side != step.side:
         raise forbidden("Chưa tới lượt của bạn.")
+
+    if is_draft_forfeit_expired(state, now):
+        forfeited = forfeit_draft_timeout(state)
+        if forfeited is not None:
+            return forfeited
 
     next_state = state.model_copy(deep=True)
     side_state = next_state.sides[step.side]
@@ -1190,85 +1345,7 @@ def submit_chamber_times(
         game_winner_side, win_reason = _resolve_game_winner(
             blue, red, next_state.ruleset.tie_break_rule
         )
-        next_state.last_game_win_reason = win_reason
-        b_uid = blue.player.user_id if blue.player else ""
-        r_uid = red.player.user_id if red.player else ""
-        game_winner_uid = (
-            b_uid if game_winner_side == "blue" else (r_uid if game_winner_side == "red" else None)
-        )
-
-        if next_state.format == "bo1":
-            next_state.status = "finished"
-            next_state.finished_at = utc_now().isoformat()
-            next_state.winner_side = game_winner_side
-            next_state.winner_user_id = game_winner_uid
-        else:
-            record = CompletedGameRecord(
-                game_number=next_state.current_game,
-                blue=_build_side_summary("blue", blue),
-                red=_build_side_summary("red", red),
-                winner_side=game_winner_side,
-                winner_user_id=game_winner_uid,
-                win_reason=win_reason,
-                finished_at=utc_now().isoformat(),
-            )
-            next_state.game_history = [
-                g for g in next_state.game_history if g.game_number != next_state.current_game
-            ] + [record]
-
-            if b_uid and b_uid not in next_state.series_scores:
-                next_state.series_scores[b_uid] = 0
-            if r_uid and r_uid not in next_state.series_scores:
-                next_state.series_scores[r_uid] = 0
-            if game_winner_uid:
-                next_state.series_scores[game_winner_uid] = (
-                    next_state.series_scores.get(game_winner_uid, 0) + 1
-                )
-
-            b_wins = next_state.series_scores.get(b_uid, 0)
-            r_wins = next_state.series_scores.get(r_uid, 0)
-            series_done = (
-                b_wins >= next_state.wins_to_win
-                or r_wins >= next_state.wins_to_win
-                or next_state.current_game >= next_state.max_games
-            )
-
-            if series_done:
-                next_state.status = "finished"
-                next_state.finished_at = utc_now().isoformat()
-                next_state.next_game_setup = None
-                if b_wins > r_wins:
-                    next_state.winner_side = "blue"
-                    next_state.winner_user_id = b_uid
-                elif r_wins > b_wins:
-                    next_state.winner_side = "red"
-                    next_state.winner_user_id = r_uid
-                else:
-                    next_state.winner_side = "draw"
-                    next_state.winner_user_id = None
-            else:
-                next_state.status = "between_games"
-                next_state.winner_side = None
-                next_state.winner_user_id = None
-                if game_winner_side == "draw":
-                    next_state.next_game_setup = NextGameSetup(
-                        game_number=next_state.current_game + 1,
-                        side_picker_user_id=None,
-                        auto_swapped=True,
-                        blue_user_id=r_uid,
-                        red_user_id=b_uid,
-                        ready_user_ids=[],
-                    )
-                else:
-                    loser_uid = r_uid if game_winner_side == "blue" else b_uid
-                    next_state.next_game_setup = NextGameSetup(
-                        game_number=next_state.current_game + 1,
-                        side_picker_user_id=loser_uid,
-                        auto_swapped=False,
-                        blue_user_id=None,
-                        red_user_id=None,
-                        ready_user_ids=[],
-                    )
+        _finalize_game_result(next_state, game_winner_side, win_reason)
 
     return next_state
 

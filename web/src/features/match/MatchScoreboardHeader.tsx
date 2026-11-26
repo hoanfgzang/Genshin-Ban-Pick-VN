@@ -85,10 +85,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
   const blueSavedReserve = state.sides.blue.reserveRemainingSeconds ?? reserveDefault
   const redSavedReserve = state.sides.red.reserveRemainingSeconds ?? reserveDefault
 
+  const maxOvertimeSeconds = state.ruleset.maxOvertimeSeconds ?? 600
   const blueSavedOvertime = state.sides.blue.overtimePenaltySeconds ?? 0
   const redSavedOvertime = state.sides.red.overtimePenaltySeconds ?? 0
 
-  const calcLiveTiming = (side: MatchSide, savedReserve: number) => {
+  const calcLiveTiming = (side: MatchSide, savedReserve: number, savedOvertime: number) => {
     if (countdown === null || countdown >= 0) {
       return {
         turnDisplay: countdown,
@@ -98,10 +99,14 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
       }
     }
     const elapsedOver = -countdown
+    const capOvertime = (rawOver: number) =>
+      maxOvertimeSeconds > 0
+        ? Math.min(rawOver, Math.max(0, maxOvertimeSeconds - savedOvertime))
+        : rawOver
     if (state.status === 'drafting' && activeStep?.side === side) {
       if (useReserveTime) {
         const liveReserve = Math.max(0, savedReserve - elapsedOver)
-        const liveOvertime = Math.max(0, elapsedOver - savedReserve)
+        const liveOvertime = capOvertime(Math.max(0, elapsedOver - savedReserve))
         return {
           turnDisplay: liveReserve > 0 ? 0 : -liveOvertime,
           liveReserve,
@@ -109,10 +114,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
           consumingReserve: liveReserve > 0,
         }
       }
+      const liveOvertime = capOvertime(elapsedOver)
       return {
-        turnDisplay: countdown,
+        turnDisplay: -liveOvertime,
         liveReserve: savedReserve,
-        liveOvertime: elapsedOver,
+        liveOvertime,
         consumingReserve: false,
       }
     }
@@ -132,8 +138,8 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
     }
   }
 
-  const blueTiming = calcLiveTiming('blue', blueSavedReserve)
-  const redTiming = calcLiveTiming('red', redSavedReserve)
+  const blueTiming = calcLiveTiming('blue', blueSavedReserve, blueSavedOvertime)
+  const redTiming = calcLiveTiming('red', redSavedReserve, redSavedOvertime)
 
   const blueTotalOvertime = blueSavedOvertime + blueTiming.liveOvertime
   const redTotalOvertime = redSavedOvertime + redTiming.liveOvertime
@@ -166,7 +172,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
           : formatClock(blueTiming.turnDisplay)
         : state.sides.blue.finalScore !== null
           ? formatSeconds(state.sides.blue.finalScore)
-          : '—'
+          : state.status === 'finished' && state.lastGameWinReason === 'forfeit_timeout'
+            ? state.winnerSide === 'blue'
+              ? 'Thắng'
+              : 'Xử thua'
+            : '—'
 
   const redClock =
     state.status === 'drafting'
@@ -181,7 +191,11 @@ export function MatchScoreboardHeader({ state, countdown }: Props) {
           : formatClock(redTiming.turnDisplay)
         : state.sides.red.finalScore !== null
           ? formatSeconds(state.sides.red.finalScore)
-          : '—'
+          : state.status === 'finished' && state.lastGameWinReason === 'forfeit_timeout'
+            ? state.winnerSide === 'red'
+              ? 'Thắng'
+              : 'Xử thua'
+            : '—'
 
   return (
     <section

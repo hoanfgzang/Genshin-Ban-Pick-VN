@@ -246,6 +246,7 @@ class RuleSetConfig(CamelModel):
     pick_seconds: int = Field(default=45, ge=0, le=600)
     use_reserve_time: bool = False
     reserve_time_seconds: int = Field(default=120, ge=0, le=3600)
+    max_overtime_seconds: int = Field(default=600, ge=0, le=3600)
     weapon_phase_seconds: int = Field(default=90, ge=0, le=900)
     chamber_base_seconds: Literal[540] = 540
     cost_rules: CostRules = Field(default_factory=CostRules)
@@ -263,6 +264,8 @@ class RuleSetConfig(CamelModel):
             d["pickSeconds"] = per_turn
         if "reserve_time_seconds" not in d and "reserveTimeSeconds" not in d:
             d["reserveTimeSeconds"] = 120
+        if "max_overtime_seconds" not in d and "maxOvertimeSeconds" not in d:
+            d["maxOvertimeSeconds"] = 600
         return d
 
     @field_validator("draft_steps")
@@ -290,6 +293,7 @@ def default_ruleset_config() -> RuleSetConfig:
         pick_seconds=45,
         use_reserve_time=True,
         reserve_time_seconds=120,
+        max_overtime_seconds=600,
         weapon_phase_seconds=90,
         chamber_base_seconds=540,
         cost_rules=CostRules(

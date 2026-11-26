@@ -20,14 +20,14 @@ class RoomManager:
     def __init__(self) -> None:
         self._connections: dict[str, set[WebSocket]] = {}
         self._locks: dict[str, asyncio.Lock] = {}
-        self._weapon_timers: dict[str, tuple[str, asyncio.Task[None]]] = {}
+        self._phase_timers: dict[str, tuple[str, asyncio.Task[None]]] = {}
         self._session_factory: async_sessionmaker[AsyncSession] | None = None
 
     def bind_session_factory(self, factory: async_sessionmaker[AsyncSession]) -> None:
         self._session_factory = factory
 
-    def _cancel_weapon_timer(self, code: str) -> None:
-        entry = self._weapon_timers.pop(code.upper(), None)
+    def _cancel_phase_timer(self, code: str) -> None:
+        entry = self._phase_timers.pop(code.upper(), None)
         if entry is None:
             return
         _, task = entry
@@ -35,29 +35,72 @@ class RoomManager:
             task.cancel()
 
     def cancel_all_timers(self) -> None:
-        for _, task in self._weapon_timers.values():
+        for _, task in self._phase_timers.values():
             if not task.done():
                 task.cancel()
-        self._weapon_timers.clear()
+        self._phase_timers.clear()
 
-    def _sync_weapon_timer(self, code: str, state: MatchState) -> None:
+    @staticmethod
+    def _format_limit_label(seconds: int) -> str:
+        m, s = divmod(max(0, seconds), 60)
+        return f"-{m}:{s:02d}"
+
+    def _forfeit_notice(self, pre_forfeit_state: MatchState) -> dict[str, str]:
+        step = draft_engine.get_current_step(pre_forfeit_state)
+        loser_label = self._side_label(pre_forfeit_state, step.side if step else None)
+        limit_label = self._format_limit_label(pre_forfeit_state.ruleset.max_overtime_seconds)
+        return {
+            "tone": "error",
+            "message": f"{loser_label} đã âm thời gian vượt giới hạn ({limit_label}) — bị xử thua!",
+        }
+
+    def _sync_phase_timer(self, code: str, state: MatchState) -> None:
         code = code.upper()
-        if state.status != "weapon_phase" or not state.turn_deadline_at:
-            self._cancel_weapon_timer(code)
+        timer_key: str | None = None
+        forfeit_at: datetime | None = None
+
+        if state.status == "weapon_phase" and state.turn_deadline_at:
+            timer_key = f"weapon:{state.turn_deadline_at}"
+        elif state.status == "drafting" and state.turn_deadline_at:
+            forfeit_at = draft_engine.get_draft_forfeit_deadline(state)
+            if forfeit_at is not None:
+                timer_key = f"draft:{state.current_step_index}:{state.turn_deadline_at}:{forfeit_at.isoformat()}"
+
+        if timer_key is None:
+            self._cancel_phase_timer(code)
             return
-        existing = self._weapon_timers.get(code)
-        if existing is not None and existing[0] == state.turn_deadline_at and not existing[1].done():
+
+        existing = self._phase_timers.get(code)
+        if existing is not None and existing[0] == timer_key and not existing[1].done():
             return
-        self._cancel_weapon_timer(code)
+
+        self._cancel_phase_timer(code)
         try:
             asyncio.get_running_loop()
         except RuntimeError:
             return
-        deadline_iso = state.turn_deadline_at
-        task = asyncio.create_task(self._weapon_phase_timeout_worker(code, deadline_iso))
-        self._weapon_timers[code] = (deadline_iso, task)
 
-    async def _weapon_phase_timeout_worker(self, code: str, expected_deadline: str) -> None:
+        if state.status == "weapon_phase" and state.turn_deadline_at:
+            task = asyncio.create_task(
+                self._weapon_phase_timeout_worker(code, state.turn_deadline_at, timer_key)
+            )
+        elif state.status == "drafting" and state.turn_deadline_at and forfeit_at is not None:
+            task = asyncio.create_task(
+                self._draft_forfeit_timeout_worker(
+                    code,
+                    state.current_step_index,
+                    state.turn_deadline_at,
+                    forfeit_at,
+                    timer_key,
+                )
+            )
+        else:
+            return
+        self._phase_timers[code] = (timer_key, task)
+
+    async def _weapon_phase_timeout_worker(
+        self, code: str, expected_deadline: str, timer_key: str
+    ) -> None:
         try:
             deadline = datetime.fromisoformat(expected_deadline)
             if deadline.tzinfo is None:
@@ -67,7 +110,34 @@ class RoomManager:
                 if remaining <= 0:
                     break
                 await asyncio.sleep(remaining + 0.02)
-            await self.trigger_weapon_phase_timeout(code, expected_deadline=expected_deadline)
+            await self.trigger_weapon_phase_timeout(
+                code, expected_deadline=expected_deadline, expected_timer_key=timer_key
+            )
+        except asyncio.CancelledError:
+            return
+        except Exception:
+            return
+
+    async def _draft_forfeit_timeout_worker(
+        self,
+        code: str,
+        expected_step_index: int,
+        expected_deadline: str,
+        forfeit_at: datetime,
+        timer_key: str,
+    ) -> None:
+        try:
+            while True:
+                remaining = (forfeit_at - draft_engine.utc_now()).total_seconds()
+                if remaining <= 0:
+                    break
+                await asyncio.sleep(remaining + 0.02)
+            await self.trigger_draft_forfeit_timeout(
+                code,
+                expected_step_index=expected_step_index,
+                expected_deadline=expected_deadline,
+                expected_timer_key=timer_key,
+            )
         except asyncio.CancelledError:
             return
         except Exception:
@@ -77,6 +147,7 @@ class RoomManager:
         self,
         code: str,
         expected_deadline: str | None = None,
+        expected_timer_key: str | None = None,
     ) -> MatchState | None:
         if not self._session_factory:
             return None
@@ -100,10 +171,10 @@ class RoomManager:
                 if next_state is None:
                     return None
                 await self._save_match_state(db, match, next_state)
-                timer_entry = self._weapon_timers.get(code)
-                target_dl = expected_deadline or state.turn_deadline_at
-                if timer_entry is not None and timer_entry[0] == target_dl:
-                    self._weapon_timers.pop(code, None)
+                timer_entry = self._phase_timers.get(code)
+                target_key = expected_timer_key or f"weapon:{state.turn_deadline_at}"
+                if timer_entry is not None and timer_entry[0] == target_key:
+                    self._phase_timers.pop(code, None)
 
         if next_state is not None:
             await self.broadcast_state(
@@ -114,6 +185,49 @@ class RoomManager:
                     "message": "Hết thời gian chọn vũ khí — hệ thống đã tự động khóa vũ khí cả 2 bên.",
                 },
             )
+        return next_state
+
+    async def trigger_draft_forfeit_timeout(
+        self,
+        code: str,
+        expected_step_index: int | None = None,
+        expected_deadline: str | None = None,
+        expected_timer_key: str | None = None,
+    ) -> MatchState | None:
+        if not self._session_factory:
+            return None
+        code = code.upper()
+        lock = self._get_lock(code)
+        next_state: MatchState | None = None
+        notice: dict[str, str] | None = None
+
+        async with lock:
+            async with self._session_factory() as db:
+                match = await self._load_match_model(db, code)
+                if not match:
+                    return None
+                state = MatchState.model_validate(match.state_json)
+                if state.status != "drafting" or not state.turn_deadline_at:
+                    return None
+                if expected_step_index is not None and state.current_step_index != expected_step_index:
+                    return None
+                if expected_deadline is not None and state.turn_deadline_at != expected_deadline:
+                    return None
+                if not draft_engine.is_draft_forfeit_expired(state):
+                    return None
+                notice = self._forfeit_notice(state)
+                next_state = draft_engine.forfeit_draft_timeout(state)
+                if next_state is None:
+                    return None
+                await self._save_match_state(db, match, next_state)
+                timer_entry = self._phase_timers.get(code)
+                if timer_entry is not None and (
+                    expected_timer_key is None or timer_entry[0] == expected_timer_key
+                ):
+                    self._phase_timers.pop(code, None)
+
+        if next_state is not None:
+            await self.broadcast_state(code, next_state, notice=notice)
         return next_state
 
     def _get_lock(self, code: str) -> asyncio.Lock:
@@ -200,7 +314,18 @@ class RoomManager:
                 if updated is not None:
                     return updated
             else:
-                self._sync_weapon_timer(code, state)
+                self._sync_phase_timer(code, state)
+        elif state.status == "drafting" and draft_engine.get_draft_forfeit_deadline(state) is not None:
+            if draft_engine.is_draft_forfeit_expired(state) and self._session_factory:
+                updated = await self.trigger_draft_forfeit_timeout(
+                    code,
+                    expected_step_index=state.current_step_index,
+                    expected_deadline=state.turn_deadline_at,
+                )
+                if updated is not None:
+                    return updated
+            else:
+                self._sync_phase_timer(code, state)
         return state
 
     async def handle_action(
@@ -217,6 +342,7 @@ class RoomManager:
         action = payload.get("action")
         notice: dict[str, str] | None = None
         expired_state: MatchState | None = None
+        expired_notice: dict[str, str] | None = None
         auto_lock_notice = {
             "tone": "info",
             "message": "Hết thời gian chọn vũ khí — hệ thống đã tự động khóa vũ khí cả 2 bên.",
@@ -239,13 +365,37 @@ class RoomManager:
                         timed_out = draft_engine.auto_handle_timeout(state)
                         if timed_out is not None:
                             await self._save_match_state(db, match, timed_out)
-                            self._cancel_weapon_timer(code)
+                            self._cancel_phase_timer(code)
                             state = timed_out
                             expired_state = timed_out
+                            expired_notice = auto_lock_notice
+                    elif state.status == "drafting" and draft_engine.is_draft_forfeit_expired(state):
+                        forfeit_msg = self._forfeit_notice(state)
+                        forfeited = draft_engine.forfeit_draft_timeout(state)
+                        if forfeited is not None:
+                            await self._save_match_state(db, match, forfeited)
+                            self._cancel_phase_timer(code)
+                            state = forfeited
+                            expired_state = forfeited
+                            expired_notice = forfeit_msg
 
-                    if expired_state is not None and action == "lock_weapons":
+                    if expired_state is not None and (
+                        (expired_notice == auto_lock_notice and action == "lock_weapons")
+                        or (
+                            expired_notice != auto_lock_notice
+                            and action
+                            in (
+                                "draft_pick_or_ban",
+                                "draft_hover",
+                                "undo_draft_step",
+                                "request_undo",
+                                "respond_undo",
+                                "cancel_undo_request",
+                            )
+                        )
+                    ):
                         next_state = state
-                        notice = auto_lock_notice
+                        notice = expired_notice
                     else:
                         if action == "select_side":
                             raw_side = payload.get("side")
@@ -443,10 +593,10 @@ class RoomManager:
                             raise AppError(400, "UNKNOWN_ACTION", f"Hành động không hợp lệ: {action}")
 
                         await self._save_match_state(db, match, next_state)
-                        self._sync_weapon_timer(code, next_state)
+                        self._sync_phase_timer(code, next_state)
         except AppError:
             if expired_state is not None:
-                await self.broadcast_state(code, expired_state, notice=auto_lock_notice)
+                await self.broadcast_state(code, expired_state, notice=expired_notice)
             raise
 
         await self.broadcast_state(code, next_state, notice=notice)

@@ -60,7 +60,7 @@ export type MatchStatus =
   | 'between_games'
   | 'finished'
 export type WinnerSide = MatchSide | 'draw'
-export type WinReason = 'score' | 'lower_cost' | 'fewer_4star' | 'draw'
+export type WinReason = 'score' | 'lower_cost' | 'fewer_4star' | 'forfeit_timeout' | 'draw'
 
 export interface ChamberTimeInput {
   minutes: number

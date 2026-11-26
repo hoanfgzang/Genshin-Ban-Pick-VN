@@ -356,6 +356,36 @@ export function RuleSetEditor({
             </label>
           </div>
 
+          <div className="grid gap-4 rounded-lg border border-line bg-bg/40 p-3.5 md:grid-cols-2">
+            <div className="flex flex-col justify-center gap-1 text-xs">
+              <span className="font-semibold text-text">Dừng đồng hồ &amp; xử thua khi âm quá giới hạn</span>
+              <p className="text-[11px] text-muted">
+                Khi tổng thời gian âm (sau khi hết thời gian gốc nếu bật) chạm mốc này, đồng hồ sẽ dừng lại và bên đang tới lượt bị xử thua ngay lập tức. Đặt 0 để tắt xử thua tự động.
+              </p>
+            </div>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-medium text-text">Giới hạn âm tối đa trước khi xử thua (giây)</span>
+              <input
+                type="number"
+                min={0}
+                max={3600}
+                value={config.maxOvertimeSeconds ?? 600}
+                onChange={(e) => {
+                  const raw = Number(e.target.value)
+                  const val = Number.isFinite(raw) ? Math.min(3600, Math.max(0, Math.trunc(raw))) : 0
+                  setConfig({ ...config, maxOvertimeSeconds: val })
+                }}
+                className="h-9 max-w-xs rounded-lg border border-line bg-bg/60 px-3 text-sm text-text"
+              />
+              <span className="text-[11px] text-muted">
+                {(config.maxOvertimeSeconds ?? 600) === 0
+                  ? 'Đang tắt — đồng hồ có thể âm vô hạn'
+                  : `Mặc định: 600 giây (10:00). Hiện tại: ${Math.floor((config.maxOvertimeSeconds ?? 600) / 60)}:${String((config.maxOvertimeSeconds ?? 600) % 60).padStart(2, '0')}`}
+              </span>
+            </label>
+          </div>
+
           <div className="rounded-lg border border-line bg-bg/40 p-3.5">
             <label className="flex flex-col gap-1.5 text-xs">
               <span className="font-semibold text-text">

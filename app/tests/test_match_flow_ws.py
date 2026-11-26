@@ -1420,4 +1420,181 @@ def test_weapon_phase_auto_lock_on_timeout_ws(test_client: TestClient) -> None:
         assert auto_state["sides"]["red"]["picks"][0]["weaponCost"] == 0.0
 
 
+def test_draft_forfeit_timeout_engine_rules() -> None:
+    all_chars, _, _ = _load_sample_catalog()
+    blue_inv = {c["slug"]: {"constellation": 0, "level": 90} for c in all_chars[:16]}
+    red_inv = {c["slug"]: {"constellation": 0, "level": 90} for c in all_chars[16:32]}
+
+    def make_started_match(
+        *,
+        match_format: str = "bo1",
+        use_reserve: bool = False,
+        reserve_sec: int = 30,
+        max_overtime: int = 600,
+    ):
+        rs = default_ruleset_config()
+        rs.use_reserve_time = use_reserve
+        rs.reserve_time_seconds = reserve_sec
+        rs.max_overtime_seconds = max_overtime
+        st = draft_engine.create_initial_match_state(
+            code="FRFT01",
+            ruleset_id="rs-1",
+            ruleset_name="Forfeit Test",
+            ruleset=rs,
+            host_user_id="u-blue",
+            match_format=match_format,  # type: ignore[arg-type]
+        )
+        st = draft_engine.select_side(
+            st, user_id="u-blue", uid="800000101", display_name="Blue", owned_characters=blue_inv, side="blue"
+        )
+        st = draft_engine.select_side(
+            st, user_id="u-red", uid="800000102", display_name="Red", owned_characters=red_inv, side="red"
+        )
+        st = draft_engine.set_ready(st, user_id="u-blue", ready=True)
+        st = draft_engine.set_ready(st, user_id="u-red", ready=True)
+        return st
+
+    # 1) Tắt giới hạn âm (max_overtime_seconds=0) -> không xử thua
+    st_unlimited = make_started_match(max_overtime=0)
+    assert draft_engine.get_draft_forfeit_deadline(st_unlimited) is None
+    assert draft_engine.is_draft_forfeit_expired(
+        st_unlimited, now=datetime.now(timezone.utc) + timedelta(hours=5)
+    ) is False
+
+    # 2) BO1 có reserve time: chỉ hết hạn xử thua sau turn + reserve + max_overtime
+    st_bo1 = make_started_match(match_format="bo1", use_reserve=True, reserve_sec=20, max_overtime=600)
+    assert st_bo1.turn_deadline_at is not None
+    dl = datetime.fromisoformat(st_bo1.turn_deadline_at)
+    forfeit_at = draft_engine.get_draft_forfeit_deadline(st_bo1)
+    assert forfeit_at == dl + timedelta(seconds=620)
+    assert draft_engine.is_draft_forfeit_expired(st_bo1, now=dl + timedelta(seconds=619)) is False
+    assert draft_engine.is_draft_forfeit_expired(st_bo1, now=dl + timedelta(seconds=620)) is True
+
+    # Nếu quá hạn khi gọi apply_draft_action -> lập tức xử thua cho bên tới lượt (Blue thua, Red thắng)
+    forfeited_bo1 = draft_engine.apply_draft_action(
+        st_bo1,
+        user_id="u-blue",
+        character_slug=all_chars[40]["slug"],
+        now=dl + timedelta(seconds=625),
+    )
+    assert forfeited_bo1.status == "finished"
+    assert forfeited_bo1.winner_side == "red"
+    assert forfeited_bo1.winner_user_id == "u-red"
+    assert forfeited_bo1.last_game_win_reason == "forfeit_timeout"
+    assert forfeited_bo1.turn_deadline_at is None
+    assert forfeited_bo1.sides["blue"].reserve_remaining_seconds == 0.0
+    assert forfeited_bo1.sides["blue"].overtime_penalty_seconds == 600.0
+
+    # 3) BO3 ván 1 xử thua -> sang between_games, cộng 1 điểm cho bên thắng và bên thua được chọn bên ván 2
+    st_bo3 = make_started_match(match_format="bo3", use_reserve=False, max_overtime=600)
+    dl_bo3 = datetime.fromisoformat(st_bo3.turn_deadline_at or "")
+    st_bo3 = draft_engine.apply_draft_action(
+        st_bo3,
+        user_id="u-blue",
+        character_slug=None,
+        now=dl_bo3 + timedelta(seconds=600),
+    )
+    assert st_bo3.status == "between_games"
+    assert st_bo3.last_game_win_reason == "forfeit_timeout"
+    assert st_bo3.series_scores == {"u-blue": 0, "u-red": 1}
+    assert len(st_bo3.game_history) == 1
+    assert st_bo3.game_history[0].winner_side == "red"
+    assert st_bo3.game_history[0].win_reason == "forfeit_timeout"
+    assert st_bo3.next_game_setup is not None
+    assert st_bo3.next_game_setup.side_picker_user_id == "u-blue"
+
+
+def test_draft_forfeit_auto_timeout_ws(test_client: TestClient) -> None:
+    import time
+
+    all_chars, _, _ = _load_sample_catalog()
+    blue_chars = all_chars[:6]
+    red_chars = all_chars[6:12]
+
+    token_a, uid_a = _register_and_seed_inventory(
+        test_client, "893333301", "Forfeit Blue", blue_chars, constellation=0, level=90
+    )
+    token_b, uid_b = _register_and_seed_inventory(
+        test_client, "893333302", "Forfeit Red", red_chars, constellation=0, level=90
+    )
+
+    settings = get_settings()
+    admin_token = test_client.post(
+        "/api/auth/login",
+        json={
+            "uid": settings.SEED_ADMIN_UID,
+            "password": settings.SEED_ADMIN_PASSWORD,
+            "remember": True,
+        },
+    ).json()["token"]
+
+    cfg = default_ruleset_config().model_dump(by_alias=True)
+    cfg["draftSteps"] = [
+        {"step": 1, "side": "blue", "action": "ban"},
+        {"step": 2, "side": "blue", "action": "pick"},
+        {"step": 3, "side": "red", "action": "pick"},
+    ]
+    cfg["banSeconds"] = 1
+    cfg["pickSeconds"] = 1
+    cfg["useReserveTime"] = False
+    cfg["maxOvertimeSeconds"] = 1
+    cfg["costRules"]["draftBonusSecondsPerCost"] = 0
+
+    rs_id = test_client.post(
+        "/api/rulesets",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "name": "Luật Xử Thua 1s",
+            "description": "Test auto forfeit on max overtime",
+            "isActive": True,
+            "isDefault": False,
+            "config": cfg,
+        },
+    ).json()["id"]
+
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+    ):
+        ws_a.receive_json()
+        ws_b.receive_json()
+
+        def recv_both() -> dict:
+            m_a = ws_a.receive_json()
+            ws_b.receive_json()
+            return m_a
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_both()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_both()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_both()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        started = recv_both()["state"]
+        assert started["status"] == "drafting"
+
+        # Blue không ban trong 1s + âm tối đa 1s -> sau ~2.3s tự động xử thua
+        time.sleep(2.3)
+        msg_a = ws_a.receive_json()
+        msg_b = ws_b.receive_json()
+        assert msg_a["type"] == "match:state"
+        assert msg_b["type"] == "match:state"
+        assert msg_a["notice"]["tone"] == "error"
+        forfeit_state = msg_a["state"]
+        assert forfeit_state["status"] == "finished"
+        assert forfeit_state["winnerSide"] == "red"
+        assert forfeit_state["winnerUserId"] == uid_b
+        assert forfeit_state["lastGameWinReason"] == "forfeit_timeout"
+        assert forfeit_state["turnDeadlineAt"] is None
+        assert forfeit_state["sides"]["blue"]["overtimePenaltySeconds"] == 1.0
+        assert forfeit_state["sides"]["blue"]["player"]["userId"] == uid_a
+
+
 

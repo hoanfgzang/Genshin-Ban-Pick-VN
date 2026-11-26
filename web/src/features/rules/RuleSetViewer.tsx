@@ -157,7 +157,7 @@ export function RuleSetViewer({ ruleset }: Props) {
               <p className="mt-1.5 max-w-3xl text-sm text-muted">{ruleset.description}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-3 lg:grid-cols-6">
             <StatBox label="Đội Xanh (Trái)" value={`${blueBans} Ban · ${bluePicks} Pick`} cls="text-hydro" />
             <StatBox label="Đội Đỏ (Phải)" value={`${redBans} Ban · ${redPicks} Pick`} cls="text-danger" />
             <StatBox
@@ -168,6 +168,15 @@ export function RuleSetViewer({ ruleset }: Props) {
               label="Thời gian gốc"
               value={config.useReserveTime ? `${config.reserveTimeSeconds ?? 120}s / người` : 'Không dùng'}
               cls={config.useReserveTime ? 'text-gold-strong' : 'text-muted'}
+            />
+            <StatBox
+              label="Giới hạn âm xử thua"
+              value={
+                (config.maxOvertimeSeconds ?? 600) > 0
+                  ? `${Math.floor((config.maxOvertimeSeconds ?? 600) / 60)}:${String((config.maxOvertimeSeconds ?? 600) % 60).padStart(2, '0')} (${config.maxOvertimeSeconds ?? 600}s)`
+                  : 'Không giới hạn'
+              }
+              cls={(config.maxOvertimeSeconds ?? 600) > 0 ? 'text-danger' : 'text-muted'}
             />
             <StatBox label="Mốc 3 ải cố định" value="09:00 / ải" cls="text-gold-strong" />
           </div>

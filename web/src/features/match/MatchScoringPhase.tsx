@@ -94,6 +94,12 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
     const refSec = s.weaponRefinementSeconds ?? 0
     const overtimeSec = s.overtimePenaltySeconds ?? 0
     const fourStarCount = countFourStarPicks(s.picks)
+    const activeWinReason =
+      state.status === 'between_games' ? lastGame?.winReason : state.lastGameWinReason
+    const isForfeitCard =
+      !s.scoreSubmitted &&
+      (state.status === 'finished' || state.status === 'between_games') &&
+      activeWinReason === 'forfeit_timeout'
 
     return (
       <section
@@ -140,6 +146,10 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
               <div className="text-xl font-extrabold text-gold-strong">
                 Tổng: {formatSeconds(s.finalScore)}
               </div>
+            ) : isForfeitCard ? (
+              <div className={cn('text-sm font-extrabold', isWinner ? 'text-success' : 'text-danger')}>
+                {isWinner ? 'Thắng (đối thủ quá giờ)' : 'Bị xử thua (quá giờ)'}
+              </div>
             ) : (
               <div className="text-xs text-muted">Chưa nộp thời gian</div>
             )}
@@ -171,6 +181,12 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
               <span className="text-sm text-gold-strong">= {formatSeconds(s.finalScore ?? 0)}</span>
             </div>
           </div>
+        ) : isForfeitCard ? (
+          <p className={cn('py-4 text-center text-xs font-semibold', isWinner ? 'text-success' : 'text-danger')}>
+            {isWinner
+              ? 'Đối thủ đã âm thời gian vượt giới hạn — bạn được xử thắng.'
+              : 'Đã âm thời gian vượt giới hạn — bị xử thua.'}
+          </p>
         ) : (
           <p className="py-4 text-center text-xs text-muted">
             Đang chờ người chơi nhập thời gian hoàn thành 3 ải…
@@ -233,6 +249,10 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
                 </p>
               )}
             </div>
+          ) : state.lastGameWinReason === 'forfeit_timeout' ? (
+            lastWinReasonText && (
+              <p className="mt-2 text-sm font-semibold text-gold-strong">{lastWinReasonText}</p>
+            )
           ) : (
             <>
               <p className="mt-2 text-sm text-muted">
@@ -288,13 +308,21 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
                     <div className="flex items-center justify-between">
                       <span className="text-hydro">{g.blue.player?.displayName ?? 'Xanh'}</span>
                       <span className="font-mono font-bold text-text">
-                        {formatSeconds(g.blue.finalScore ?? 0)} (Cost {formatCost(g.blue.totalCost)} · {g.blue.fourStarCount}★4)
+                        {g.winReason === 'forfeit_timeout' && g.blue.finalScore === null
+                          ? g.winnerSide === 'blue'
+                            ? 'Thắng (xử thua)'
+                            : 'Bị xử thua'
+                          : `${formatSeconds(g.blue.finalScore ?? 0)} (Cost ${formatCost(g.blue.totalCost)} · ${g.blue.fourStarCount}★4)`}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-danger">{g.red.player?.displayName ?? 'Đỏ'}</span>
                       <span className="font-mono font-bold text-text">
-                        {formatSeconds(g.red.finalScore ?? 0)} (Cost {formatCost(g.red.totalCost)} · {g.red.fourStarCount}★4)
+                        {g.winReason === 'forfeit_timeout' && g.red.finalScore === null
+                          ? g.winnerSide === 'red'
+                            ? 'Thắng (xử thua)'
+                            : 'Bị xử thua'
+                          : `${formatSeconds(g.red.finalScore ?? 0)} (Cost ${formatCost(g.red.totalCost)} · ${g.red.fourStarCount}★4)`}
                       </span>
                     </div>
                   </div>

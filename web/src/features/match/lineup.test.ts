@@ -288,6 +288,51 @@ describe('features/match/lineup', () => {
     expect(board.red.banRows.map((r) => r.length)).toEqual([2, 2])
   })
 
+  it('buildDraftBoardRows chia đều Pick 4-4 và Ban 2-2 ngay cả trong lúc drafting với mẫu 24 bước phòng 49D2GQ', () => {
+    const makeSteps = (pattern: Array<['blue' | 'red', 'ban' | 'pick']>): DraftStep[] =>
+      pattern.map(([side, action], idx) => ({ step: idx + 1, side, action }))
+
+    const steps = makeSteps([
+      ['blue', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'ban'],
+      ['red', 'ban'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'ban'],
+      ['blue', 'ban'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+      ['blue', 'ban'],
+      ['red', 'ban'],
+      ['blue', 'pick'],
+      ['red', 'pick'],
+      ['red', 'pick'],
+      ['blue', 'pick'],
+    ])
+
+    for (const status of ['drafting', 'weapon_phase'] as const) {
+      const board = buildDraftBoardRows(
+        steps,
+        { blue: emptySide(), red: emptySide() },
+        status === 'drafting' ? 0 : steps.length,
+        status,
+      )
+      expect(board.blue.pickRows.map((r) => r.length)).toEqual([4, 4])
+      expect(board.red.pickRows.map((r) => r.length)).toEqual([4, 4])
+      expect(board.blue.banRows.map((r) => r.length)).toEqual([2, 2])
+      expect(board.red.banRows.map((r) => r.length)).toEqual([2, 2])
+    }
+  })
+
   it('getStepBaseSeconds trả thời gian riêng của bước, hoặc mặc định Ban/Pick', () => {
     const cfg = createDefaultRuleSetConfig()
     cfg.banSeconds = 25

@@ -96,6 +96,8 @@ export function formatWinReason(reason: WinReason | null | undefined): string | 
       return 'Thắng tie-break nhờ tổng Cost thấp hơn'
     case 'fewer_4star':
       return 'Thắng tie-break nhờ số nhân vật 4★ ít hơn'
+    case 'forfeit_timeout':
+      return 'Thắng do đối thủ quá giới hạn thời gian (xử thua)'
     case 'draw':
       return 'Hòa điểm (sau khi đã xét điều kiện phụ)'
     default:

@@ -188,24 +188,6 @@ function packRunsIntoRows(
   return rows
 }
 
-export function splitPickCellsIntoRows(
-  picks: readonly DraftBoardCell[],
-  maxConsecutivePicks: number,
-): DraftBoardCell[][] {
-  if (picks.length === 0) return []
-  if (maxConsecutivePicks >= 3) {
-    return packRunsIntoRows(picks, maxConsecutivePicks)
-  }
-  const half = Math.ceil(picks.length / 2)
-  return packRunsIntoRows(picks, half)
-}
-
-export function splitBanCellsIntoRows(bans: readonly DraftBoardCell[]): DraftBoardCell[][] {
-  if (bans.length === 0) return []
-  const half = Math.ceil(bans.length / 2)
-  return packRunsIntoRows(bans, half)
-}
-
 function chunkCellsIntoRows(
   cells: readonly DraftBoardCell[],
   rowSize: number,
@@ -217,6 +199,22 @@ function chunkCellsIntoRows(
     rows.push(cells.slice(i, i + cap))
   }
   return rows
+}
+
+export function splitPickCellsIntoRows(
+  picks: readonly DraftBoardCell[],
+  maxConsecutivePicks: number,
+): DraftBoardCell[][] {
+  if (picks.length === 0) return []
+  if (maxConsecutivePicks >= 3) {
+    return packRunsIntoRows(picks, maxConsecutivePicks)
+  }
+  return chunkCellsIntoRows(picks, Math.ceil(picks.length / 2))
+}
+
+export function splitBanCellsIntoRows(bans: readonly DraftBoardCell[]): DraftBoardCell[][] {
+  if (bans.length === 0) return []
+  return chunkCellsIntoRows(bans, Math.ceil(bans.length / 2))
 }
 
 /**

@@ -82,6 +82,7 @@ export interface RuleSetConfig {
   pickSeconds?: number
   useReserveTime?: boolean
   reserveTimeSeconds?: number
+  maxOvertimeSeconds?: number
   weaponPhaseSeconds: number
   chamberBaseSeconds: 540
   costRules: CostRules
@@ -151,6 +152,7 @@ export function createDefaultRuleSetConfig(): RuleSetConfig {
     pickSeconds: 45,
     useReserveTime: true,
     reserveTimeSeconds: 120,
+    maxOvertimeSeconds: 600,
     weaponPhaseSeconds: 90,
     chamberBaseSeconds: 540,
     costRules: {

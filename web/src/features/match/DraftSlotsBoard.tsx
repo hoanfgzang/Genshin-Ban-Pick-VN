@@ -3,7 +3,7 @@ import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
-import { buildDraftBoardRows, groupConsecutiveCells, type DraftBoardCell } from './lineup'
+import { buildDraftBoardRows, type DraftBoardCell } from './lineup'
 
 interface Props {
   state: MatchState
@@ -212,59 +212,28 @@ export function DraftSlotsBoard({
     return <div key={cell.step}>{inner}</div>
   }
 
-  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start', compact = false) =>
-    rows.map((row, rIdx) => {
-      if (compact) {
-        return (
-          <div
-            key={rIdx}
-            className={cn(
-              'flex flex-wrap items-center justify-center gap-0',
-              align === 'end' ? 'md:justify-end' : 'md:justify-start',
-            )}
-          >
-            {row.map((cell, cIdx) => {
-              const pos =
-                row.length === 1
-                  ? 'single'
-                  : cIdx === 0
-                    ? 'first'
-                    : cIdx === row.length - 1
-                      ? 'last'
-                      : 'middle'
-              return renderCell(cell, pos)
-            })}
-          </div>
-        )
-      }
-
-      const groups = groupConsecutiveCells(row)
-      return (
-        <div
-          key={rIdx}
-          className={cn(
-            'flex flex-wrap items-center justify-center gap-[calc(var(--slot-w)/4)]',
-            align === 'end' ? 'md:justify-end' : 'md:justify-start',
-          )}
-        >
-          {groups.map((group, gIdx) => (
-            <div key={gIdx} className="flex items-center gap-0">
-              {group.map((cell, cIdx) => {
-                const pos =
-                  group.length === 1
-                    ? 'single'
-                    : cIdx === 0
-                      ? 'first'
-                      : cIdx === group.length - 1
-                        ? 'last'
-                        : 'middle'
-                return renderCell(cell, pos)
-              })}
-            </div>
-          ))}
-        </div>
-      )
-    })
+  const renderRows = (rows: DraftBoardCell[][], align: 'end' | 'start') =>
+    rows.map((row, rIdx) => (
+      <div
+        key={rIdx}
+        className={cn(
+          'flex flex-wrap items-center justify-center gap-0',
+          align === 'end' ? 'md:justify-end' : 'md:justify-start',
+        )}
+      >
+        {row.map((cell, cIdx) => {
+          const pos =
+            row.length === 1
+              ? 'single'
+              : cIdx === 0
+                ? 'first'
+                : cIdx === row.length - 1
+                  ? 'last'
+                  : 'middle'
+          return renderCell(cell, pos)
+        })}
+      </div>
+    ))
 
   return (
     <section
@@ -282,7 +251,7 @@ export function DraftSlotsBoard({
       >
         <div
           className={cn(
-            'flex flex-col items-center gap-1.5 md:items-end',
+            'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-end',
             isPostDraft &&
               '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
           )}
@@ -290,7 +259,9 @@ export function DraftSlotsBoard({
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          {renderRows(board.blue.pickRows, 'end', isPostDraft)}
+          <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
+            {renderRows(board.blue.pickRows, 'end')}
+          </div>
         </div>
 
         {board.blue.banRows.length > 0 && (
@@ -299,7 +270,7 @@ export function DraftSlotsBoard({
               BAN
             </span>
             <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-              {renderRows(board.blue.banRows, 'end', isPostDraft)}
+              {renderRows(board.blue.banRows, 'end')}
             </div>
           </div>
         )}
@@ -327,14 +298,14 @@ export function DraftSlotsBoard({
               BAN
             </span>
             <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
-              {renderRows(board.red.banRows, 'start', isPostDraft)}
+              {renderRows(board.red.banRows, 'start')}
             </div>
           </div>
         )}
 
         <div
           className={cn(
-            'flex flex-col items-center gap-1.5 md:items-start',
+            'flex flex-col items-center gap-1.5 border border-transparent py-1.5 md:items-start',
             isPostDraft &&
               '[--slot-w:3rem] sm:[--slot-w:3.5rem] md:[--slot-w:2.875rem] lg:[--slot-w:3.625rem] xl:[--slot-w:4.25rem] 2xl:[--slot-w:4.75rem]',
           )}
@@ -342,7 +313,9 @@ export function DraftSlotsBoard({
           <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
             PICK
           </span>
-          {renderRows(board.red.pickRows, 'start', isPostDraft)}
+          <div className={cn('flex flex-col', isPostDraft ? 'gap-0.5' : 'gap-1')}>
+            {renderRows(board.red.pickRows, 'start')}
+          </div>
         </div>
       </div>
     </section>
