@@ -1,5 +1,5 @@
 import { getCharacter } from './characters'
-import type { CharacterCustomCost, CostRules, WeaponCustomCost } from './ruleset'
+import type { CharacterCustomCost, CostMilestone, CostRules, WeaponCustomCost } from './ruleset'
 import { getWeapon } from './weapons'
 
 export const CHAMBER_BASE_SECONDS = 540
@@ -99,32 +99,28 @@ export function calcCostPenaltySeconds(totalCost: number, costRules: CostRules):
   }
 
   const milestones = [...costRules.milestones].sort((a, b) => a.minCost - b.minCost)
-  let totalSeconds = 0
-
-  const firstMin = milestones[0].minCost
-  if (firstMin > 0) {
-    totalSeconds += Math.min(cost, firstMin) * costRules.baseSecondsPerCost
-  }
+  let active: CostMilestone | null = null
 
   for (const m of milestones) {
-    if (cost >= m.minCost && (m.minCost === 0 ? cost > 0 : true)) {
-      totalSeconds += m.bonusSeconds
+    const upper = m.maxCost ?? Number.POSITIVE_INFINITY
+    if (m.minCost <= cost && cost < upper) {
+      active = m
     }
-    if (cost > m.minCost) {
-      const upper = m.maxCost ?? Number.POSITIVE_INFINITY
-      const portion = Math.min(cost, upper) - m.minCost
-      if (portion > 0) {
-        totalSeconds += portion * m.secondsPerCost
+  }
+
+  if (!active) {
+    for (const m of milestones) {
+      if (m.maxCost !== null && cost === m.maxCost) {
+        active = m
       }
     }
   }
 
-  const lastMax = milestones[milestones.length - 1].maxCost
-  if (lastMax !== null && cost > lastMax) {
-    totalSeconds += (cost - lastMax) * costRules.baseSecondsPerCost
+  if (!active) {
+    return round2(cost * costRules.baseSecondsPerCost)
   }
 
-  return round2(totalSeconds)
+  return round2(cost * active.secondsPerCost + active.bonusSeconds)
 }
 
 export function calcChamberDiff(minutes: number, seconds: number): number | null {

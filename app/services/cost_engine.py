@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from ..data_loader import get_character, get_weapon
-from ..schemas.ruleset import CostRules
+from ..schemas.ruleset import CostMilestone, CostRules
 
 CHAMBER_BASE_SECONDS = 540  # Cố định cứng 9:00 mỗi ải
 
@@ -80,7 +80,7 @@ def calc_weapon_refinement_seconds(
 
 
 def calc_cost_penalty_seconds(total_cost: float, cost_rules: CostRules) -> float:
-    """Quy đổi tổng Cost thành số giây cộng thêm (điểm phạt ban đầu) theo các mốc."""
+    """Quy đổi tổng Cost thành số giây phạt bằng cách nhân toàn bộ Cost với hệ số của mốc hiện tại."""
     cost = max(0.0, float(total_cost))
     if cost <= 0:
         return 0.0
@@ -89,29 +89,22 @@ def calc_cost_penalty_seconds(total_cost: float, cost_rules: CostRules) -> float
         return round(cost * cost_rules.base_seconds_per_cost, 2)
 
     milestones = sorted(cost_rules.milestones, key=lambda m: m.min_cost)
-    total_seconds = 0.0
-
-    # Phần cost nhỏ hơn min_cost đầu tiên (nếu mốc đầu không bắt đầu từ 0)
-    first_min = milestones[0].min_cost
-    if first_min > 0:
-        under_part = min(cost, first_min)
-        total_seconds += under_part * cost_rules.base_seconds_per_cost
+    active: CostMilestone | None = None
 
     for m in milestones:
-        if cost >= m.min_cost and (cost > 0 if m.min_cost == 0 else True):
-            total_seconds += m.bonus_seconds
-        if cost > m.min_cost:
-            upper = m.max_cost if m.max_cost is not None else math.inf
-            portion = min(cost, upper) - m.min_cost
-            if portion > 0:
-                total_seconds += portion * m.seconds_per_cost
+        upper = m.max_cost if m.max_cost is not None else math.inf
+        if m.min_cost <= cost < upper:
+            active = m
 
-    # Nếu cost vượt quá max_cost của mốc cuối cùng mà mốc cuối có max_cost hữu hạn
-    last_max = milestones[-1].max_cost
-    if last_max is not None and cost > last_max:
-        total_seconds += (cost - last_max) * cost_rules.base_seconds_per_cost
+    if active is None:
+        for m in milestones:
+            if m.max_cost is not None and cost == m.max_cost:
+                active = m
 
-    return round(total_seconds, 2)
+    if active is None:
+        return round(cost * cost_rules.base_seconds_per_cost, 2)
+
+    return round(cost * active.seconds_per_cost + active.bonus_seconds, 2)
 
 
 def calc_chamber_scores(chambers: list[dict[str, int]]) -> tuple[list[int], int]:

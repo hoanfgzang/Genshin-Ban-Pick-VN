@@ -48,14 +48,36 @@ describe('domain/cost', () => {
     expect(getWeapon('cool-steel')).toBeUndefined()
   })
 
-  it('tính giây cộng thêm theo mốc bậc thang và phép trừ 9:00', () => {
+  it('nhân tổng cost theo mốc hiện tại và phép trừ 9:00', () => {
     const { costRules } = createDefaultRuleSetConfig()
+    costRules.baseSecondsPerCost = 5
     costRules.milestones = [
       { minCost: 0, maxCost: 6, secondsPerCost: 5, bonusSeconds: 0 },
       { minCost: 6, maxCost: 12, secondsPerCost: 8, bonusSeconds: 10 },
+      { minCost: 12, maxCost: null, secondsPerCost: 12, bonusSeconds: 20 },
     ]
-    // 7.5 cost = 6*5 + 10 + 1.5*8 = 52
-    expect(calcCostPenaltySeconds(7.5, costRules)).toBe(52)
+    expect(calcCostPenaltySeconds(0, costRules)).toBe(0)
+    expect(calcCostPenaltySeconds(4.5, costRules)).toBe(22.5)
+    // Chạm đúng mốc 6 => 6 * 8 + 10 = 58
+    expect(calcCostPenaltySeconds(6, costRules)).toBe(58)
+    // 7.5 cost => 7.5 * 8 + 10 = 70
+    expect(calcCostPenaltySeconds(7.5, costRules)).toBe(70)
+    // Chạm đúng mốc 12 => 12 * 12 + 20 = 164
+    expect(calcCostPenaltySeconds(12, costRules)).toBe(164)
+    expect(calcCostPenaltySeconds(13, costRules)).toBe(176)
+
+    // Không có mốc => dùng baseSecondsPerCost
+    expect(calcCostPenaltySeconds(6, { ...costRules, milestones: [] })).toBe(30)
+
+    // Dưới minCost đầu tiên, chạm đúng maxCost hữu hạn và vượt maxCost hữu hạn
+    const boundedRules = {
+      ...costRules,
+      baseSecondsPerCost: 4,
+      milestones: [{ minCost: 6, maxCost: 12, secondsPerCost: 8, bonusSeconds: 10 }],
+    }
+    expect(calcCostPenaltySeconds(4, boundedRules)).toBe(16)
+    expect(calcCostPenaltySeconds(12, boundedRules)).toBe(106)
+    expect(calcCostPenaltySeconds(14, boundedRules)).toBe(56)
 
     expect(calcChamberDiff(8, 30)).toBe(30)
     expect(calcChamberDiff(9, 0)).toBe(0)

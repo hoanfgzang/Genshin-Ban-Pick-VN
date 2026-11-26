@@ -84,7 +84,7 @@ def test_legacy_cost_rules_migration_and_catalog() -> None:
 
 
 def test_milestone_penalty_seconds() -> None:
-    # Mốc bậc thang: 0..6 => 5s/cost; 6..12 => 8s/cost + 10s bonus khi chạm mốc 6
+    # Nhân toàn bộ Tổng Cost theo hệ số của mốc hiện tại [min_cost, max_cost) + bonus của mốc đó
     rules = CostRules(
         base_seconds_per_cost=5.0,
         milestones=[
@@ -95,10 +95,31 @@ def test_milestone_penalty_seconds() -> None:
     )
     assert calc_cost_penalty_seconds(0.0, rules) == 0.0
     assert calc_cost_penalty_seconds(4.5, rules) == 22.5
-    # 7.5 cost = (6 * 5) + bonus 10 + (1.5 * 8) = 30 + 10 + 12 = 52.0
-    assert calc_cost_penalty_seconds(7.5, rules) == 52.0
-    # 13.0 cost = (6*5) + (10 + 6*8) + (20 + 1*12) = 30 + 58 + 32 = 120.0
-    assert calc_cost_penalty_seconds(13.0, rules) == 120.0
+    # Chạm đúng mốc 6.0 -> áp dụng mốc 6..12: 6.0 * 8 + 10 = 58.0
+    assert calc_cost_penalty_seconds(6.0, rules) == 58.0
+    # 7.5 cost -> thuộc mốc 6..12: 7.5 * 8 + 10 = 70.0 (không cộng dồn bonus mốc trước)
+    assert calc_cost_penalty_seconds(7.5, rules) == 70.0
+    # Chạm đúng mốc 12.0 -> áp dụng mốc 12..∞: 12.0 * 12 + 20 = 164.0
+    assert calc_cost_penalty_seconds(12.0, rules) == 164.0
+    # 13.0 cost -> 13.0 * 12 + 20 = 176.0
+    assert calc_cost_penalty_seconds(13.0, rules) == 176.0
+
+    # Không có mốc -> dùng base_seconds_per_cost
+    no_milestone_rules = CostRules(base_seconds_per_cost=5.0, milestones=[])
+    assert calc_cost_penalty_seconds(6.0, no_milestone_rules) == 30.0
+
+    # Khoảng hở dưới min_cost đầu tiên và vượt max_cost hữu hạn cuối cùng
+    bounded_rules = CostRules(
+        base_seconds_per_cost=4.0,
+        milestones=[
+            CostMilestone(min_cost=6.0, max_cost=12.0, seconds_per_cost=8.0, bonus_seconds=10.0),
+        ],
+    )
+    assert calc_cost_penalty_seconds(4.0, bounded_rules) == 16.0
+    # Chạm đúng max_cost hữu hạn khi không có mốc kế tiếp vẫn ăn mốc đó: 12.0 * 8 + 10 = 106.0
+    assert calc_cost_penalty_seconds(12.0, bounded_rules) == 106.0
+    # Vượt quá max_cost hữu hạn cuối -> fallback về base_seconds_per_cost: 14.0 * 4 = 56.0
+    assert calc_cost_penalty_seconds(14.0, bounded_rules) == 56.0
 
 
 def test_chamber_9_minute_subtraction_math() -> None:

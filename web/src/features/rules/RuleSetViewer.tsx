@@ -223,9 +223,9 @@ export function RuleSetViewer({ ruleset }: Props) {
               <table className="w-full text-left text-sm">
                 <thead className="bg-panel-2 text-xs text-muted">
                   <tr>
-                    <th className="px-3 py-2">Khoảng Cost</th>
-                    <th className="px-3 py-2">Mỗi 1 Cost cộng</th>
-                    <th className="px-3 py-2">Cộng thêm khi chạm mốc</th>
+                    <th className="px-3 py-2">Mốc Cost</th>
+                    <th className="px-3 py-2">Hệ số nhân Tổng Cost</th>
+                    <th className="px-3 py-2">Cộng cố định ở mốc</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/60">
@@ -234,7 +234,7 @@ export function RuleSetViewer({ ruleset }: Props) {
                       <td className="px-3 py-2 font-medium">
                         {formatCost(m.minCost)} → {m.maxCost === null ? '∞' : formatCost(m.maxCost)}
                       </td>
-                      <td className="px-3 py-2 text-gold-strong">+{formatSeconds(m.secondsPerCost)} / cost</td>
+                      <td className="px-3 py-2 text-gold-strong">Tổng Cost × {formatSeconds(m.secondsPerCost)}</td>
                       <td className="px-3 py-2 text-muted">
                         {m.bonusSeconds > 0 ? `+${formatSeconds(m.bonusSeconds)}` : '0s'}
                       </td>

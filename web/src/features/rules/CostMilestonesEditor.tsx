@@ -151,7 +151,7 @@ export function CostMilestonesEditor({ costRules, onChange }: Props) {
             onChange={(e) => updateField('baseSecondsPerCost', Math.max(0, Number(e.target.value) || 0))}
             className="h-9 rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
           />
-          <span className="text-[11px] text-muted">Dùng khi không có mốc bậc thang hoặc phần Cost ngoài mốc.</span>
+          <span className="text-[11px] text-muted">Dùng khi chưa thiết lập mốc hoặc khi Tổng Cost nằm ngoài các mốc.</span>
         </label>
 
         <label className="flex flex-col gap-1 text-xs">
@@ -173,7 +173,7 @@ export function CostMilestonesEditor({ costRules, onChange }: Props) {
           <div>
             <h4 className="text-sm font-bold text-text">Các mốc cộng thời gian theo Cost</h4>
             <p className="text-xs text-muted">
-              Ví dụ: 0–6 Cost tính 5s/cost; 6–12 Cost tính 8s/cost; trên 12 Cost tính 12s/cost.
+              Khi đạt mốc [Từ Cost, Đến Cost), tổng thời gian = Tổng Cost × Giây/Cost (+ giây cố định của mốc). Ví dụ: 0–6 tính 5s/cost; chạm 6–12 tính 8s/cost (6 Cost = 48s, 8 Cost = 64s); từ 12 trở lên tính 12s/cost.
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={addMilestone}>
@@ -183,7 +183,7 @@ export function CostMilestonesEditor({ costRules, onChange }: Props) {
 
         {costRules.milestones.length === 0 ? (
           <p className="rounded-lg border border-dashed border-line p-3 text-xs text-muted">
-            Chưa có mốc bậc thang — đang dùng hệ số cơ bản ({formatSeconds(costRules.baseSecondsPerCost)} / cost).
+            Chưa có mốc Cost — đang dùng hệ số cơ bản ({formatSeconds(costRules.baseSecondsPerCost)} / cost).
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -249,7 +249,7 @@ export function CostMilestonesEditor({ costRules, onChange }: Props) {
         )}
 
         <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
-          {[4, 8, 12, 16].map((sample) => (
+          {[4, 6, 8, 12, 16].map((sample) => (
             <span key={sample} className="rounded bg-panel-2 px-2 py-1">
               {sample} Cost ={' '}
               <strong className="text-gold-strong">
