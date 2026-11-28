@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CHARACTERS } from '@/domain/characters'
+import { COST_CHARACTERS } from '@/domain/characters'
 import { createDefaultRuleSetConfig } from '@/domain/ruleset'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import {
@@ -12,7 +12,7 @@ describe('features/rules/costTableUtils', () => {
   it('lọc theo hệ (đơn hệ, đa hệ, Khác) và tìm kiếm tiếng Việt không dấu', () => {
     const { costRules } = createDefaultRuleSetConfig()
 
-    const pyroAndHydro = filterAndSortCharacters(CHARACTERS, costRules, {
+    const pyroAndHydro = filterAndSortCharacters(COST_CHARACTERS, costRules, {
       query: '',
       elements: ['pyro', 'hydro'],
       rarity: null,
@@ -23,21 +23,32 @@ describe('features/rules/costTableUtils', () => {
     expect(pyroAndHydro.length).toBeGreaterThan(0)
     expect(pyroAndHydro.every((c) => c.element === 'pyro' || c.element === 'hydro')).toBe(true)
 
-    const multiElement = filterAndSortCharacters(CHARACTERS, costRules, {
+    const multiElement = filterAndSortCharacters(COST_CHARACTERS, costRules, {
       query: 'nha lu hanh',
-      elements: ['none'],
+      elements: [],
       rarity: null,
       onlyOverridden: false,
       onlyCustom: false,
       sort: 'name_asc',
     })
-    expect(multiElement.length).toBeGreaterThanOrEqual(2)
-    expect(multiElement.every((c) => c.element === null)).toBe(true)
+    expect(multiElement).toHaveLength(7)
+    expect(multiElement.every((c) => c.slug.startsWith('traveler-'))).toBe(true)
+
+    const noneElements = filterAndSortCharacters(COST_CHARACTERS, costRules, {
+      query: '',
+      elements: ['none'],
+      rarity: null,
+      onlyOverridden: false,
+      onlyCustom: false,
+      sort: 'default',
+    })
+    expect(noneElements.length).toBeGreaterThanOrEqual(2)
+    expect(noneElements.every((c) => c.element === null)).toBe(true)
   })
 
   it('sắp xếp theo hệ đúng thứ tự Hỏa -> Thủy -> Lôi -> Băng -> Thảo -> Phong -> Nham -> Khác', () => {
     const { costRules } = createDefaultRuleSetConfig()
-    const sorted = filterAndSortCharacters(CHARACTERS, costRules, {
+    const sorted = filterAndSortCharacters(COST_CHARACTERS, costRules, {
       query: '',
       elements: [],
       rarity: null,

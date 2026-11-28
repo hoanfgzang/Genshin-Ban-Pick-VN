@@ -14,6 +14,7 @@ from ..models.match import Match
 from ..models.user import User
 from ..schemas.match import MatchState, SideName
 from . import draft_engine
+from .traveler import normalize_traveler_inventory_dict
 
 
 class RoomManager:
@@ -286,10 +287,11 @@ class RoomManager:
     async def _load_user_inventory(self, db: AsyncSession, user_id: str) -> dict[str, dict[str, Any]]:
         res = await db.execute(select(UserCharacter).where(UserCharacter.user_id == user_id))
         rows = res.scalars().all()
-        return {
+        raw = {
             row.character_slug: {"constellation": row.constellation, "level": row.level}
             for row in rows
         }
+        return normalize_traveler_inventory_dict(raw)
 
     async def _save_match_state(self, db: AsyncSession, match: Match, state: MatchState) -> None:
         match.status = state.status
@@ -569,11 +571,29 @@ class RoomManager:
                             chambers = payload.get("chambers")
                             if not isinstance(chambers, list):
                                 raise AppError(400, "INVALID_CHAMBER_TIMES", "Dữ liệu thời gian 3 ải không hợp lệ.")
+                            raw_side = payload.get("side")
+                            if raw_side is not None and raw_side not in ("blue", "red"):
+                                raise AppError(400, "INVALID_SIDE", "Bên chọn phải là Xanh (blue) hoặc Đỏ (red).")
+                            target_side: SideName | None = raw_side
+                            actor_side = draft_engine._find_user_side(state, user.id)
                             next_state = draft_engine.submit_chamber_times(
                                 state,
                                 user_id=user.id,
+                                user_role=user.role,
+                                target_side=target_side,
                                 chambers=chambers,
                             )
+                            submitted_side: SideName | None = target_side or actor_side
+                            if (
+                                state.status == "scoring"
+                                and next_state.status == "scoring"
+                                and submitted_side is not None
+                                and (user.role == "admin" or actor_side != submitted_side)
+                            ):
+                                notice = {
+                                    "tone": "info",
+                                    "message": f"{user.display_name} đã nhập thời gian 3 phòng cho {self._side_label(next_state, submitted_side)}.",
+                                }
                             if (
                                 state.status == "scoring"
                                 and next_state.status == "between_games"

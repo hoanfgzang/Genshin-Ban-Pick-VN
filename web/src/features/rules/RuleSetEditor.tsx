@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { toast } from '@/components/ui/toast'
-import { CHARACTER_BY_SLUG } from '@/domain/characters'
+import { COST_CHARACTER_BY_SLUG } from '@/domain/characters'
 import {
   createDefaultRuleSetConfig,
   TIE_BREAK_OPTIONS,
@@ -100,7 +100,7 @@ export function RuleSetEditor({
 
     for (const [slug, items] of Object.entries(config.costRules.characterCustomCosts ?? {})) {
       if (items.some((item) => !item.note.trim())) {
-        const charName = CHARACTER_BY_SLUG.get(slug)?.name ?? slug
+        const charName = COST_CHARACTER_BY_SLUG.get(slug)?.name ?? slug
         toast.error(`Nhân vật "${charName}" có Custom Cost chưa nhập ghi chú điều kiện kích hoạt.`)
         return
       }
@@ -117,12 +117,12 @@ export function RuleSetEditor({
     try {
       const prunedCharOverrides = Object.fromEntries(
         Object.entries(config.costRules.characterOverrides).filter(([slug]) =>
-          CHARACTER_BY_SLUG.has(slug),
+          COST_CHARACTER_BY_SLUG.has(slug),
         ),
       )
       const prunedCharCustom: Record<string, CharacterCustomCost[]> = Object.fromEntries(
         Object.entries(config.costRules.characterCustomCosts ?? {})
-          .filter(([slug, items]) => CHARACTER_BY_SLUG.has(slug) && items.length > 0)
+          .filter(([slug, items]) => COST_CHARACTER_BY_SLUG.has(slug) && items.length > 0)
           .map(([slug, items]) => [
             slug,
             items.map((item) => ({ ...item, note: item.note.trim() })),

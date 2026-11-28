@@ -36,13 +36,13 @@ export function MatchLobbyPhase({
     return (
       <div
         className={cn(
-          'panel flex flex-col justify-between gap-4 p-5',
+          'panel flex flex-col justify-between gap-4 p-3.5 sm:p-5',
           isBlue ? 'border-hydro/50' : 'border-danger/50',
         )}
       >
         <div>
-          <div className="flex items-center justify-between gap-2">
-            <h2 className={cn('text-lg font-extrabold', isBlue ? 'text-hydro' : 'text-danger')}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className={cn('text-base font-extrabold sm:text-lg', isBlue ? 'text-hydro' : 'text-danger')}>
               {isBlue ? 'Bên Trái · Đội Xanh Dương' : 'Bên Phải · Đội Đỏ'}
             </h2>
             <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-semibold text-muted">

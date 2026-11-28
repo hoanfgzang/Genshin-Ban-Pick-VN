@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import Field, field_validator, model_validator
 
 from .auth import CamelModel
+from ..services.traveler import migrate_legacy_traveler_cost_dict
 
 TieBreakRule = Literal["none", "lower_cost", "fewer_4star", "lower_cost_then_fewer_4star"]
 
@@ -139,6 +140,12 @@ class CostRules(CamelModel):
                     for k, v in legacy_ov.items()
                     if isinstance(v, list) and len(v) > 0
                 }
+        for key in ("characterOverrides", "character_overrides"):
+            if isinstance(d.get(key), dict):
+                d[key] = migrate_legacy_traveler_cost_dict(d[key], deep_copy_value=False)
+        for key in ("characterCustomCosts", "character_custom_costs"):
+            if isinstance(d.get(key), dict):
+                d[key] = migrate_legacy_traveler_cost_dict(d[key], deep_copy_value=True)
         return d
 
     @field_validator("default_char_5_costs", "default_char_4_costs")

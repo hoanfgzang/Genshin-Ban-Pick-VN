@@ -1,16 +1,17 @@
 import type { DragEvent } from 'react'
 import { ElementIcon } from '@/components/ui/ElementIcon'
 import type { Element } from '@/domain/character'
-import { getCharacter } from '@/domain/characters'
 import { formatCost, formatSeconds, getCharacterCustomCosts } from '@/domain/cost'
 import type { CostRules } from '@/domain/ruleset'
+import { resolveCharacterForOwned } from '@/domain/traveler'
 import { getWeapon } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
-import type { MatchPickSlot } from '@/services'
+import type { MatchPickSlot, SideOwnedChar } from '@/services'
 
 interface Props {
   pick: MatchPickSlot
   slotInTeam: number
+  ownedCharacters?: Record<string, SideOwnedChar>
   costRules?: CostRules
   canReorder: boolean
   canEditWeapon: boolean
@@ -37,6 +38,7 @@ const ELEMENT_GLOW: Record<Element, string> = {
 export function TeamSlotCard({
   pick,
   slotInTeam,
+  ownedCharacters,
   costRules,
   canReorder,
   canEditWeapon,
@@ -49,7 +51,7 @@ export function TeamSlotCard({
   onDragEnd,
   onClickWeapon,
 }: Props) {
-  const char = getCharacter(pick.characterSlug)
+  const char = resolveCharacterForOwned(pick.characterSlug, ownedCharacters)
   const weapon = pick.weaponSlug ? getWeapon(pick.weaponSlug) : null
   const weaponRefSec = pick.weaponRefinementSeconds ?? 0
   const hasCharCustomOptions = costRules
@@ -117,10 +119,10 @@ export function TeamSlotCard({
         </div>
 
         {/* Lv | C{n} & cost nổi bật trên đáy ảnh chân dung */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-1.5 pt-4 pb-1">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-1 pt-4 pb-1 sm:px-1.5">
           <span
             className={cn(
-              'rounded px-1 py-0.5 font-mono text-[10.3px] font-black leading-none',
+              'rounded px-1 py-0.5 font-mono text-[9px] font-black leading-none sm:text-[10.3px]',
               pick.level === 100
                 ? 'bg-gradient-to-r from-gold-strong to-geo text-bg'
                 : pick.level === 95
@@ -131,7 +133,7 @@ export function TeamSlotCard({
             {pick.level}|C{pick.constellation}
           </span>
           {pick.characterCost > 0 && (
-            <span className="rounded bg-black/80 px-1 py-0.5 text-[10.3px] font-bold leading-none text-gold-strong">
+            <span className="rounded bg-black/80 px-1 py-0.5 text-[9px] font-bold leading-none text-gold-strong sm:text-[10.3px]">
               +{formatCost(pick.characterCost)}
             </span>
           )}
@@ -139,7 +141,7 @@ export function TeamSlotCard({
       </div>
 
       {/* Thanh đáy hiển thị tên nhân vật: chữ đen nền trắng */}
-      <div className="truncate bg-white px-1.5 py-1 text-center text-[11.33px] font-bold leading-tight text-black">
+      <div className="truncate bg-white px-1 py-0.5 text-center text-[10px] font-bold leading-tight text-black sm:px-1.5 sm:py-1 sm:text-[11.33px]">
         {char?.name ?? pick.characterSlug}
       </div>
     </>
@@ -150,7 +152,7 @@ export function TeamSlotCard({
   }${canReorder ? ' · Kéo hoặc bấm để đổi vị trí' : ''}`
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1 sm:gap-1.5">
       {/* Thẻ nhân vật dọc (kéo-thả hoặc bấm để đổi vị trí) */}
       {canReorder ? (
         <button
@@ -164,7 +166,7 @@ export function TeamSlotCard({
           title={charTitle}
           aria-pressed={isSelectedForSwap}
           className={cn(
-            'group relative flex aspect-[2/4.6] min-h-40 w-full cursor-grab flex-col overflow-hidden rounded-lg border text-left transition active:cursor-grabbing sm:min-h-48',
+            'group relative flex aspect-[2/3.5] min-h-28 w-full cursor-grab flex-col overflow-hidden rounded-lg border text-left transition active:cursor-grabbing sm:aspect-[2/4.1] sm:min-h-36 xl:aspect-[2/4.6] xl:min-h-48',
             isSelectedForSwap
               ? 'border-gold-strong ring-2 ring-gold-strong shadow-[0_0_18px_rgba(244,223,168,0.45)]'
               : isDropTarget
@@ -177,7 +179,7 @@ export function TeamSlotCard({
       ) : (
         <div
           title={charTitle}
-          className="relative flex aspect-[2/4.6] min-h-40 w-full flex-col overflow-hidden rounded-lg border border-line/80 sm:min-h-48"
+          className="relative flex aspect-[2/3.5] min-h-28 w-full flex-col overflow-hidden rounded-lg border border-line/80 sm:aspect-[2/4.1] sm:min-h-36 xl:aspect-[2/4.6] xl:min-h-48"
         >
           {cardInner}
         </div>
@@ -216,7 +218,7 @@ export function TeamSlotCard({
               : 'Vũ khí 4★ (Mặc định · 0 cost)'
         }
         className={cn(
-          'relative flex h-24 flex-col overflow-hidden rounded-lg border transition',
+          'relative flex h-16 flex-col overflow-hidden rounded-lg border transition sm:h-20 lg:h-24',
           canEditWeapon ? 'cursor-pointer hover:border-gold-strong' : 'cursor-default',
           weapon
             ? 'border-line/80 bg-panel-2/80'
@@ -237,7 +239,7 @@ export function TeamSlotCard({
                 src={weapon.icon}
                 alt={weapon.name}
                 loading="lazy"
-                className="size-14 max-h-full max-w-full object-contain drop-shadow sm:size-15"
+                className="size-10 max-h-full max-w-full object-contain drop-shadow sm:size-12 xl:size-15"
               />
               {weaponRefSec > 0 && (
                 <span className="absolute top-0.5 left-0.5 rounded bg-black/80 px-1 py-0.2 text-[9.27px] font-bold text-pyro">

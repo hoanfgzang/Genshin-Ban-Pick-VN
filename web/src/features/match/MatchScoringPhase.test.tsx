@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { createDefaultRuleSetConfig } from '@/domain/ruleset'
@@ -91,60 +91,84 @@ function buildScoringState(): MatchState {
 }
 
 describe('features/match/MatchScoringPhase', () => {
-  it('căn ô nhập 3 phòng sang trái cho Blue và hiển thị đủ 5 thông số ở phần dư', () => {
+  it('hiển thị form nhập thời gian và đủ 5 thông số cho cả 2 bên khi người chơi đang thi đấu', () => {
     const state = buildScoringState()
+    const onSubmitScores = vi.fn()
     render(
       <MemoryRouter>
-        <MatchScoringPhase state={state} mySide="blue" onSubmitScores={vi.fn()} />
+        <MatchScoringPhase state={state} mySide="blue" isAdmin={false} onSubmitScores={onSubmitScores} />
       </MemoryRouter>,
     )
 
-    const formSection = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng' })
-    const infoSection = screen.getByRole('region', { name: 'Thông tin Cost và Thời gian' })
+    const blueForm = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng đội Xanh' })
+    const redForm = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng đội Đỏ' })
 
-    expect(formSection.className).toContain('lg:order-1')
-    expect(infoSection.className).toContain('lg:order-2')
+    expect(within(blueForm).getByLabelText('Phút phòng 1')).toBeInTheDocument()
+    expect(within(blueForm).getByLabelText('Phút phòng 2')).toBeInTheDocument()
+    expect(within(blueForm).getByLabelText('Phút phòng 3')).toBeInTheDocument()
+    expect(within(blueForm).getByText('Bạn')).toBeInTheDocument()
 
-    expect(within(formSection).getByLabelText('Phút phòng 1')).toBeInTheDocument()
-    expect(within(formSection).getByLabelText('Phút phòng 2')).toBeInTheDocument()
-    expect(within(formSection).getByLabelText('Phút phòng 3')).toBeInTheDocument()
+    expect(within(blueForm).getByText('7.5')).toBeInTheDocument()
+    expect(within(blueForm).getByText('NV 6.5 · VK 1')).toBeInTheDocument()
+    expect(within(blueForm).getByText('6 → 12')).toBeInTheDocument()
+    expect(within(blueForm).getByText('8s/cost + 10s')).toBeInTheDocument()
+    expect(within(blueForm).getByText('+75s')).toBeInTheDocument()
+    expect(within(blueForm).getByText('+12s')).toBeInTheDocument()
+    expect(within(blueForm).getByText('+87s')).toBeInTheDocument()
 
-    expect(within(infoSection).getByText('Cost')).toBeInTheDocument()
-    expect(within(infoSection).getByText('7.5')).toBeInTheDocument()
-    expect(within(infoSection).getByText('NV 6.5 · VK 1')).toBeInTheDocument()
+    expect(within(redForm).getByText('4')).toBeInTheDocument()
+    expect(within(redForm).getByText('0 → 6')).toBeInTheDocument()
+    expect(within(redForm).getByText('5s/cost')).toBeInTheDocument()
+    expect(within(redForm).getByText('0s')).toBeInTheDocument()
+    expect(within(redForm).getAllByText('+20s').length).toBeGreaterThanOrEqual(2)
 
-    expect(within(infoSection).getByText('Mốc cost hiện tại')).toBeInTheDocument()
-    expect(within(infoSection).getByText('6 → 12')).toBeInTheDocument()
-    expect(within(infoSection).getByText('8s/cost + 10s')).toBeInTheDocument()
+    fireEvent.click(within(blueForm).getByRole('button', { name: 'Xác nhận Đội Xanh' }))
+    expect(onSubmitScores).toHaveBeenCalledWith('blue', [
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+    ])
 
-    expect(within(infoSection).getByText('Thời gian cộng thêm')).toBeInTheDocument()
-    expect(within(infoSection).getByText('+75s')).toBeInTheDocument()
-
-    expect(within(infoSection).getByText('Thời gian bị phạt')).toBeInTheDocument()
-    expect(within(infoSection).getByText('+12s')).toBeInTheDocument()
-
-    expect(within(infoSection).getByText('Tổng thời gian cộng thêm')).toBeInTheDocument()
-    expect(within(infoSection).getByText('+87s')).toBeInTheDocument()
+    fireEvent.click(within(redForm).getByRole('button', { name: 'Xác nhận Đội Đỏ' }))
+    expect(onSubmitScores).toHaveBeenCalledWith('red', [
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+    ])
   })
 
-  it('căn ô nhập 3 phòng sang phải cho Red và đặt thông tin Cost/Thời gian sang trái', () => {
+  it('cho phép Admin không ngồi ghế nhập thời gian cho cả 2 bên', () => {
     const state = buildScoringState()
+    const onSubmitScores = vi.fn()
     render(
       <MemoryRouter>
-        <MatchScoringPhase state={state} mySide="red" onSubmitScores={vi.fn()} />
+        <MatchScoringPhase state={state} mySide={null} isAdmin onSubmitScores={onSubmitScores} />
       </MemoryRouter>,
     )
 
-    const formSection = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng' })
-    const infoSection = screen.getByRole('region', { name: 'Thông tin Cost và Thời gian' })
+    const blueForm = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng đội Xanh' })
+    const redForm = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng đội Đỏ' })
 
-    expect(formSection.className).toContain('lg:order-2')
-    expect(infoSection.className).toContain('lg:order-1')
+    fireEvent.change(within(redForm).getByLabelText('Giây phòng 1'), { target: { value: '30' } })
+    fireEvent.click(within(redForm).getByRole('button', { name: 'Xác nhận Đội Đỏ' }))
 
-    expect(within(infoSection).getByText('4')).toBeInTheDocument()
-    expect(within(infoSection).getByText('0 → 6')).toBeInTheDocument()
-    expect(within(infoSection).getByText('5s/cost')).toBeInTheDocument()
-    expect(within(infoSection).getByText('0s')).toBeInTheDocument()
-    expect(within(infoSection).getAllByText('+20s').length).toBeGreaterThanOrEqual(2)
+    expect(onSubmitScores).toHaveBeenCalledWith('red', [
+      { minutes: 8, seconds: 30 },
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+    ])
+    expect(within(blueForm).getByRole('button', { name: 'Xác nhận Đội Xanh' })).toBeInTheDocument()
+  })
+
+  it('ẩn form nhập điểm đối với khán giả thường', () => {
+    const state = buildScoringState()
+    render(
+      <MemoryRouter>
+        <MatchScoringPhase state={state} mySide={null} isAdmin={false} onSubmitScores={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('region', { name: 'Nhập kết quả 3 phòng đội Xanh' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Nhập kết quả 3 phòng đội Đỏ' })).not.toBeInTheDocument()
   })
 })

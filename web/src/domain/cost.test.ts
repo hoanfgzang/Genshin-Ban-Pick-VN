@@ -153,4 +153,18 @@ describe('domain/cost', () => {
       rateLabel: '4.5s/cost',
     })
   })
+
+  it('tính riêng 7 bộ Cost theo 7 hệ của Nhà Lữ Hành', () => {
+    const { costRules } = createDefaultRuleSetConfig()
+    const travelerRules = {
+      ...costRules,
+      characterOverrides: {
+        'traveler-pyro': [1, 1, 1.5, 1.5, 2, 2.5, 3],
+        'traveler-dendro': [0, 0, 0, 0.5, 0.5, 0.5, 1],
+      },
+    }
+    expect(calcCharacterCost('traveler-pyro', 6, travelerRules)).toBe(3)
+    expect(calcCharacterCost('traveler-dendro', 6, travelerRules)).toBe(1)
+    expect(calcCharacterCost('traveler-hydro', 6, travelerRules)).toBe(7)
+  })
 })

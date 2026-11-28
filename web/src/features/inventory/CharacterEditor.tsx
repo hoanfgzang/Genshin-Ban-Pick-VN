@@ -11,6 +11,7 @@ import {
   setLevel,
   setOwned,
 } from '@/domain/inventory'
+import { isTravelerGenderSlug } from '@/domain/traveler'
 import { cn } from '@/lib/cn'
 import { useInventoryStore } from './inventoryStore'
 
@@ -109,6 +110,11 @@ export function CharacterEditor({ character, onClose, onPrev, onNext }: Characte
             />
           </label>
           <p className="text-xs text-muted">Chọn cung mệnh hoặc level sẽ tự đánh dấu sở hữu.</p>
+          {isTravelerGenderSlug(c.slug) && (
+            <p className="rounded border border-gold/30 bg-gold/5 px-2.5 py-1.5 text-[11px] text-gold-strong">
+              Kho chỉ sở hữu 1 trong 2 Nhà Lữ Hành (Nam hoặc Nữ). Bật hoặc chỉnh sẽ tự chuyển C/Lv từ nhân vật còn lại.
+            </p>
+          )}
         </div>
       </div>
 

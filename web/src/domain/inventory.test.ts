@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyTravelerGenderChoice,
   bulkSetLevel,
   bulkSetOwned,
   diffInventory,
   emptyInventory,
   exportInventory,
+  getInventoryTravelerGender,
   isOwned,
   normalizeLevel,
   parseInventory,
@@ -201,5 +203,72 @@ describe('domain/inventory', () => {
     to = setOwned(to, 'bennett', true)
 
     expect(diffInventory(from, to)).toEqual({ added: 1, removed: 1, changed: 1 })
+  })
+
+  it('chỉ cho phép sở hữu 1 trong 2 Nhà Lữ Hành và giữ C/Lv khi chuyển đổi', () => {
+    let inv = emptyInventory()
+    inv = setConstellation(inv, 'traveler-boy', 5)
+    inv = setLevel(inv, 'traveler-boy', 95)
+    expect(isOwned(inv, 'traveler-boy')).toBe(true)
+    expect(isOwned(inv, 'traveler-girl')).toBe(false)
+
+    // Bật Nhà Lữ Hành Nữ -> tự tắt Nam và kế thừa C5 Lv95
+    inv = setOwned(inv, 'traveler-girl', true)
+    expect(isOwned(inv, 'traveler-boy')).toBe(false)
+    expect(inv.characters['traveler-girl']).toEqual({
+      slug: 'traveler-girl',
+      constellation: 5,
+      level: 95,
+    })
+
+    // bulkSetOwned khi chứa cả Nam & Nữ chỉ giữ 1
+    inv = bulkSetOwned(emptyInventory(), ['traveler-boy', 'traveler-girl', 'furina'], true)
+    expect(isOwned(inv, 'traveler-boy')).toBe(true)
+    expect(isOwned(inv, 'traveler-girl')).toBe(false)
+    expect(isOwned(inv, 'furina')).toBe(true)
+  })
+
+  it('parseInventory gộp slug chung "traveler" hoặc file cũ chứa cả Nam & Nữ và cho đổi giới tính', () => {
+    const genericJson = JSON.stringify({
+      version: 1,
+      updatedAt: '2026-11-28T00:00:00Z',
+      characters: {
+        traveler: { slug: 'traveler', constellation: 6, level: 90 },
+        furina: { slug: 'furina', constellation: 2, level: 95 },
+      },
+    })
+    const parsed = parseInventory(
+      genericJson,
+      new Set(['traveler-boy', 'traveler-girl', 'furina']),
+    )
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.unknownSlugs).toEqual([])
+    expect(parsed.travelerImport).toEqual({ constellation: 6, level: 90, source: 'generic' })
+    expect(getInventoryTravelerGender(parsed.inventory)).toBe('traveler-boy')
+
+    const switched = applyTravelerGenderChoice(parsed.inventory, 'traveler-girl')
+    expect(getInventoryTravelerGender(switched)).toBe('traveler-girl')
+    expect(switched.characters['traveler-boy']).toBeUndefined()
+    expect(switched.characters['traveler-girl']).toEqual({
+      slug: 'traveler-girl',
+      constellation: 6,
+      level: 90,
+    })
+
+    // File cũ chứa cả Nam & Nữ -> tự gộp thành 1
+    const bothJson = JSON.stringify({
+      version: 1,
+      updatedAt: '2026-11-28T00:00:00Z',
+      characters: {
+        'traveler-boy': { slug: 'traveler-boy', constellation: 1, level: 90 },
+        'traveler-girl': { slug: 'traveler-girl', constellation: 6, level: 100 },
+      },
+    })
+    const parsedBoth = parseInventory(bothJson, new Set(['traveler-boy', 'traveler-girl']))
+    expect(parsedBoth.ok).toBe(true)
+    if (!parsedBoth.ok) return
+    expect(parsedBoth.travelerImport).toEqual({ constellation: 6, level: 100, source: 'both' })
+    expect(Object.keys(parsedBoth.inventory.characters)).toHaveLength(1)
   })
 })

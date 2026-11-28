@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { buttonClass } from '@/components/ui/buttonStyles'
 import { FullPageSpinner } from '@/components/ui/Spinner'
 import { toast } from '@/components/ui/toast'
-import { getCharacter } from '@/domain/characters'
 import type { MatchSide } from '@/domain/ruleset'
+import { resolveCharacterForOwned } from '@/domain/traveler'
 import { useAuthStore } from '@/features/auth/authStore'
 import { BetweenGamesPanel } from '@/features/match/BetweenGamesPanel'
 import { DraftSlotsBoard } from '@/features/match/DraftSlotsBoard'
@@ -102,9 +102,13 @@ export function MatchPage() {
   const activePick: MatchPickSlot | null = weaponTarget
     ? (state.sides[weaponTarget.side].picks[weaponTarget.slot] ?? null)
     : null
-  const weaponModalCharacter = activePick
-    ? getCharacter(activePick.characterSlug) ?? null
-    : null
+  const weaponModalCharacter =
+    activePick && weaponTarget
+      ? resolveCharacterForOwned(
+          activePick.characterSlug,
+          state.sides[weaponTarget.side].ownedCharacters,
+        ) ?? null
+      : null
   const isBo3 = state.format === 'bo3'
   const currentGame = state.currentGame ?? 1
   const priorGames = getPriorGames(state)
@@ -129,16 +133,17 @@ export function MatchPage() {
   return (
     <div
       className={cn(
-        'flex flex-col gap-3',
-        state.status !== 'lobby' && 'match-arena-bg rounded-2xl border border-line/50 p-2.5 sm:p-4',
+        'flex flex-col gap-2.5 sm:gap-3',
+        state.status !== 'lobby' &&
+          'match-arena-bg rounded-xl border border-line/50 p-2 sm:rounded-2xl sm:p-3 xl:p-4',
       )}
     >
       {/* Thanh phòng gọn */}
-      <header className="panel flex flex-wrap items-center justify-between gap-3 border-line/70 bg-bg/75 px-4 py-2.5">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Phòng</span>
-            <span className="rounded-md bg-gold/15 px-2.5 py-0.5 font-mono text-base font-extrabold tracking-widest text-gold-strong">
+      <header className="panel flex flex-wrap items-center justify-between gap-2 border-line/70 bg-bg/75 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="hidden text-xs text-muted sm:inline">Phòng</span>
+            <span className="rounded-md bg-gold/15 px-2 py-0.5 font-mono text-sm font-extrabold tracking-widest text-gold-strong sm:px-2.5 sm:text-base">
               {state.code}
             </span>
           </div>
@@ -153,7 +158,7 @@ export function MatchPage() {
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {isAdmin && (
             <span className="rounded-full border border-gold/50 bg-gold/15 px-2.5 py-0.5 text-[11px] font-bold text-gold-strong">
               Admin
@@ -224,6 +229,7 @@ export function MatchPage() {
               state={state}
               mySide={mySide}
               isAdmin={isAdmin}
+              countdown={countdown}
               selectedSlug={effectiveHoverSlug}
               onSelectSlug={handleDraftHover}
               onDraftAction={handleDraftAction}
@@ -234,7 +240,7 @@ export function MatchPage() {
               }}
               onRequestUndo={() => sendAction({ action: 'request_undo' })}
             />
-          ) : (
+          ) : state.status === 'weapon_phase' ? (
             <PostDraftTeamsStage
               key={`teams-g${currentGame}`}
               state={state}
@@ -250,20 +256,42 @@ export function MatchPage() {
               onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
               onRequestUndo={() => sendAction({ action: 'request_undo' })}
             />
+          ) : (
+            <>
+              <div className="order-1 xl:order-2">
+                <MatchScoringPhase
+                  key={`scoring-g${currentGame}-${mySide ?? 'spec'}`}
+                  state={state}
+                  mySide={mySide}
+                  isAdmin={isAdmin}
+                  onSubmitScores={(side, chambers) => sendAction({ action: 'submit_scores', side, chambers })}
+                />
+              </div>
+              <div className="order-2 xl:order-1">
+                <PostDraftTeamsStage
+                  key={`teams-g${currentGame}`}
+                  state={state}
+                  mySide={mySide}
+                  isAdmin={isAdmin}
+                  canReorderSide={canReorderSide}
+                  canEditWeaponsForSide={canEditWeaponsForSide}
+                  onReorderLineup={(side, order) =>
+                    sendAction({ action: 'reorder_lineup', side, order })
+                  }
+                  onSelectWeaponSlot={(side, pick) => setWeaponTarget({ side, slot: pick.slot })}
+                  onLockWeapons={() => sendAction({ action: 'lock_weapons' })}
+                  onUndoStep={() => sendAction({ action: 'undo_draft_step' })}
+                  onRequestUndo={() => sendAction({ action: 'request_undo' })}
+                />
+              </div>
+            </>
           )}
 
-          {(state.status === 'scoring' ||
-            state.status === 'between_games' ||
-            state.status === 'finished') && (
-            <MatchScoringPhase
-              key={`scoring-g${currentGame}-${mySide ?? 'spec'}`}
-              state={state}
-              mySide={mySide}
-              onSubmitScores={(chambers) => sendAction({ action: 'submit_scores', chambers })}
-            />
+          {isBo3 && priorGames.length > 0 && (
+            <div className="order-3">
+              <PreviousGamesPicksPanel state={state} />
+            </div>
           )}
-
-          {isBo3 && priorGames.length > 0 && <PreviousGamesPicksPanel state={state} />}
         </>
       )}
 

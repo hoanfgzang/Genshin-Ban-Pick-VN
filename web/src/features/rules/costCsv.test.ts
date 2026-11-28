@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CHARACTERS } from '@/domain/characters'
+import { CHARACTERS, COST_CHARACTERS } from '@/domain/characters'
 import { createDefaultRuleSetConfig } from '@/domain/ruleset'
 import { WEAPONS_LIST } from '@/domain/weapons'
 import {
@@ -118,5 +118,26 @@ describe('features/rules/costCsv', () => {
         note: 'Cầm cho Yelan',
       },
     ])
+  })
+
+  it('xuất và nhập CSV hỗ trợ 7 biến thể Nhà Lữ Hành theo 7 hệ', () => {
+    const { costRules } = createDefaultRuleSetConfig()
+    const withTraveler = {
+      ...costRules,
+      characterOverrides: {
+        'traveler-pyro': [1, 1, 1, 1.5, 1.5, 2, 3],
+        'traveler-dendro': [0, 0, 0, 0, 0, 0.5, 1],
+      },
+    }
+    const travelers = COST_CHARACTERS.filter((c) => c.slug.startsWith('traveler-'))
+    expect(travelers).toHaveLength(7)
+
+    const csv = exportCharacterCostCsv(travelers, withTraveler)
+    const parsed = parseCharacterCostCsv(csv, createDefaultRuleSetConfig().costRules)
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.nextOverrides['traveler-pyro']).toEqual([1, 1, 1, 1.5, 1.5, 2, 3])
+    expect(parsed.nextOverrides['traveler-dendro']).toEqual([0, 0, 0, 0, 0, 0.5, 1])
+    expect(parsed.stats.matchedCharacters).toBe(7)
   })
 })

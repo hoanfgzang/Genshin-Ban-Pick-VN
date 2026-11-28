@@ -5,7 +5,8 @@ import { Dialog } from '@/components/ui/Dialog'
 import { ElementIcon } from '@/components/ui/ElementIcon'
 import { toast } from '@/components/ui/toast'
 import { ELEMENT_LABEL, type Rarity } from '@/domain/character'
-import { CHARACTERS } from '@/domain/characters'
+import { COST_CHARACTERS } from '@/domain/characters'
+import { isTravelerElementSlug } from '@/domain/traveler'
 import type { CharacterCustomCost, CostRules } from '@/domain/ruleset'
 import {
   downloadCsvFile,
@@ -70,7 +71,7 @@ export function CharacterCostOverrides({ costRules, rulesetName = 'bo-luat', onC
 
   const overriddenTotalCount = useMemo(
     () =>
-      CHARACTERS.filter(
+      COST_CHARACTERS.filter(
         (c) => c.slug in costRules.characterOverrides || (customMap[c.slug]?.length ?? 0) > 0,
       ).length,
     [costRules.characterOverrides, customMap],
@@ -78,7 +79,7 @@ export function CharacterCostOverrides({ costRules, rulesetName = 'bo-luat', onC
 
   const filtered = useMemo(
     () =>
-      filterAndSortCharacters(CHARACTERS, costRules, {
+      filterAndSortCharacters(COST_CHARACTERS, costRules, {
         query,
         elements,
         rarity,
@@ -179,9 +180,11 @@ export function CharacterCostOverrides({ costRules, rulesetName = 'bo-luat', onC
   }
 
   const handleExportCsv = () => {
-    const csv = exportCharacterCostCsv(filtered.length > 0 ? filtered : CHARACTERS, costRules)
+    const csv = exportCharacterCostCsv(filtered.length > 0 ? filtered : COST_CHARACTERS, costRules)
     downloadCsvFile(`cost-nhan-vat-${slugifyFilePart(rulesetName)}.csv`, csv)
-    toast.success(`Đã xuất CSV (${filtered.length > 0 ? filtered.length : CHARACTERS.length} nhân vật).`)
+    toast.success(
+      `Đã xuất CSV (${filtered.length > 0 ? filtered.length : COST_CHARACTERS.length} nhân vật).`,
+    )
   }
 
   const handleImportFile = async (file: File | undefined) => {
@@ -322,6 +325,11 @@ export function CharacterCostOverrides({ costRules, rulesetName = 'bo-luat', onC
                         {c.element && <ElementIcon element={c.element} className="size-3.5 shrink-0" />}
                         <span className="font-medium text-text">{c.name}</span>
                         <span className="text-muted">{c.rarity}★</span>
+                        {isTravelerElementSlug(c.slug) && (
+                          <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
+                            Nam / Nữ
+                          </span>
+                        )}
                         {customItems.length > 0 && (
                           <span className="rounded bg-hydro/20 px-1.5 py-0.5 text-[10px] font-bold text-hydro">
                             {customItems.length} ĐK

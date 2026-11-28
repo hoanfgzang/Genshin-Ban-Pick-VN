@@ -21,7 +21,8 @@ import { countFourStarPicks, formatWinReason, getSeriesWinsForSide } from './ser
 interface Props {
   state: MatchState
   mySide: MatchSide | null
-  onSubmitScores: (chambers: ChamberTimeInput[]) => void
+  isAdmin?: boolean
+  onSubmitScores: (side: MatchSide, chambers: ChamberTimeInput[]) => void
 }
 
 const DEFAULT_CHAMBERS: ChamberTimeInput[] = [
@@ -30,27 +31,30 @@ const DEFAULT_CHAMBERS: ChamberTimeInput[] = [
   { minutes: 8, seconds: 0 },
 ]
 
-export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
-  const myInitialChambers = mySide ? state.sides[mySide].chambers : null
+interface SideScoreFormProps {
+  side: MatchSide
+  state: MatchState
+  isMySide: boolean
+  onSubmitScores: (side: MatchSide, chambers: ChamberTimeInput[]) => void
+}
+
+function SideScoreForm({ side, state, isMySide, onSubmitScores }: SideScoreFormProps) {
+  const sideState = state.sides[side]
+  const isBlue = side === 'blue'
   const [chambers, setChambers] = useState<ChamberTimeInput[]>(
-    () => myInitialChambers ?? DEFAULT_CHAMBERS,
+    () => sideState.chambers ?? DEFAULT_CHAMBERS,
   )
 
   const diffs = chambers.map((c) => calcChamberDiff(c.minutes, c.seconds))
   const allValid = diffs.every((d) => d !== null)
   const totalChamberDiff = diffs.reduce<number>((sum, d) => sum + (d ?? 0), 0)
-  const mySideState = mySide ? state.sides[mySide] : null
-  const myBreakdown = mySideState
-    ? computeCostBreakdown(mySideState.picks)
-    : { characterCost: 0, weaponCost: 0, weaponRefinementSeconds: 0 }
-  const myMilestone = mySideState
-    ? formatCostMilestoneSummary(mySideState.totalCost, state.ruleset.costRules)
-    : { rangeLabel: '0 cost', rateLabel: '—' }
-  const myRefSec = mySideState ? (mySideState.weaponRefinementSeconds ?? 0) : 0
-  const myAddedSeconds = mySideState ? round2(mySideState.costPenaltySeconds + myRefSec) : 0
-  const myOvertime = mySideState ? round2(mySideState.overtimePenaltySeconds ?? 0) : 0
-  const myTotalAddedSeconds = round2(myAddedSeconds + myOvertime)
-  const myProjectedTotal = mySideState ? round2(myTotalAddedSeconds + totalChamberDiff) : 0
+  const breakdown = computeCostBreakdown(sideState.picks)
+  const milestone = formatCostMilestoneSummary(sideState.totalCost, state.ruleset.costRules)
+  const refSec = sideState.weaponRefinementSeconds ?? 0
+  const addedSeconds = round2(sideState.costPenaltySeconds + refSec)
+  const overtime = round2(sideState.overtimePenaltySeconds ?? 0)
+  const totalAddedSeconds = round2(addedSeconds + overtime)
+  const projectedTotal = round2(totalAddedSeconds + totalChamberDiff)
 
   const handleTimeChange = (idx: number, field: 'minutes' | 'seconds', raw: string) => {
     const val = Math.max(0, Number(raw) || 0)
@@ -71,8 +75,183 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
       toast.error('Thời gian mỗi ải phải từ 00:00 đến tối đa 09:00.')
       return
     }
-    onSubmitScores(chambers)
+    onSubmitScores(side, chambers)
   }
+
+  return (
+    <section
+      data-score-form={side}
+      aria-label={isBlue ? 'Nhập kết quả 3 phòng đội Xanh' : 'Nhập kết quả 3 phòng đội Đỏ'}
+      className={cn(
+        'panel flex flex-col justify-between gap-3 p-4',
+        isBlue ? 'border-hydro/45' : 'border-danger/45',
+      )}
+    >
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'rounded px-2 py-0.5 text-[11px] font-extrabold uppercase',
+                isBlue ? 'bg-hydro/20 text-hydro' : 'bg-danger/20 text-danger',
+              )}
+            >
+              {isBlue ? 'Đội Xanh' : 'Đội Đỏ'}
+            </span>
+            <h2 className="text-base font-bold text-text">
+              {sideState.player?.displayName ?? '—'}
+            </h2>
+            {isMySide && (
+              <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold-strong">
+                Bạn
+              </span>
+            )}
+            {sideState.scoreSubmitted && (
+              <span className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                Đã nộp
+              </span>
+            )}
+          </div>
+          <span className="font-mono text-xs font-bold text-gold-strong">
+            +{totalChamberDiff}s (3 phòng)
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-muted">
+          Mốc 09:00 / phòng (tính <code className="text-text">09:00 − thời gian nhập</code>).
+        </p>
+
+        <div className="mt-3 flex flex-col gap-2">
+          {chambers.map((ch, idx) => {
+            const diff = diffs[idx]
+            return (
+              <div
+                key={idx}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-bg/50 px-2.5 py-2 sm:px-3"
+              >
+                <span className="min-w-12 text-xs font-bold text-text sm:min-w-16">
+                  Phòng {idx + 1}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <label className="flex items-center gap-1 text-[11px] text-muted">
+                    <span>Phút</span>
+                    <input
+                      type="number"
+                      aria-label={`Phút phòng ${idx + 1}`}
+                      min={0}
+                      max={9}
+                      value={ch.minutes}
+                      onChange={(e) => handleTimeChange(idx, 'minutes', e.target.value)}
+                      className="h-10 w-14 rounded-lg border border-line bg-panel px-1.5 text-center font-mono text-base text-text focus:border-gold focus:outline-none sm:text-sm xl:h-8 xl:px-2"
+                    />
+                  </label>
+                  <span className="font-mono text-sm font-bold text-muted">:</span>
+                  <label className="flex items-center gap-1 text-[11px] text-muted">
+                    <span>Giây</span>
+                    <input
+                      type="number"
+                      aria-label={`Giây phòng ${idx + 1}`}
+                      min={0}
+                      max={59}
+                      value={ch.seconds}
+                      onChange={(e) => handleTimeChange(idx, 'seconds', e.target.value)}
+                      className="h-10 w-14 rounded-lg border border-line bg-panel px-1.5 text-center font-mono text-base text-text focus:border-gold focus:outline-none sm:text-sm xl:h-8 xl:px-2"
+                    />
+                  </label>
+                </div>
+                <span
+                  className={cn(
+                    'min-w-12 text-right font-mono text-xs font-bold sm:min-w-16',
+                    diff !== null ? 'text-gold-strong' : 'text-danger',
+                  )}
+                >
+                  {diff !== null ? `+${diff}s` : 'Lỗi'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Thông tin Cost & Thời gian của bên này */}
+        <div
+          aria-label={`Thông tin Cost và Thời gian đội ${isBlue ? 'Xanh' : 'Đỏ'}`}
+          className="mt-3 grid grid-cols-2 gap-2 text-xs"
+        >
+          <div className="rounded-xl border border-line bg-bg/55 p-2.5">
+            <div className="text-[11px] font-medium text-muted">Cost</div>
+            <div className="mt-0.5 font-mono text-base font-extrabold text-gold-strong">
+              {formatCost(sideState.totalCost)}
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted">
+              NV {formatCost(breakdown.characterCost)} · VK {formatCost(breakdown.weaponCost)}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-bg/55 p-2.5">
+            <div className="text-[11px] font-medium text-muted">Mốc cost hiện tại</div>
+            <div className="mt-0.5 font-mono text-base font-extrabold text-text">
+              {milestone.rangeLabel}
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted">{milestone.rateLabel}</div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-bg/55 p-2.5">
+            <div className="text-[11px] font-medium text-muted">Thời gian cộng thêm</div>
+            <div className="mt-0.5 font-mono text-base font-extrabold text-gold-strong">
+              +{formatSeconds(addedSeconds)}
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted">
+              {refSec > 0
+                ? `Cost +${formatSeconds(sideState.costPenaltySeconds)} · Tinh luyện +${formatSeconds(refSec)}`
+                : 'Quy đổi từ Cost'}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-line bg-bg/55 p-2.5">
+            <div className="text-[11px] font-medium text-muted">Thời gian bị phạt</div>
+            <div
+              className={cn(
+                'mt-0.5 font-mono text-base font-extrabold',
+                overtime > 0 ? 'text-danger' : 'text-text',
+              )}
+            >
+              {overtime > 0 ? `+${formatSeconds(overtime)}` : '0s'}
+            </div>
+            <div className="mt-0.5 text-[11px] text-muted">Quá giờ Ban/Pick</div>
+          </div>
+
+          <div className="col-span-2 flex items-center justify-between gap-2 rounded-xl border border-gold/30 bg-gold/5 px-3 py-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-gold-strong">
+              Tổng thời gian cộng thêm
+            </span>
+            <span className="font-mono text-base font-black text-gold-strong">
+              +{formatSeconds(totalAddedSeconds)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 px-3.5 py-2.5">
+        <div className="text-xs sm:text-sm">
+          <div className="text-muted">
+            Tổng 3 phòng: <strong className="text-text">+{totalChamberDiff}s</strong>
+          </div>
+          <div>
+            Tổng điểm dự kiến:{' '}
+            <strong className="text-gold-strong">{formatSeconds(projectedTotal)}</strong>
+          </div>
+        </div>
+        <Button variant="primary" size="sm" disabled={!allValid} onClick={handleSubmit}>
+          {sideState.scoreSubmitted
+            ? `Cập nhật Đội ${isBlue ? 'Xanh' : 'Đỏ'}`
+            : `Xác nhận Đội ${isBlue ? 'Xanh' : 'Đỏ'}`}
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+export function MatchScoringPhase({ state, mySide, isAdmin = false, onSubmitScores }: Props) {
+  const canSubmitScores = state.status === 'scoring' && (isAdmin || mySide !== null)
 
   const lastGame = state.gameHistory?.[state.gameHistory.length - 1] ?? null
   const isBo3 = state.format === 'bo3'
@@ -109,7 +288,7 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
           isWinner && 'ring-2 ring-gold',
         )}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-line/70 pb-2.5">
+        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line/70 pb-2.5">
           <div>
             <div className="flex items-center gap-2">
               <span className={cn('text-sm font-extrabold', isBlue ? 'text-hydro' : 'text-danger')}>
@@ -124,7 +303,7 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
             <div className="text-base font-bold text-text">{s.player?.displayName ?? '—'}</div>
           </div>
 
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <div className="text-[11px] text-muted">
               Cost: {formatCost(s.totalCost)} (+{formatSeconds(s.costPenaltySeconds)})
               {' · '}
@@ -336,181 +515,26 @@ export function MatchScoringPhase({ state, mySide, onSubmitScores }: Props) {
         </section>
       )}
 
-      {state.status === 'scoring' && mySide && mySideState && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {/* Ô nhập kết quả 3 phòng: thu gọn vào bên người chơi (Blue = trái, Red = phải) */}
-          <section
-            aria-label="Nhập kết quả 3 phòng"
-            className={cn(
-              'panel flex flex-col justify-between gap-3 p-4',
-              mySide === 'blue' ? 'border-hydro/45 lg:order-1' : 'border-danger/45 lg:order-2',
-            )}
-          >
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      'rounded px-2 py-0.5 text-[11px] font-extrabold uppercase',
-                      mySide === 'blue' ? 'bg-hydro/20 text-hydro' : 'bg-danger/20 text-danger',
-                    )}
-                  >
-                    {mySide === 'blue' ? 'Đội Xanh' : 'Đội Đỏ'}
-                  </span>
-                  <h2 className="text-base font-bold text-gold-strong">Nhập kết quả 3 phòng</h2>
-                </div>
-                <span className="font-mono text-xs font-bold text-gold-strong">
-                  +{totalChamberDiff}s (3 phòng)
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted">
-                Mốc 09:00 / phòng (tính <code className="text-text">09:00 − thời gian nhập</code>).
-              </p>
-
-              <div className="mt-3 flex flex-col gap-2">
-                {chambers.map((ch, idx) => {
-                  const diff = diffs[idx]
-                  return (
-                    <div
-                      key={idx}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-bg/50 px-3 py-2"
-                    >
-                      <span className="min-w-16 text-xs font-bold text-text">Phòng {idx + 1}</span>
-                      <div className="flex items-center gap-1.5">
-                        <label className="flex items-center gap-1 text-[11px] text-muted">
-                          <span>Phút</span>
-                          <input
-                            type="number"
-                            aria-label={`Phút phòng ${idx + 1}`}
-                            min={0}
-                            max={9}
-                            value={ch.minutes}
-                            onChange={(e) => handleTimeChange(idx, 'minutes', e.target.value)}
-                            className="h-8 w-14 rounded-lg border border-line bg-panel px-2 text-center font-mono text-sm text-text focus:border-gold focus:outline-none"
-                          />
-                        </label>
-                        <span className="font-mono text-sm font-bold text-muted">:</span>
-                        <label className="flex items-center gap-1 text-[11px] text-muted">
-                          <span>Giây</span>
-                          <input
-                            type="number"
-                            aria-label={`Giây phòng ${idx + 1}`}
-                            min={0}
-                            max={59}
-                            value={ch.seconds}
-                            onChange={(e) => handleTimeChange(idx, 'seconds', e.target.value)}
-                            className="h-8 w-14 rounded-lg border border-line bg-panel px-2 text-center font-mono text-sm text-text focus:border-gold focus:outline-none"
-                          />
-                        </label>
-                      </div>
-                      <span
-                        className={cn(
-                          'min-w-16 text-right font-mono text-xs font-bold',
-                          diff !== null ? 'text-gold-strong' : 'text-danger',
-                        )}
-                      >
-                        {diff !== null ? `+${diff}s` : 'Lỗi'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 px-3.5 py-2.5">
-              <div className="text-xs sm:text-sm">
-                <div className="text-muted">
-                  Tổng 3 phòng: <strong className="text-text">+{totalChamberDiff}s</strong>
-                </div>
-                <div>
-                  Tổng điểm dự kiến:{' '}
-                  <strong className="text-gold-strong">{formatSeconds(myProjectedTotal)}</strong>
-                </div>
-              </div>
-              <Button variant="primary" size="sm" disabled={!allValid} onClick={handleSubmit}>
-                {mySideState.scoreSubmitted ? 'Cập nhật lại kết quả' : 'Xác nhận kết quả 3 phòng'}
-              </Button>
-            </div>
-          </section>
-
-          {/* Khoảng trống dư ra: hiển thị Cost, mốc cost hiện tại, thời gian cộng thêm, thời gian bị phạt, tổng thời gian cộng thêm */}
-          <section
-            aria-label="Thông tin Cost và Thời gian"
-            className={cn(
-              'panel flex flex-col justify-between gap-3 border-gold/40 p-4',
-              mySide === 'blue' ? 'lg:order-2' : 'lg:order-1',
-            )}
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-2">
-              <h2 className="text-base font-bold text-gold-strong">Thông tin Cost & Thời gian</h2>
-              <span className="text-xs font-semibold text-muted">
-                {mySideState.player?.displayName ?? '—'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-xl border border-line bg-bg/55 p-3">
-                <div className="text-[11px] font-medium text-muted">Cost</div>
-                <div className="mt-0.5 font-mono text-xl font-extrabold text-gold-strong">
-                  {formatCost(mySideState.totalCost)}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted">
-                  NV {formatCost(myBreakdown.characterCost)} · VK {formatCost(myBreakdown.weaponCost)}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-bg/55 p-3">
-                <div className="text-[11px] font-medium text-muted">Mốc cost hiện tại</div>
-                <div className="mt-0.5 font-mono text-xl font-extrabold text-text">
-                  {myMilestone.rangeLabel}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted">{myMilestone.rateLabel}</div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-bg/55 p-3">
-                <div className="text-[11px] font-medium text-muted">Thời gian cộng thêm</div>
-                <div className="mt-0.5 font-mono text-xl font-extrabold text-gold-strong">
-                  +{formatSeconds(myAddedSeconds)}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted">
-                  {myRefSec > 0
-                    ? `Cost +${formatSeconds(mySideState.costPenaltySeconds)} · Tinh luyện +${formatSeconds(myRefSec)}`
-                    : 'Quy đổi từ Cost'}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-bg/55 p-3">
-                <div className="text-[11px] font-medium text-muted">Thời gian bị phạt</div>
-                <div
-                  className={cn(
-                    'mt-0.5 font-mono text-xl font-extrabold',
-                    myOvertime > 0 ? 'text-danger' : 'text-text',
-                  )}
-                >
-                  {myOvertime > 0 ? `+${formatSeconds(myOvertime)}` : '0s'}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted">Quá giờ Ban/Pick</div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-gold-strong">
-                  Tổng thời gian cộng thêm
-                </div>
-                <div className="text-[11px] text-muted">
-                  Thời gian cộng thêm + Thời gian bị phạt
-                </div>
-              </div>
-              <div className="font-mono text-2xl font-black text-gold-strong">
-                +{formatSeconds(myTotalAddedSeconds)}
-              </div>
-            </div>
-          </section>
+      {canSubmitScores && (
+        <div className="flex flex-col gap-3">
+          <div className="rounded-xl border border-line/70 bg-bg/60 px-3.5 py-2 text-xs text-muted">
+            Admin và cả 2 người chơi đều có thể nhập hoặc cập nhật thời gian hoàn thành 3 phòng cho cả 2 bên.
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {(['blue', 'red'] as const).map((side) => (
+              <SideScoreForm
+                key={`${side}-${state.currentGame ?? 1}-${JSON.stringify(state.sides[side].chambers)}`}
+                side={side}
+                state={state}
+                isMySide={mySide === side}
+                onSubmitScores={onSubmitScores}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 lg:gap-4">
         {renderScoreCard('blue')}
         {renderScoreCard('red')}
       </div>

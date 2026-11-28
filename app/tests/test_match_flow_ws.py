@@ -15,7 +15,11 @@ WEPS_PATH = Path(__file__).resolve().parents[2] / "web" / "src" / "data" / "weap
 
 
 def _load_sample_catalog() -> tuple[list[dict], dict[str, str], dict[str, str]]:
-    chars = json.loads(CHARS_PATH.read_text(encoding="utf-8"))
+    chars = [
+        c
+        for c in json.loads(CHARS_PATH.read_text(encoding="utf-8"))
+        if c["slug"] not in ("traveler-boy", "traveler-girl")
+    ]
     weps = json.loads(WEPS_PATH.read_text(encoding="utf-8"))
     # Chọn 1 vũ khí 4★ và 1 vũ khí 5★ bất kỳ cho mỗi loại vũ khí
     weapon4_by_type: dict[str, str] = {}
@@ -1648,6 +1652,168 @@ def test_ruleset_phase_equal_bans_validation() -> None:
                 ("blue", "pick"), ("red", "pick"),
             ])
         )
+
+
+def test_submit_scores_admin_and_cross_side_ws(test_client: TestClient) -> None:
+    all_chars, _, _ = _load_sample_catalog()
+    blue_chars = all_chars[:6]
+    red_chars = all_chars[6:12]
+
+    token_a, _ = _register_and_seed_inventory(
+        test_client, "894444401", "Score Blue", blue_chars, constellation=0, level=90
+    )
+    token_b, _ = _register_and_seed_inventory(
+        test_client, "894444402", "Score Red", red_chars, constellation=0, level=90
+    )
+    token_c, _ = _register_and_seed_inventory(
+        test_client, "894444403", "Outsider Spectator", all_chars[12:18], constellation=0, level=90
+    )
+
+    settings = get_settings()
+    admin_token = test_client.post(
+        "/api/auth/login",
+        json={
+            "uid": settings.SEED_ADMIN_UID,
+            "password": settings.SEED_ADMIN_PASSWORD,
+            "remember": True,
+        },
+    ).json()["token"]
+
+    cfg = default_ruleset_config().model_dump(by_alias=True)
+    cfg["draftSteps"] = [
+        {"step": 1, "side": "blue", "action": "pick"},
+        {"step": 2, "side": "red", "action": "pick"},
+    ]
+    rs_id = test_client.post(
+        "/api/rulesets",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={
+            "name": "Luật Scoring 2 bước",
+            "description": "Test cross-side and admin score submission",
+            "isActive": True,
+            "isDefault": False,
+            "config": cfg,
+        },
+    ).json()["id"]
+
+    code = test_client.post(
+        "/api/matches",
+        headers={"Authorization": f"Bearer {token_a}"},
+        json={"rulesetId": rs_id},
+    ).json()["code"]
+
+    with (
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_a}") as ws_a,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_b}") as ws_b,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={token_c}") as ws_c,
+        test_client.websocket_connect(f"/ws/matches/{code}?token={admin_token}") as ws_admin,
+    ):
+        for ws in (ws_a, ws_b, ws_c, ws_admin):
+            ws.receive_json()
+
+        def recv_all() -> dict:
+            st = ws_a.receive_json()
+            ws_b.receive_json()
+            ws_c.receive_json()
+            ws_admin.receive_json()
+            return st
+
+        ws_a.send_json({"action": "select_side", "side": "blue"})
+        recv_all()
+        ws_b.send_json({"action": "select_side", "side": "red"})
+        recv_all()
+        ws_a.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+        ws_b.send_json({"action": "set_ready", "ready": True})
+        recv_all()
+
+        ws_a.send_json({"action": "draft_pick_or_ban", "characterSlug": blue_chars[0]["slug"]})
+        recv_all()
+        ws_b.send_json({"action": "draft_pick_or_ban", "characterSlug": red_chars[0]["slug"]})
+        recv_all()
+
+        ws_a.send_json({"action": "lock_weapons"})
+        recv_all()
+        ws_b.send_json({"action": "lock_weapons"})
+        state = recv_all()["state"]
+        assert state["status"] == "scoring"
+
+        # 1) Khán giả (không ngồi ghế & không phải Admin) bị chặn FORBIDDEN
+        ws_c.send_json(
+            {
+                "action": "submit_scores",
+                "side": "blue",
+                "chambers": [{"minutes": 8, "seconds": 0}] * 3,
+            }
+        )
+        err_spec = ws_c.receive_json()
+        assert err_spec["type"] == "match:error"
+        assert err_spec["code"] == "FORBIDDEN"
+
+        # 2) Admin không ngồi ghế nhưng không truyền side -> INVALID_SIDE
+        ws_admin.send_json(
+            {
+                "action": "submit_scores",
+                "chambers": [{"minutes": 8, "seconds": 0}] * 3,
+            }
+        )
+        err_admin = ws_admin.receive_json()
+        assert err_admin["type"] == "match:error"
+        assert err_admin["code"] == "INVALID_SIDE"
+
+        # 3) Người chơi Blue nhập hộ thời gian cho Red
+        ws_a.send_json(
+            {
+                "action": "submit_scores",
+                "side": "red",
+                "chambers": [
+                    {"minutes": 8, "seconds": 30},
+                    {"minutes": 8, "seconds": 30},
+                    {"minutes": 8, "seconds": 30},
+                ],  # tổng 90s
+            }
+        )
+        msg_cross_red = recv_all()
+        state = msg_cross_red["state"]
+        assert state["status"] == "scoring"
+        assert state["sides"]["red"]["scoreSubmitted"] is True
+        assert state["sides"]["red"]["chamberTotalSeconds"] == 90
+        assert msg_cross_red["notice"]["tone"] == "info"
+
+        # 4) Admin cập nhật lại thời gian cho Red (chậm hơn: 120s)
+        ws_admin.send_json(
+            {
+                "action": "submit_scores",
+                "side": "red",
+                "chambers": [
+                    {"minutes": 8, "seconds": 20},
+                    {"minutes": 8, "seconds": 20},
+                    {"minutes": 8, "seconds": 20},
+                ],  # tổng 120s
+            }
+        )
+        state = recv_all()["state"]
+        assert state["status"] == "scoring"
+        assert state["sides"]["red"]["chamberTotalSeconds"] == 120
+
+        # 5) Người chơi Red nhập hộ thời gian cho Blue (nhanh hơn: 60s) -> hoàn tất trận
+        ws_b.send_json(
+            {
+                "action": "submit_scores",
+                "side": "blue",
+                "chambers": [
+                    {"minutes": 8, "seconds": 40},
+                    {"minutes": 8, "seconds": 40},
+                    {"minutes": 8, "seconds": 40},
+                ],  # tổng 60s
+            }
+        )
+        state = recv_all()["state"]
+        assert state["status"] == "finished"
+        assert state["sides"]["blue"]["scoreSubmitted"] is True
+        assert state["sides"]["blue"]["chamberTotalSeconds"] == 60
+        assert state["winnerSide"] == "blue"
+
 
 
 

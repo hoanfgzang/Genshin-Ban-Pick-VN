@@ -4,6 +4,7 @@ import math
 
 from ..data_loader import get_character, get_weapon
 from ..schemas.ruleset import CostMilestone, CostRules
+from .traveler import TRAVELER_GENDER_SLUGS, is_traveler_element_slug
 
 CHAMBER_BASE_SECONDS = 540  # Cố định cứng 9:00 mỗi ải
 
@@ -23,6 +24,12 @@ def calc_character_cost(
     override = cost_rules.character_overrides.get(slug)
     if override and len(override) == 7:
         return round(float(override[c]), 2)
+
+    if is_traveler_element_slug(slug):
+        for legacy_slug in TRAVELER_GENDER_SLUGS:
+            legacy_override = cost_rules.character_overrides.get(legacy_slug)
+            if legacy_override and len(legacy_override) == 7:
+                return round(float(legacy_override[c]), 2)
 
     char = get_character(slug)
     rarity = char["rarity"] if char else 5

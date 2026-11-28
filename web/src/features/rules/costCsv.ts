@@ -1,5 +1,5 @@
 import { ELEMENT_LABEL, WEAPON_LABEL, type Character } from '@/domain/character'
-import { CHARACTER_BY_SLUG, CHARACTERS } from '@/domain/characters'
+import { COST_CHARACTER_BY_SLUG, COST_CHARACTERS } from '@/domain/characters'
 import { round2 } from '@/domain/cost'
 import type { CharacterCustomCost, CostRules, WeaponCustomCost } from '@/domain/ruleset'
 import type { Weapon } from '@/domain/weapon'
@@ -126,7 +126,7 @@ function arraysEqual(a: readonly number[], b: readonly number[]): boolean {
   return a.every((val, idx) => round2(val) === round2(b[idx] ?? 0))
 }
 
-const CHAR_BY_NORM_NAME = new Map(CHARACTERS.map((c) => [normalizeVi(c.name), c]))
+const CHAR_BY_NORM_NAME = new Map(COST_CHARACTERS.map((c) => [normalizeVi(c.name), c]))
 const WEAPON_BY_NORM_NAME = new Map(WEAPONS_LIST.map((w) => [normalizeVi(w.name), w]))
 
 // ---------- CSV Nhân vật ----------
@@ -237,8 +237,9 @@ export function parseCharacterCostCsv(
     const rawName = nameCol >= 0 ? (r[nameCol] ?? '').trim() : ''
     if (!rawSlug && !rawName) continue
 
+    const normalizedSlug = rawSlug.replace(/^traveler-(?:boy|girl)-/, 'traveler-')
     const char =
-      (rawSlug ? CHARACTER_BY_SLUG.get(rawSlug) : undefined) ??
+      (normalizedSlug ? COST_CHARACTER_BY_SLUG.get(normalizedSlug) : undefined) ??
       (rawName ? CHAR_BY_NORM_NAME.get(normalizeVi(rawName)) : undefined)
 
     if (!char) {

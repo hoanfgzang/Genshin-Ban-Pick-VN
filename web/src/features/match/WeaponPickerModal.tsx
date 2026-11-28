@@ -150,7 +150,7 @@ export function WeaponPickerModal({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Tìm tên vũ khí…"
-          className="h-9 w-full rounded-lg border border-line bg-bg/60 px-3 text-sm text-text focus:border-gold focus:outline-none"
+          className="h-10 w-full rounded-lg border border-line bg-bg/60 px-3 text-base text-text focus:border-gold focus:outline-none sm:text-sm xl:h-9"
         />
 
         <button
@@ -170,7 +170,7 @@ export function WeaponPickerModal({
           <span className="font-mono text-[11px] font-bold">0 cost · 0s</span>
         </button>
 
-        <div className="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid max-h-[52dvh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:max-h-96 sm:grid-cols-2 lg:grid-cols-3">
           {candidates.map((w) => {
             const cost = calcWeaponCost(w.slug, costRules)
             const refSec = calcWeaponRefinementSeconds(w.slug, refinement, costRules)

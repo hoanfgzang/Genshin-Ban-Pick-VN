@@ -1,5 +1,5 @@
 import { ElementIcon } from '@/components/ui/ElementIcon'
-import { getCharacter } from '@/domain/characters'
+import { resolveCharacterForOwned } from '@/domain/traveler'
 import type { MatchSide } from '@/domain/ruleset'
 import { cn } from '@/lib/cn'
 import type { MatchState } from '@/services'
@@ -79,7 +79,7 @@ export function PreviousGamesPicksPanel({ state }: Props) {
 
               <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 xl:grid-cols-8">
                 {g.picks.map((pick) => {
-                  const ch = getCharacter(pick.characterSlug)
+                  const ch = resolveCharacterForOwned(pick.characterSlug, sideState.ownedCharacters)
                   return (
                     <div
                       key={`${g.gameNumber}-${pick.slot}`}

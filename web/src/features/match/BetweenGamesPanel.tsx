@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import type { MatchSide } from '@/domain/ruleset'
+import { isTravelerGenderSlug, TRAVELER_ELEMENT_SLUGS } from '@/domain/traveler'
 import { cn } from '@/lib/cn'
 import type { MatchPlayerInfo, MatchState, SideState, User } from '@/services'
 import {
@@ -76,7 +77,24 @@ export function BetweenGamesPanel({
       setup.gameNumber,
     )
     const availableCount = sideState
-      ? Object.keys(sideState.ownedCharacters).filter((slug) => !lockedMap.has(slug)).length
+      ? (() => {
+          let cnt = 0
+          let countedTraveler = false
+          for (const slug of Object.keys(sideState.ownedCharacters)) {
+            if (isTravelerGenderSlug(slug)) {
+              if (
+                !countedTraveler &&
+                TRAVELER_ELEMENT_SLUGS.some((elSlug) => !lockedMap.has(elSlug))
+              ) {
+                cnt += 1
+                countedTraveler = true
+              }
+            } else if (!lockedMap.has(slug)) {
+              cnt += 1
+            }
+          }
+          return cnt
+        })()
       : 0
     const enoughChars = availableCount >= requiredPicks
 

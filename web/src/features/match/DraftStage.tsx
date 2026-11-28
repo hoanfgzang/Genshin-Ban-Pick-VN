@@ -1,17 +1,24 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { getCharacter } from '@/domain/characters'
 import { calcCharacterCost, formatCost } from '@/domain/cost'
 import type { MatchSide } from '@/domain/ruleset'
+import {
+  getOwnedTraveler,
+  isTravelerElementSlug,
+  resolveCharacterForOwned,
+} from '@/domain/traveler'
 import { getWeapon } from '@/domain/weapons'
 import { cn } from '@/lib/cn'
 import type { MatchPickSlot, MatchState } from '@/services'
 import { DualRosterGrid } from './DualRosterGrid'
+import { getLockedCharactersByUser } from './series'
+import { TravelerElementDialog } from './TravelerElementDialog'
 
 interface Props {
   state: MatchState
   mySide: MatchSide | null
   isAdmin: boolean
+  countdown?: number | null
   selectedSlug: string | null
   onSelectSlug: (slug: string | null) => void
   onDraftAction: (characterSlug: string | null) => void
@@ -24,6 +31,7 @@ export function DraftStage({
   state,
   mySide,
   isAdmin,
+  countdown = null,
   selectedSlug,
   onSelectSlug,
   onDraftAction,
@@ -32,22 +40,62 @@ export function DraftStage({
   onRequestUndo,
 }: Props) {
   const [showQuickWeapons, setShowQuickWeapons] = useState(false)
+  const [travelerDialog, setTravelerDialog] = useState<{
+    side: MatchSide
+    autoSubmit: boolean
+  } | null>(null)
 
   const currentStep = state.ruleset.draftSteps[state.currentStepIndex] ?? null
   const isMyTurn = Boolean(currentStep && mySide === currentStep.side)
-  const selectedChar = selectedSlug ? getCharacter(selectedSlug) : null
+  const activeOwnedForSelected = currentStep
+    ? currentStep.action === 'ban'
+      ? state.sides[currentStep.side === 'blue' ? 'red' : 'blue'].ownedCharacters
+      : state.sides[currentStep.side].ownedCharacters
+    : null
+  const selectedChar = selectedSlug
+    ? resolveCharacterForOwned(
+        selectedSlug,
+        activeOwnedForSelected,
+        currentStep ? state.sides[currentStep.side].ownedCharacters : null,
+      ) ?? null
+    : null
 
   const submitSlug = (slug: string | null) => {
     if (!isMyTurn) return
+    setTravelerDialog(null)
     onDraftAction(slug)
   }
 
   const ownedInActiveSide =
-    currentStep && selectedSlug ? state.sides[currentStep.side].ownedCharacters[selectedSlug] : null
+    currentStep && selectedSlug
+      ? isTravelerElementSlug(selectedSlug)
+        ? getOwnedTraveler(state.sides[currentStep.side].ownedCharacters)?.entry ?? null
+        : state.sides[currentStep.side].ownedCharacters[selectedSlug] ?? null
+      : null
   const previewCost =
     selectedSlug && ownedInActiveSide
       ? calcCharacterCost(selectedSlug, ownedInActiveSide.constellation, state.ruleset.costRules)
       : null
+
+  const bannedSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const sideKey of ['blue', 'red'] as const) {
+      for (const slug of state.sides[sideKey].bans) {
+        if (slug) s.add(slug)
+      }
+    }
+    return s
+  }, [state.sides])
+
+  const allPickedSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const sideKey of ['blue', 'red'] as const) {
+      for (const p of state.sides[sideKey].picks) {
+        s.add(p.characterSlug)
+      }
+    }
+    return s
+  }, [state.sides])
 
   const weaponEditableSides: MatchSide[] = isAdmin
     ? ['blue', 'red']
@@ -63,12 +111,12 @@ export function DraftStage({
   const showRequestUndo = Boolean(mySide && !isMyTurn && !isAdmin)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5 sm:gap-3">
       {/* Thanh thao tác trung tâm: Trái (trạng thái) · Giữa (Vũ khí / Xác nhận) · Phải (Lùi / Bỏ qua) */}
-      <div className="panel flex flex-wrap items-center justify-between gap-3 border-line/80 bg-bg/70 px-4 py-2.5">
-        <div className="min-w-48 text-sm">
+      <div className="panel flex flex-wrap items-center justify-between gap-2 border-line/80 bg-bg/70 px-3 py-2 xl:gap-3 xl:px-4 xl:py-2.5">
+        <div className="min-w-0 flex-1 text-xs sm:text-sm xl:min-w-48 xl:flex-initial">
           {currentStep ? (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <span
                 className={cn(
                   'font-extrabold',
@@ -78,12 +126,12 @@ export function DraftStage({
                 Đội {currentStep.side === 'blue' ? 'Xanh' : 'Đỏ'}
               </span>
               <span className="text-muted">đang</span>
-              <span className="rounded bg-gold/20 px-2 py-0.5 text-xs font-extrabold uppercase text-gold-strong">
+              <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[11px] font-extrabold uppercase text-gold-strong sm:px-2 sm:text-xs">
                 {currentStep.action}
               </span>
               {isMyTurn ? (
                 selectedChar ? (
-                  <span className="text-text">
+                  <span className="hidden text-text xl:inline">
                     · Đã chọn <strong className="text-gold-strong">{selectedChar.name}</strong>
                     {previewCost !== null ? ` (+${formatCost(previewCost)} cost)` : ''}
                   </span>
@@ -91,7 +139,7 @@ export function DraftStage({
                   <span className="text-gold-strong">· Lượt của bạn!</span>
                 )
               ) : selectedChar ? (
-                <span className="text-text">
+                <span className="hidden text-text xl:inline">
                   · Đang nhắm <strong className="text-gold-strong">{selectedChar.name}</strong>
                 </span>
               ) : (
@@ -119,7 +167,7 @@ export function DraftStage({
             variant="primary"
             disabled={!isMyTurn || !selectedSlug}
             onClick={() => submitSlug(selectedSlug)}
-            className="min-w-36 font-extrabold uppercase tracking-wide"
+            className="hidden min-w-36 font-extrabold uppercase tracking-wide xl:inline-flex"
           >
             {currentStep?.action === 'ban' ? 'Xác nhận BAN' : 'Xác nhận PICK'}
           </Button>
@@ -127,11 +175,7 @@ export function DraftStage({
 
         <div className="flex flex-wrap items-center gap-2">
           {canDirectUndo && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onUndoStep}
-            >
+            <Button size="sm" variant="secondary" onClick={onUndoStep}>
               {isAdmin && !isMyTurn ? 'Admin: Lùi lượt' : 'Lùi lượt trước'}
             </Button>
           )}
@@ -146,7 +190,12 @@ export function DraftStage({
             </Button>
           )}
           {isMyTurn && currentStep?.action === 'ban' && (
-            <Button size="sm" variant="danger" onClick={() => submitSlug(null)}>
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => submitSlug(null)}
+              className="hidden xl:inline-flex"
+            >
               Bỏ qua lượt Ban
             </Button>
           )}
@@ -172,7 +221,7 @@ export function DraftStage({
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {picks.map((p) => {
-                        const ch = getCharacter(p.characterSlug)
+                        const ch = resolveCharacterForOwned(p.characterSlug, state.sides[s].ownedCharacters)
                         const wp = p.weaponSlug ? getWeapon(p.weaponSlug) : null
                         return (
                           <button
@@ -213,7 +262,126 @@ export function DraftStage({
           if (!isMyTurn) return
           submitSlug(slug)
         }}
+        onRequestTravelerElement={(side, autoSubmit) => {
+          if (!isMyTurn) return
+          setTravelerDialog({ side, autoSubmit })
+        }}
       />
+
+      {travelerDialog && currentStep && isMyTurn && (() => {
+        const dialogSideState = state.sides[travelerDialog.side]
+        const dialogOwnedTraveler = getOwnedTraveler(dialogSideState.ownedCharacters)
+        const dialogGender = dialogOwnedTraveler?.slug ?? 'traveler-boy'
+        const actorSideState = state.sides[currentStep.side]
+        const actorOwnedTraveler = getOwnedTraveler(actorSideState.ownedCharacters)
+        const constellationForDialog =
+          currentStep.action === 'pick'
+            ? (actorOwnedTraveler?.entry.constellation ?? null)
+            : (dialogOwnedTraveler?.entry.constellation ?? null)
+        const lockedByPriorGame = getLockedCharactersByUser(
+          state.gameHistory,
+          actorSideState.player?.userId,
+          state.currentGame,
+        )
+        const sideHasPickedTraveler = actorSideState.picks.some((p) =>
+          isTravelerElementSlug(p.characterSlug),
+        )
+
+        return (
+          <TravelerElementDialog
+            open
+            action={currentStep.action}
+            genderSlug={dialogGender}
+            constellation={constellationForDialog}
+            costRules={state.ruleset.costRules}
+            bannedSet={bannedSet}
+            allPickedSet={allPickedSet}
+            lockedByPriorGame={lockedByPriorGame}
+            allowDuplicatePick={state.ruleset.allowDuplicatePick}
+            sideHasPickedTraveler={sideHasPickedTraveler}
+            currentSelectedSlug={selectedSlug}
+            autoSubmit={travelerDialog.autoSubmit}
+            onSelectElement={(elSlug) => onSelectSlug(elSlug)}
+            onConfirmElement={(elSlug) => submitSlug(elSlug)}
+            onClearSelection={() => onSelectSlug(null)}
+            onClose={() => setTravelerDialog(null)}
+          />
+        )
+      })()}
+
+      {/* Thanh xác nhận nổi ở đáy màn hình cho Mobile & iPad (< xl) */}
+      <div className="sticky bottom-2 z-20 pb-[env(safe-area-inset-bottom)] xl:hidden">
+        <div className="panel flex items-center justify-between gap-2.5 border-gold/45 bg-panel px-3 py-2.5 shadow-xl sm:px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            {selectedChar ? (
+              <>
+                <img
+                  src={selectedChar.icon}
+                  alt=""
+                  className="size-10 shrink-0 rounded-lg border border-gold/50 object-cover"
+                />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold text-gold-strong">
+                    {selectedChar.name}
+                  </div>
+                  <div className="text-xs text-muted">
+                    {previewCost !== null ? `+${formatCost(previewCost)} cost` : currentStep?.action.toUpperCase()}
+                    {countdown !== null && (
+                      <span
+                        className={cn(
+                          'ml-1.5 font-mono font-bold tabular-nums',
+                          countdown < 0 ? 'text-danger' : 'text-text',
+                        )}
+                      >
+                        · {countdown < 0 ? `-${Math.abs(countdown)}s` : `${countdown}s`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="min-w-0">
+                <div className="truncate text-xs font-semibold text-text sm:text-sm">
+                  {isMyTurn ? (
+                    <span className="text-gold-strong">Lượt bạn: chạm chọn 1 nhân vật</span>
+                  ) : (
+                    <span className="text-muted">
+                      Đang chờ Đội {currentStep?.side === 'blue' ? 'Xanh' : 'Đỏ'}…
+                    </span>
+                  )}
+                </div>
+                {countdown !== null && (
+                  <div
+                    className={cn(
+                      'font-mono text-xs font-bold tabular-nums',
+                      countdown < 0 ? 'text-danger' : 'text-muted',
+                    )}
+                  >
+                    Thời gian: {countdown < 0 ? `-${Math.abs(countdown)}s` : `${countdown}s`}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            {isMyTurn && currentStep?.action === 'ban' && (
+              <Button size="md" variant="danger" onClick={() => submitSlug(null)} className="px-3">
+                Bỏ qua
+              </Button>
+            )}
+            <Button
+              size="md"
+              variant="primary"
+              disabled={!isMyTurn || !selectedSlug}
+              onClick={() => submitSlug(selectedSlug)}
+              className="px-3.5 font-bold uppercase sm:px-5"
+            >
+              {currentStep?.action === 'ban' ? 'Xác nhận BAN' : 'Xác nhận PICK'}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

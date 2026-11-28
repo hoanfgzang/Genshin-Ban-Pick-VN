@@ -1,4 +1,4 @@
-import { CHARACTERS } from '@/domain/characters'
+import { CHARACTERS, EFFECTIVE_CHARACTER_COUNT } from '@/domain/characters'
 import type { Inventory } from '@/domain/inventory'
 import type { User } from '@/services'
 import type { SaveState } from './inventoryStore'
@@ -15,7 +15,9 @@ export function InventorySummary({ user, inventory, saveState }: Props) {
   const five = owned.filter((o) => bySlug.get(o.slug)?.rarity === 5).length
   const totalC = owned.reduce((s, o) => s + o.constellation, 0)
   const lv = (n: number) => owned.filter((o) => o.level === n).length
-  const pct = CHARACTERS.length ? Math.round((owned.length / CHARACTERS.length) * 100) : 0
+  const pct = EFFECTIVE_CHARACTER_COUNT
+    ? Math.min(100, Math.round((owned.length / EFFECTIVE_CHARACTER_COUNT) * 100))
+    : 0
 
   const stats = [
     { label: '5★', value: five },
@@ -55,7 +57,7 @@ export function InventorySummary({ user, inventory, saveState }: Props) {
           <span className="text-muted">Đã sở hữu</span>
           <span>
             <strong className="text-lg text-gold-strong">{owned.length}</strong>
-            <span className="text-muted"> / {CHARACTERS.length}</span>
+            <span className="text-muted"> / {EFFECTIVE_CHARACTER_COUNT}</span>
           </span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-bg" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Tỉ lệ sở hữu">

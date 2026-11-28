@@ -1,5 +1,6 @@
 import { getCharacter } from './characters'
 import type { CharacterCustomCost, CostMilestone, CostRules, WeaponCustomCost } from './ruleset'
+import { isTravelerElementSlug, TRAVELER_GENDER_SLUGS } from './traveler'
 import { getWeapon } from './weapons'
 
 export const CHAMBER_BASE_SECONDS = 540
@@ -36,6 +37,14 @@ export function calcCharacterCost(
   const override = costRules.characterOverrides[slug]
   if (override && override.length === 7) {
     return round2(override[c] ?? 0)
+  }
+  if (isTravelerElementSlug(slug)) {
+    for (const legacySlug of TRAVELER_GENDER_SLUGS) {
+      const legacyOverride = costRules.characterOverrides[legacySlug]
+      if (legacyOverride && legacyOverride.length === 7) {
+        return round2(legacyOverride[c] ?? 0)
+      }
+    }
   }
   const char = getCharacter(slug)
   const rarity = char?.rarity ?? 5

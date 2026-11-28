@@ -31,6 +31,14 @@ from .cost_engine import (
     calc_weapon_cost,
     calc_weapon_refinement_seconds,
 )
+from .traveler import (
+    TRAVELER_ELEMENT_SLUGS,
+    TRAVELER_GENDER_SLUGS,
+    TRAVELER_GENERIC_ALIASES,
+    is_traveler_element_slug,
+    is_traveler_gender_slug,
+    normalize_traveler_inventory_dict,
+)
 
 
 def utc_now() -> datetime:
@@ -314,14 +322,15 @@ def select_side(
         next_state.sides[current_side].ready = False
         next_state.sides[current_side].owned_characters = {}
 
+    normalized_owned = normalize_traveler_inventory_dict(owned_characters)
     owned_map = {
         slug: SideOwnedChar(
             slug=slug,
             constellation=int(item["constellation"]),
             level=int(item["level"]),
         )
-        for slug, item in owned_characters.items()
-        if get_character(slug) is not None
+        for slug, item in normalized_owned.items()
+        if get_character(slug) is not None and not is_traveler_element_slug(slug)
     }
     next_state.sides[side].player = MatchPlayerInfo(
         user_id=user_id,
@@ -348,14 +357,15 @@ def refresh_side_inventory(
         return state
 
     next_state = state.model_copy(deep=True)
+    normalized_owned = normalize_traveler_inventory_dict(owned_characters)
     owned_map = {
         slug: SideOwnedChar(
             slug=slug,
             constellation=int(item["constellation"]),
             level=int(item["level"]),
         )
-        for slug, item in owned_characters.items()
-        if get_character(slug) is not None
+        for slug, item in normalized_owned.items()
+        if get_character(slug) is not None and not is_traveler_element_slug(slug)
     }
     next_state.sides[side].owned_characters = owned_map
     if next_state.sides[side].player:
@@ -461,7 +471,17 @@ def set_ready(state: MatchState, *, user_id: str, ready: bool) -> MatchState:
             required = _required_picks_for_side(next_state.ruleset, next_side)
             prev_picked = _previously_picked_slugs_for_user(next_state, user_id)
             owned_map = next_state.sides[user_side].owned_characters
-            available_count = sum(1 for slug in owned_map if slug not in prev_picked)
+            available_count = 0
+            counted_traveler = False
+            for slug in owned_map:
+                if is_traveler_gender_slug(slug):
+                    if not counted_traveler and any(
+                        el_slug not in prev_picked for el_slug in TRAVELER_ELEMENT_SLUGS
+                    ):
+                        available_count += 1
+                        counted_traveler = True
+                elif slug not in prev_picked:
+                    available_count += 1
             if available_count < required:
                 raise bad_request(
                     "NOT_ENOUGH_CHARACTERS",
@@ -549,6 +569,30 @@ def _all_picked_slugs(state: MatchState, side: SideName | None = None) -> set[st
         s_key: SideName = s
         picked.update(p.character_slug for p in state.sides[s_key].picks)
     return picked
+
+
+def _get_owned_traveler(side_state: SideState) -> SideOwnedChar | None:
+    for gender_slug in TRAVELER_GENDER_SLUGS:
+        owned = side_state.owned_characters.get(gender_slug)
+        if owned is not None:
+            return owned
+    return None
+
+
+def _side_has_picked_traveler(side_state: SideState) -> bool:
+    return any(is_traveler_element_slug(p.character_slug) for p in side_state.picks)
+
+
+def _validate_traveler_selection_slug(character_slug: str) -> None:
+    if (
+        is_traveler_gender_slug(character_slug)
+        or character_slug in TRAVELER_GENERIC_ALIASES
+        or character_slug in ("aether", "lumine")
+    ):
+        raise bad_request(
+            "TRAVELER_ELEMENT_REQUIRED",
+            "Vui lòng chọn hệ cụ thể cho Nhà Lữ Hành.",
+        )
 
 
 def _finalize_game_result(
@@ -737,6 +781,7 @@ def apply_draft_action(
 
     if step.action == "ban":
         if character_slug is not None:
+            _validate_traveler_selection_slug(character_slug)
             if not get_character(character_slug):
                 raise bad_request("UNKNOWN_CHARACTER", "Nhân vật không tồn tại.")
             if character_slug in banned or character_slug in all_picked:
@@ -745,12 +790,19 @@ def apply_draft_action(
     else:
         if not character_slug:
             raise bad_request("PICK_REQUIRED", "Lượt Pick bắt buộc phải chọn một nhân vật.")
+        _validate_traveler_selection_slug(character_slug)
         char_info = get_character(character_slug)
         if not char_info:
             raise bad_request("UNKNOWN_CHARACTER", "Nhân vật không tồn tại.")
         if character_slug in banned:
             raise bad_request("CHARACTER_BANNED", "Nhân vật này đã bị Ban.")
-        if character_slug in own_picked:
+        if is_traveler_element_slug(character_slug):
+            if _side_has_picked_traveler(side_state):
+                raise bad_request(
+                    "TRAVELER_ALREADY_PICKED_BY_SIDE",
+                    "Mỗi bên chỉ được Pick tối đa 1 Nhà Lữ Hành trong 1 ván.",
+                )
+        elif character_slug in own_picked:
             raise bad_request("ALREADY_PICKED", "Bạn đã Pick nhân vật này rồi.")
         if not next_state.ruleset.allow_duplicate_pick and character_slug in all_picked:
             raise bad_request("ALREADY_PICKED", "Nhân vật này đã được đối phương Pick.")
@@ -762,7 +814,11 @@ def apply_draft_action(
                 "Bạn đã Pick nhân vật này ở ván trước và không thể chọn lại trong chế độ BO3.",
             )
 
-        owned = side_state.owned_characters.get(character_slug)
+        owned = (
+            _get_owned_traveler(side_state)
+            if is_traveler_element_slug(character_slug)
+            else side_state.owned_characters.get(character_slug)
+        )
         if not owned:
             raise bad_request("NOT_OWNED", "Bạn không sở hữu nhân vật này trong kho tài khoản.")
 
@@ -914,6 +970,7 @@ def set_draft_hover(
         raise forbidden("Chưa tới lượt của bạn.")
 
     if character_slug is not None:
+        _validate_traveler_selection_slug(character_slug)
         if not get_character(character_slug):
             raise bad_request("UNKNOWN_CHARACTER", "Nhân vật không tồn tại.")
         banned = _all_banned_slugs(state)
@@ -926,7 +983,13 @@ def set_draft_hover(
             side_state = state.sides[step.side]
             if character_slug in banned:
                 raise bad_request("CHARACTER_BANNED", "Nhân vật này đã bị Ban.")
-            if character_slug in own_picked:
+            if is_traveler_element_slug(character_slug):
+                if _side_has_picked_traveler(side_state):
+                    raise bad_request(
+                        "TRAVELER_ALREADY_PICKED_BY_SIDE",
+                        "Mỗi bên chỉ được Pick tối đa 1 Nhà Lữ Hành trong 1 ván.",
+                    )
+            elif character_slug in own_picked:
                 raise bad_request("ALREADY_PICKED", "Bạn đã Pick nhân vật này rồi.")
             if not state.ruleset.allow_duplicate_pick and character_slug in all_picked:
                 raise bad_request("ALREADY_PICKED", "Nhân vật này đã được đối phương Pick.")
@@ -936,7 +999,12 @@ def set_draft_hover(
                     "PREVIOUSLY_PICKED",
                     "Bạn đã Pick nhân vật này ở ván trước và không thể chọn lại trong chế độ BO3.",
                 )
-            if character_slug not in side_state.owned_characters:
+            has_owned = (
+                _get_owned_traveler(side_state) is not None
+                if is_traveler_element_slug(character_slug)
+                else character_slug in side_state.owned_characters
+            )
+            if not has_owned:
                 raise bad_request("NOT_OWNED", "Bạn không sở hữu nhân vật này trong kho tài khoản.")
 
     next_state = state.model_copy(deep=True)
@@ -1314,14 +1382,26 @@ def submit_chamber_times(
     state: MatchState,
     *,
     user_id: str,
+    user_role: str = "player",
+    target_side: SideName | None = None,
     chambers: list[dict[str, int]],
 ) -> MatchState:
     if state.status != "scoring":
         raise bad_request("INVALID_PHASE", "Trận đấu chưa chuyển sang giai đoạn nhập thời gian 3 ải.")
 
-    side = _find_user_side(state, user_id)
-    if not side:
-        raise forbidden("Bạn không phải người chơi trong trận này.")
+    is_admin = user_role == "admin"
+    actor_side = _find_user_side(state, user_id)
+    if not is_admin and not actor_side:
+        raise forbidden("Chỉ người chơi trong trận hoặc Admin mới có thể nhập thời gian hoàn thành.")
+
+    if target_side is not None:
+        if target_side not in ("blue", "red"):
+            raise bad_request("INVALID_SIDE", "Bên chọn phải là Xanh (blue) hoặc Đỏ (red).")
+        side: SideName = target_side
+    elif actor_side is not None:
+        side = actor_side
+    else:
+        raise bad_request("INVALID_SIDE", "Cần chỉ định bên Xanh (blue) hoặc Đỏ (red) khi nhập thời gian.")
 
     try:
         validated_inputs = [ChamberTimeInput.model_validate(c) for c in chambers]
@@ -1368,20 +1448,33 @@ def auto_handle_timeout(state: MatchState) -> MatchState | None:
         all_picked = _all_picked_slugs(state)
         own_picked = _all_picked_slugs(state, step.side)
         prev_picked = _previously_picked_slugs_for_user(state, user_id)
-        candidates = [
-            slug
-            for slug in side_state.owned_characters
-            if slug not in banned
-            and slug not in own_picked
-            and slug not in prev_picked
-            and (state.ruleset.allow_duplicate_pick or slug not in all_picked)
-        ]
+        side_has_traveler = _side_has_picked_traveler(side_state)
+        candidates: list[str] = []
+        for slug in side_state.owned_characters:
+            if is_traveler_gender_slug(slug):
+                if not side_has_traveler:
+                    for el_slug in TRAVELER_ELEMENT_SLUGS:
+                        if (
+                            el_slug not in banned
+                            and el_slug not in prev_picked
+                            and (state.ruleset.allow_duplicate_pick or el_slug not in all_picked)
+                        ):
+                            candidates.append(el_slug)
+            elif (
+                slug not in banned
+                and slug not in own_picked
+                and slug not in prev_picked
+                and (state.ruleset.allow_duplicate_pick or slug not in all_picked)
+            ):
+                candidates.append(slug)
         if not candidates:
             # Fallback nếu kho bị thiếu bất thường: lấy bất kỳ nhân vật chưa ban/pick
             candidates = [
                 slug
                 for slug in get_character_map()
-                if slug not in banned
+                if not is_traveler_gender_slug(slug)
+                and not (side_has_traveler and is_traveler_element_slug(slug))
+                and slug not in banned
                 and slug not in own_picked
                 and slug not in prev_picked
                 and (state.ruleset.allow_duplicate_pick or slug not in all_picked)
@@ -1389,11 +1482,17 @@ def auto_handle_timeout(state: MatchState) -> MatchState | None:
         if not candidates:
             return None
         chosen = random.choice(candidates)
-        if chosen not in side_state.owned_characters:
+        needs_owned_inject = (
+            _get_owned_traveler(side_state) is None
+            if is_traveler_element_slug(chosen)
+            else chosen not in side_state.owned_characters
+        )
+        if needs_owned_inject:
             # Hiếm gặp: đảm bảo không crash
             temp = state.model_copy(deep=True)
-            temp.sides[step.side].owned_characters[chosen] = SideOwnedChar(
-                slug=chosen, constellation=0, level=90
+            inject_slug = "traveler-boy" if is_traveler_element_slug(chosen) else chosen
+            temp.sides[step.side].owned_characters[inject_slug] = SideOwnedChar(
+                slug=inject_slug, constellation=0, level=90
             )
             return apply_draft_action(temp, user_id=user_id, character_slug=chosen)
         return apply_draft_action(state, user_id=user_id, character_slug=chosen)

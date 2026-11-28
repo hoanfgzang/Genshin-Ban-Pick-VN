@@ -5,6 +5,7 @@ from functools import lru_cache
 from typing import Any
 
 from .core.config import WEB_DATA_DIR
+from .services.traveler import build_traveler_element_characters
 
 
 @lru_cache
@@ -15,8 +16,16 @@ def get_characters() -> list[dict[str, Any]]:
 
 
 @lru_cache
+def get_traveler_element_characters() -> list[dict[str, Any]]:
+    return build_traveler_element_characters()
+
+
+@lru_cache
 def get_character_map() -> dict[str, dict[str, Any]]:
-    return {c["slug"]: c for c in get_characters()}
+    chars = {c["slug"]: c for c in get_characters()}
+    for c in get_traveler_element_characters():
+        chars[c["slug"]] = c
+    return chars
 
 
 def get_character(slug: str) -> dict[str, Any] | None:
@@ -43,6 +52,7 @@ def get_weapon(slug: str) -> dict[str, Any] | None:
 
 def clear_catalog_cache() -> None:
     get_characters.cache_clear()
+    get_traveler_element_characters.cache_clear()
     get_character_map.cache_clear()
     get_weapons.cache_clear()
     get_weapon_map.cache_clear()

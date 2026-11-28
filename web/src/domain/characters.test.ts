@@ -14,7 +14,7 @@ describe('domain/characters', () => {
     expect(slugs.size).toBe(CHARACTERS.length)
   })
 
-  it('chỉ giữ 2 mục Nhà Lữ Hành Nam và Nữ, không có biến thể nguyên tố', () => {
+  it('chỉ giữ 2 mục Nhà Lữ Hành Nam và Nữ trong CHARACTERS và có 7 biến thể hệ trong COST_CHARACTERS', () => {
     const boy = CHARACTER_BY_SLUG.get('traveler-boy')
     const girl = CHARACTER_BY_SLUG.get('traveler-girl')
     expect(boy).toBeDefined()

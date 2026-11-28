@@ -1,4 +1,12 @@
 import { z } from 'zod'
+import {
+  getOppositeTravelerGenderSlug,
+  isTravelerElementSlug,
+  isTravelerGenderSlug,
+  TRAVELER_GENDER_SLUGS,
+  TRAVELER_GENERIC_ALIASES,
+  type TravelerGenderSlug,
+} from './traveler'
 
 export const CONSTELLATIONS = [0, 1, 2, 3, 4, 5, 6] as const
 export type Constellation = (typeof CONSTELLATIONS)[number]
@@ -68,7 +76,18 @@ export function setOwned(inv: Inventory, slug: string, owned: boolean): Inventor
   if (owned === isOwned(inv, slug)) return inv
   const next = { ...inv.characters }
   if (owned) {
-    next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
+    if (isTravelerGenderSlug(slug)) {
+      const other = getOppositeTravelerGenderSlug(slug)
+      const prev = next[other]
+      if (prev) {
+        delete next[other]
+        next[slug] = { slug, constellation: prev.constellation, level: prev.level }
+      } else {
+        next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
+      }
+    } else {
+      next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
+    }
   } else {
     delete next[slug]
   }
@@ -80,12 +99,26 @@ export function toggleOwned(inv: Inventory, slug: string): Inventory {
 }
 
 function patch(inv: Inventory, slug: string, changes: Partial<OwnedCharacter>): Inventory {
-  const base = inv.characters[slug] ?? {
+  const next = { ...inv.characters }
+  if (isTravelerGenderSlug(slug)) {
+    const other = getOppositeTravelerGenderSlug(slug)
+    const base = next[slug] ??
+      next[other] ?? {
+        slug,
+        constellation: DEFAULT_CONSTELLATION,
+        level: DEFAULT_LEVEL,
+      }
+    delete next[other]
+    next[slug] = { ...base, ...changes, slug }
+    return withCharacters(inv, next)
+  }
+  const base = next[slug] ?? {
     slug,
     constellation: DEFAULT_CONSTELLATION,
     level: DEFAULT_LEVEL,
   }
-  return withCharacters(inv, { ...inv.characters, [slug]: { ...base, ...changes, slug } })
+  next[slug] = { ...base, ...changes, slug }
+  return withCharacters(inv, next)
 }
 
 export function isConstellation(n: number): n is Constellation {
@@ -120,10 +153,18 @@ export function bulkSetOwned(inv: Inventory, slugs: Iterable<string>, owned: boo
   const next = { ...inv.characters }
   let changed = false
   for (const slug of slugs) {
-    if (owned && !(slug in next)) {
-      next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
-      changed = true
-    } else if (!owned && slug in next) {
+    if (owned) {
+      if (isTravelerGenderSlug(slug)) {
+        const other = getOppositeTravelerGenderSlug(slug)
+        if (!(slug in next) && !(other in next)) {
+          next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
+          changed = true
+        }
+      } else if (!(slug in next)) {
+        next[slug] = { slug, constellation: DEFAULT_CONSTELLATION, level: DEFAULT_LEVEL }
+        changed = true
+      }
+    } else if (slug in next) {
       delete next[slug]
       changed = true
     }
@@ -151,9 +192,44 @@ export function exportInventory(inv: Inventory): string {
   return JSON.stringify(inv, null, 2)
 }
 
+export type TravelerImportSource = 'generic' | 'both' | 'boy' | 'girl'
+
+export interface TravelerImportInfo {
+  constellation: Constellation
+  level: Level
+  source: TravelerImportSource
+}
+
 export type ParseResult =
-  | { ok: true; inventory: Inventory; unknownSlugs: string[]; normalizedLevels: number }
+  | {
+      ok: true
+      inventory: Inventory
+      unknownSlugs: string[]
+      normalizedLevels: number
+      travelerImport?: TravelerImportInfo
+    }
   | { ok: false; error: string }
+
+export function getInventoryTravelerGender(inv: Inventory): TravelerGenderSlug | null {
+  for (const slug of TRAVELER_GENDER_SLUGS) {
+    if (slug in inv.characters) return slug
+  }
+  return null
+}
+
+export function applyTravelerGenderChoice(
+  inv: Inventory,
+  gender: TravelerGenderSlug,
+): Inventory {
+  const currentGender = getInventoryTravelerGender(inv)
+  if (!currentGender || currentGender === gender) return inv
+  const entry = inv.characters[currentGender]
+  if (!entry) return inv
+  const next = { ...inv.characters }
+  delete next[currentGender]
+  next[gender] = { ...entry, slug: gender }
+  return { ...inv, characters: next }
+}
 
 /**
  * Đọc & kiểm tra JSON kho. `knownSlugs` dùng để loại bỏ nhân vật không tồn tại.
@@ -173,20 +249,89 @@ export function parseInventory(text: string, knownSlugs?: ReadonlySet<string>): 
   const unknownSlugs: string[] = []
   const characters: Record<string, OwnedCharacter> = {}
   let normalizedLevels = 0
-  for (const c of Object.values(inv.characters)) {
+
+  const knowsAnyTraveler =
+    !knownSlugs || knownSlugs.has('traveler-boy') || knownSlugs.has('traveler-girl')
+  let sawBoy = false
+  let sawGirl = false
+  let sawGeneric = false
+  let bestTraveler: { constellation: Constellation; level: Level } | null = null
+
+  for (const [rawKey, c] of Object.entries(inv.characters)) {
+    const slug = (c.slug || rawKey).trim().toLowerCase()
+    const level = normalizeLevel(c.level)
+
+    const isBoy = slug === 'traveler-boy' || slug === 'aether'
+    const isGirl = slug === 'traveler-girl' || slug === 'lumine'
+    const isGeneric = TRAVELER_GENERIC_ALIASES.has(slug)
+
+    if (isBoy || isGirl || isGeneric) {
+      if (!knowsAnyTraveler) {
+        unknownSlugs.push(c.slug)
+        continue
+      }
+      if (level !== c.level) normalizedLevels++
+      if (isBoy) sawBoy = true
+      else if (isGirl) sawGirl = true
+      else sawGeneric = true
+
+      if (
+        !bestTraveler ||
+        c.constellation > bestTraveler.constellation ||
+        (c.constellation === bestTraveler.constellation && level > bestTraveler.level)
+      ) {
+        bestTraveler = { constellation: c.constellation, level }
+      }
+      continue
+    }
+
+    if (isTravelerElementSlug(slug)) {
+      unknownSlugs.push(c.slug)
+      continue
+    }
+
     if (knownSlugs && !knownSlugs.has(c.slug)) {
       unknownSlugs.push(c.slug)
       continue
     }
-    const level = normalizeLevel(c.level)
     if (level !== c.level) normalizedLevels++
     characters[c.slug] = { slug: c.slug, constellation: c.constellation, level }
   }
+
+  let travelerImport: TravelerImportInfo | undefined
+  if (bestTraveler) {
+    const source: TravelerImportSource =
+      sawBoy && sawGirl
+        ? 'both'
+        : sawGeneric
+          ? 'generic'
+          : sawGirl && !sawBoy
+            ? 'girl'
+            : 'boy'
+    const initialGender: TravelerGenderSlug =
+      source === 'girl'
+        ? 'traveler-girl'
+        : knownSlugs && !knownSlugs.has('traveler-boy') && knownSlugs.has('traveler-girl')
+          ? 'traveler-girl'
+          : 'traveler-boy'
+    characters[initialGender] = {
+      slug: initialGender,
+      constellation: bestTraveler.constellation,
+      level: bestTraveler.level,
+    }
+    travelerImport = {
+      constellation: bestTraveler.constellation,
+      level: bestTraveler.level,
+      source,
+    }
+  }
+
   return {
     ok: true,
     inventory: { version: inv.version, updatedAt: inv.updatedAt, characters },
     unknownSlugs,
     normalizedLevels,
+    travelerImport,
   }
 }
 

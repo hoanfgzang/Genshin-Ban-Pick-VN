@@ -15,7 +15,11 @@ WEPS_PATH = Path(__file__).resolve().parents[2] / "web" / "src" / "data" / "weap
 
 
 def _load_catalog() -> tuple[list[dict], dict[str, str]]:
-    chars = json.loads(CHARS_PATH.read_text(encoding="utf-8"))
+    chars = [
+        c
+        for c in json.loads(CHARS_PATH.read_text(encoding="utf-8"))
+        if c["slug"] not in ("traveler-boy", "traveler-girl")
+    ]
     weps = json.loads(WEPS_PATH.read_text(encoding="utf-8"))
     weapon4_by_type: dict[str, str] = {}
     for w in weps:

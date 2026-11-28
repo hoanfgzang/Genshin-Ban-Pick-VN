@@ -3,7 +3,8 @@ import { Fragment, useMemo, useState } from 'react'
 import { Chip } from '@/components/ui/Chip'
 import { ElementIcon } from '@/components/ui/ElementIcon'
 import { ELEMENT_LABEL, WEAPON_LABEL, type Rarity, type WeaponType, WEAPONS } from '@/domain/character'
-import { CHARACTERS } from '@/domain/characters'
+import { COST_CHARACTERS } from '@/domain/characters'
+import { isTravelerElementSlug } from '@/domain/traveler'
 import {
   calcCharacterCost,
   calcCostPenaltySeconds,
@@ -84,7 +85,7 @@ export function RuleSetViewer({ ruleset }: Props) {
   )
   const charOverriddenCount = useMemo(
     () =>
-      CHARACTERS.filter(
+      COST_CHARACTERS.filter(
         (c) => c.slug in costRules.characterOverrides || (charCustomMap[c.slug]?.length ?? 0) > 0,
       ).length,
     [costRules.characterOverrides, charCustomMap],
@@ -92,7 +93,7 @@ export function RuleSetViewer({ ruleset }: Props) {
 
   const filteredCharacters = useMemo(
     () =>
-      filterAndSortCharacters(CHARACTERS, costRules, {
+      filterAndSortCharacters(COST_CHARACTERS, costRules, {
         query: charQuery,
         elements: charElements,
         rarity: charRarity,
@@ -330,7 +331,7 @@ export function RuleSetViewer({ ruleset }: Props) {
                 value="characters"
                 className="cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold text-muted transition data-[state=active]:bg-gold data-[state=active]:text-bg"
               >
-                Nhân vật ({CHARACTERS.length})
+                Nhân vật ({COST_CHARACTERS.length})
               </Tabs.Trigger>
               <Tabs.Trigger
                 value="weapons"
@@ -430,6 +431,11 @@ export function RuleSetViewer({ ruleset }: Props) {
                               {c.element && <ElementIcon element={c.element} className="size-3.5 shrink-0" />}
                               <span className="font-medium text-text">{c.name}</span>
                               <span className="text-[11px] text-muted">{c.rarity}★</span>
+                              {isTravelerElementSlug(c.slug) && (
+                                <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
+                                  Nam / Nữ
+                                </span>
+                              )}
                               {isOverridden && (
                                 <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-semibold text-gold-strong">
                                   Tùy chỉnh

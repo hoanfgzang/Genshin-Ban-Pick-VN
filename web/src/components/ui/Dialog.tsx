@@ -27,7 +27,7 @@ export function Dialog({
         <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" />
         <RadixDialog.Content
           className={cn(
-            'panel fixed top-1/2 left-1/2 z-50 max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto p-5',
+            'panel fixed top-1/2 left-1/2 z-50 max-h-[90dvh] w-[calc(100vw-1rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto p-3.5 sm:w-[calc(100vw-2rem)] sm:p-5',
             'border-gold/30',
             className,
           )}

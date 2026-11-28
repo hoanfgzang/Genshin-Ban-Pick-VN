@@ -23,10 +23,9 @@
 
     const slug = toSlug(name);
 
-    // Xử lý riêng nếu HoYoLAB hiển thị là "Traveler", "Aether" hoặc "Lumine"
-    if (slug === 'traveler') {
-      rawEntries.push(['traveler-boy', { slug: 'traveler-boy', constellation, level }]);
-      rawEntries.push(['traveler-girl', { slug: 'traveler-girl', constellation, level }]);
+    // Xử lý riêng nếu HoYoLAB hiển thị là "Traveler", "Nhà Lữ Hành", "Aether" hoặc "Lumine"
+    if (slug === 'traveler' || slug === 'nha-lu-hanh') {
+      rawEntries.push(['traveler', { slug: 'traveler', constellation, level }]);
     } else if (slug === 'aether') {
       rawEntries.push(['traveler-boy', { slug: 'traveler-boy', constellation, level }]);
     } else if (slug === 'lumine') {

@@ -3,18 +3,21 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Segmented } from '@/components/ui/Segmented'
 import { toast } from '@/components/ui/toast'
-import { CHARACTER_BY_SLUG, CHARACTERS } from '@/domain/characters'
+import { CHARACTERS } from '@/domain/characters'
 import {
+  applyTravelerGenderChoice,
   bulkSetLevel,
   bulkSetOwned,
   diffInventory,
   exportInventory,
+  getInventoryTravelerGender,
   LEVELS,
   parseInventory,
   type Inventory,
-  type InventoryDiff,
   type Level,
+  type TravelerImportInfo,
 } from '@/domain/inventory'
+import { isTravelerGenderSlug, type TravelerGenderSlug } from '@/domain/traveler'
 import { ImportGuideDialog } from './ImportGuideDialog'
 import { useInventoryStore } from './inventoryStore'
 
@@ -31,8 +34,12 @@ const MODE_OPTIONS = [
   { value: 'quick' as const, label: 'Chọn nhanh', title: 'Bấm thẻ để bật/tắt sở hữu' },
 ]
 
-const KNOWN_SLUGS = new Set(CHARACTER_BY_SLUG.keys())
+const KNOWN_SLUGS = new Set(CHARACTERS.map((c) => c.slug))
 const FOUR_STAR_SLUGS = CHARACTERS.filter((c) => c.rarity === 4).map((c) => c.slug)
+const TRAVELER_GENDER_OPTIONS: ReadonlyArray<{ value: TravelerGenderSlug; label: string }> = [
+  { value: 'traveler-boy', label: 'Nam (Aether)' },
+  { value: 'traveler-girl', label: 'Nữ (Lumine)' },
+]
 
 export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Props) {
   const inventory = useInventoryStore((s) => s.inventory)
@@ -43,19 +50,37 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
   const [guideOpen, setGuideOpen] = useState(false)
   const [level, setLevelValue] = useState<Level>(90)
   const [pending, setPending] = useState<{
-    inv: Inventory
-    diff: InventoryDiff
+    baseInv: Inventory
+    travelerGender: TravelerGenderSlug
+    travelerImport?: TravelerImportInfo
     unknown: string[]
     normalizedLevels: number
   } | null>(null)
 
-  const count = visibleSlugs.length
-  const ownedVisible = visibleSlugs.filter((s) => inventory.characters[s]).length
+  const hasBothTravelersVisible =
+    visibleSlugs.includes('traveler-boy') && visibleSlugs.includes('traveler-girl')
+  const count = hasBothTravelersVisible ? visibleSlugs.length - 1 : visibleSlugs.length
+  const ownedTravelerVisible = visibleSlugs.some(
+    (s) => isTravelerGenderSlug(s) && Boolean(inventory.characters[s]),
+  )
+    ? 1
+    : 0
+  const ownedNonTravelerVisible = visibleSlugs.filter(
+    (s) => !isTravelerGenderSlug(s) && Boolean(inventory.characters[s]),
+  ).length
+  const ownedVisible = ownedNonTravelerVisible + ownedTravelerVisible
   const missingFourStars = FOUR_STAR_SLUGS.filter((s) => !(s in inventory.characters)).length
+
+  const effectivePendingInv = pending
+    ? pending.travelerImport
+      ? applyTravelerGenderChoice(pending.baseInv, pending.travelerGender)
+      : pending.baseInv
+    : null
+  const effectiveDiff = effectivePendingInv ? diffInventory(inventory, effectivePendingInv) : null
 
   const ownAll = () => {
     update((inv) => bulkSetOwned(inv, visibleSlugs, true))
-    toast.success(`Đã đánh dấu sở hữu ${count - ownedVisible} nhân vật.`)
+    toast.success(`Đã đánh dấu sở hữu ${Math.max(0, count - ownedVisible)} nhân vật.`)
   }
 
   const ownAllFourStars = () => {
@@ -93,17 +118,22 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
       toast.error(result.error)
       return
     }
+    const existingGender = getInventoryTravelerGender(inventory)
+    const defaultGender: TravelerGenderSlug =
+      existingGender ??
+      (result.travelerImport?.source === 'girl' ? 'traveler-girl' : 'traveler-boy')
     setPending({
-      inv: result.inventory,
-      diff: diffInventory(inventory, result.inventory),
+      baseInv: result.inventory,
+      travelerGender: defaultGender,
+      travelerImport: result.travelerImport,
       unknown: result.unknownSlugs,
       normalizedLevels: result.normalizedLevels,
     })
   }
 
   const confirmImport = () => {
-    if (!pending) return
-    replace({ ...pending.inv, updatedAt: new Date().toISOString() })
+    if (!effectivePendingInv) return
+    replace({ ...effectivePendingInv, updatedAt: new Date().toISOString() })
     setPending(null)
     toast.success('Đã nhập dữ liệu kho.')
   }
@@ -190,23 +220,47 @@ export function BulkActions({ mode, onModeChange, visibleSlugs, username }: Prop
           </>
         }
       >
-        {pending && (
-          <ul className="space-y-1.5 text-sm">
-            <li>
-              Tổng nhân vật trong file: <strong>{Object.keys(pending.inv.characters).length}</strong>
-            </li>
-            <li className="text-success">+ Thêm mới: {pending.diff.added}</li>
-            <li className="text-gold">~ Thay đổi C/Lv: {pending.diff.changed}</li>
-            <li className="text-danger">− Bị xóa: {pending.diff.removed}</li>
-            {pending.unknown.length > 0 && (
-              <li className="text-muted">Bỏ qua {pending.unknown.length} nhân vật không xác định.</li>
-            )}
-            {pending.normalizedLevels > 0 && (
-              <li className="text-muted">
-                Quy đổi level về mốc 90/95/100 cho {pending.normalizedLevels} nhân vật.
+        {pending && effectivePendingInv && effectiveDiff && (
+          <div className="space-y-3 text-sm">
+            <ul className="space-y-1.5">
+              <li>
+                Tổng nhân vật trong file:{' '}
+                <strong>{Object.keys(effectivePendingInv.characters).length}</strong>
               </li>
+              <li className="text-success">+ Thêm mới: {effectiveDiff.added}</li>
+              <li className="text-gold">~ Thay đổi C/Lv: {effectiveDiff.changed}</li>
+              <li className="text-danger">− Bị xóa: {effectiveDiff.removed}</li>
+              {pending.unknown.length > 0 && (
+                <li className="text-muted">Bỏ qua {pending.unknown.length} nhân vật không xác định.</li>
+              )}
+              {pending.normalizedLevels > 0 && (
+                <li className="text-muted">
+                  Quy đổi level về mốc 90/95/100 cho {pending.normalizedLevels} nhân vật.
+                </li>
+              )}
+            </ul>
+
+            {pending.travelerImport && (
+              <div className="rounded-lg border border-gold/35 bg-gold/5 p-3">
+                <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
+                  <span className="font-bold text-gold-strong">
+                    Nhà Lữ Hành (C{pending.travelerImport.constellation} · Lv{pending.travelerImport.level})
+                  </span>
+                  <span className="text-muted">Kho chỉ sở hữu 1 trong 2</span>
+                </div>
+                <Segmented
+                  label="Chọn Nhà Lữ Hành trong kho"
+                  size="sm"
+                  value={pending.travelerGender}
+                  options={TRAVELER_GENDER_OPTIONS}
+                  onChange={(gender) =>
+                    setPending((cur) => (cur ? { ...cur, travelerGender: gender } : null))
+                  }
+                  className="flex w-full"
+                />
+              </div>
             )}
-          </ul>
+          </div>
         )}
       </Dialog>
 

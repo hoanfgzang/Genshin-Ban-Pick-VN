@@ -49,7 +49,16 @@ export function PostDraftTeamsStage({
   } | null>(null)
   const [showRosters, setShowRosters] = useState(false)
   const [revealDone, setRevealDone] = useState(false)
+  const [teamTabOverride, setTeamTabOverride] = useState<{
+    status: string
+    tab: 'blue' | 'red' | 'both'
+  } | null>(null)
   const maxSideCards = Math.max(state.sides.blue.picks.length, state.sides.red.picks.length, 1)
+  const tabScopeKey = `${state.currentGame ?? 1}-${state.status}-${mySide ?? 'spec'}`
+  const defaultTeamTab: 'blue' | 'red' | 'both' =
+    state.status === 'weapon_phase' && mySide ? mySide : 'both'
+  const mobileTeamTab: 'blue' | 'red' | 'both' =
+    teamTabOverride?.status === tabScopeKey ? teamTabOverride.tab : defaultTeamTab
 
   useEffect(() => {
     if (revealDone) return
@@ -88,15 +97,17 @@ export function PostDraftTeamsStage({
     const order = normalizeLineup(sideState.picks.length, sideState.lineup)
     const teams = splitIntoTeams(order, TEAM_SIZE)
     const useStagger = teams.length === 2
+    const visibleMobile = mobileTeamTab === 'both' || mobileTeamTab === side
 
     return (
       <section
         className={cn(
-          'panel flex flex-col gap-3 border-line/75 bg-bg/65 p-3.5',
+          'panel flex-col gap-3 border-line/75 bg-bg/65 p-2.5 sm:p-3.5',
+          visibleMobile ? 'flex' : 'hidden md:flex',
           isBlue ? 'border-hydro/40' : 'border-danger/40',
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2 md:min-h-11 xl:min-h-0">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -136,14 +147,13 @@ export function PostDraftTeamsStage({
         >
           {teams.map((teamSlots, teamIdx) => {
             const label = teamIdx === 0 ? 'Half 1' : teamIdx === 1 ? 'Half 2' : `Team ${teamIdx + 1}`
-            // Độ lệch dọc nhẹ giống Banpick_UI.png: Blue Half 1 ở trên-trái, Half 2 lệch nhẹ xuống; Red đối xứng
             const labelOnTop = isBlue ? teamIdx % 2 === 1 : teamIdx % 2 === 0
             const staggerTop = useStagger && labelOnTop ? 'xl:mt-5' : ''
 
             const labelBadge = (
               <div
                 className={cn(
-                  'flex items-center justify-center gap-2 text-xs font-extrabold tracking-wider uppercase',
+                  'flex items-center justify-between gap-2 border-b border-line/40 pb-1 text-xs font-extrabold tracking-wider uppercase xl:justify-center xl:border-b-0 xl:pb-0',
                   isBlue ? 'text-hydro' : 'text-danger',
                 )}
               >
@@ -154,7 +164,7 @@ export function PostDraftTeamsStage({
 
             return (
               <div key={teamIdx} className={cn('flex flex-col gap-2', staggerTop)}>
-                {labelOnTop && labelBadge}
+                <div className={cn(!labelOnTop && 'xl:hidden')}>{labelBadge}</div>
                 <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
                   {teamSlots.map((pickIndex, posInTeam) => {
                     const lineupIndex = teamIdx * TEAM_SIZE + posInTeam
@@ -181,6 +191,7 @@ export function PostDraftTeamsStage({
                         <TeamSlotCard
                           pick={pick}
                           slotInTeam={posInTeam + 1}
+                          ownedCharacters={sideState.ownedCharacters}
                           costRules={state.ruleset.costRules}
                           canReorder={canReorder}
                           canEditWeapon={canEditWeapon}
@@ -217,7 +228,7 @@ export function PostDraftTeamsStage({
                     )
                   })}
                 </div>
-                {!labelOnTop && labelBadge}
+                {!labelOnTop && <div className="hidden xl:block">{labelBadge}</div>}
               </div>
             )
           })}
@@ -283,14 +294,8 @@ export function PostDraftTeamsStage({
         </div>
       )}
 
-      {/* Đội hình 2 bên (Half 1 & Half 2, mỗi team 4 nhân vật) */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {renderSideTeams('blue')}
-        {renderSideTeams('red')}
-      </div>
-
-      {/* Thanh hành động giữa: Khóa vũ khí (khi ở weapon_phase) + Nút ROSTERS giống Banpick_UI.png */}
-      <div className="panel flex flex-wrap items-center justify-between gap-3 border-line/70 bg-bg/65 px-4 py-2.5">
+      {/* Thanh hành động: Khóa vũ khí (khi ở weapon_phase) + Nút ROSTERS (trên ở mobile/iPad, dưới ở desktop) */}
+      <div className="panel order-1 flex flex-wrap items-center justify-between gap-2.5 border-line/70 bg-bg/65 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 xl:order-2">
         <div className="text-xs text-muted">
           {state.status === 'weapon_phase' ? (
             mySideState ? (
@@ -363,7 +368,55 @@ export function PostDraftTeamsStage({
         </div>
       </div>
 
-      {showRosters && <DualRosterGrid state={state} mode="readonly" />}
+      {/* Bộ chuyển nhanh giữa 2 đội hình trên Mobile (< md) */}
+      <div
+        role="tablist"
+        aria-label="Chọn đội hình hiển thị"
+        className="order-2 grid min-h-11 grid-cols-3 gap-1 rounded-xl border border-line/65 bg-bg p-1 md:hidden"
+      >
+        {(
+          [
+            ['blue', 'Đội Xanh'],
+            ['red', 'Đội Đỏ'],
+            ['both', 'Cả 2 đội'],
+          ] as const
+        ).map(([tab, label]) => {
+          const active = mobileTeamTab === tab
+          return (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTeamTabOverride({ status: tabScopeKey, tab })}
+              className={cn(
+                'min-h-9 cursor-pointer rounded-lg px-2 text-xs font-medium transition-colors',
+                active
+                  ? tab === 'blue'
+                    ? 'bg-panel-2 font-semibold text-hydro ring-1 ring-hydro/40'
+                    : tab === 'red'
+                      ? 'bg-panel-2 font-semibold text-danger ring-1 ring-danger/40'
+                      : 'bg-panel-2 font-semibold text-gold-strong ring-1 ring-gold/40'
+                  : 'text-muted hover:text-text',
+              )}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Đội hình 2 bên (Half 1 & Half 2, mỗi team 4 nhân vật) */}
+      <div className="order-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:gap-4 xl:order-1">
+        {renderSideTeams('blue')}
+        {renderSideTeams('red')}
+      </div>
+
+      {showRosters && (
+        <div className="order-4">
+          <DualRosterGrid state={state} mode="readonly" />
+        </div>
+      )}
     </div>
   )
 }
