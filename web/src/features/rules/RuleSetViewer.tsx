@@ -188,7 +188,7 @@ export function RuleSetViewer({ ruleset }: Props) {
               }
               cls={(config.maxOvertimeSeconds ?? 600) > 0 ? 'text-danger' : 'text-muted'}
             />
-            <StatBox label="Mốc 3 ải cố định" value="09:00 / ải" cls="text-gold-strong" />
+            <StatBox label="Mốc 3 ải cố định" value="10:00 / ải" cls="text-gold-strong" />
           </div>
         </div>
 
@@ -245,7 +245,7 @@ export function RuleSetViewer({ ruleset }: Props) {
             Tổng điểm (giây) của đội = <strong className="text-text">Điểm quy đổi từ Cost</strong> +{' '}
             <strong className="text-text">Thời gian cộng thêm khi tinh luyện vũ khí</strong> +{' '}
             <strong className="text-text">Phạt quá giờ (nếu vượt đồng hồ đếm ngược)</strong> +{' '}
-            <strong className="text-text">09:00 − thời gian hoàn thành</strong> của 3 ải. Ai ít điểm nhất người đó thắng.
+            <strong className="text-text">10:00 − thời gian hoàn thành</strong> của 3 ải. Ai ít điểm nhất người đó thắng.
           </p>
           {costRules.milestones.length > 0 ? (
             <div className="overflow-x-auto rounded-lg border border-line">

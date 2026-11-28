@@ -1,6 +1,6 @@
 # Genshin Ban/Pick VN
 
-Ứng dụng web thi đấu **Ban/Pick nhân vật Genshin Impact 1v1 thời gian thực**, quản lý kho nhân vật cá nhân (C0–C6 và Lv 90/95/100), hệ thống **Cost cân bằng** theo từng bộ luật, chọn vũ khí khi thi đấu và tính điểm 3 ải theo mốc `09:00`.
+Ứng dụng web thi đấu **Ban/Pick nhân vật Genshin Impact 1v1 thời gian thực**, quản lý kho nhân vật cá nhân (C0–C6 và Lv 90/95/100), hệ thống **Cost cân bằng** theo từng bộ luật, chọn vũ khí khi thi đấu và tính điểm 3 ải theo mốc `10:00`.
 
 ## Tính năng chính
 
@@ -17,7 +17,7 @@
 - **Phòng đấu 1v1 Realtime (`/lobby`, `/match/:code`)**:
   - Tạo phòng theo bộ luật, mời đối thủ qua link/mã 6 ký tự, chọn bên **Xanh Dương (Trái)** hoặc **Đỏ (Phải)**.
   - Tự động gắn cung mệnh & level từ kho khi Pick nhân vật; cho phép điền **Vũ khí (`R1–R5`)** ngay cạnh nhân vật lúc đang Pick hoặc trong khoảng thời gian trống sau khi Ban/Pick xong.
-  - Nhập thời gian hoàn thành 3 ải (`Phút : Giây`), hệ thống lấy `09:00 − thời gian nhập` ở mỗi ải cộng vào điểm Cost — **bên có tổng điểm thấp nhất thắng**.
+  - Nhập thời gian hoàn thành 3 ải (`Phút : Giây`), hệ thống lấy `10:00 − thời gian nhập` ở mỗi ải cộng vào điểm Cost — **bên có tổng điểm thấp nhất thắng**.
 
 ## Cài đặt & chạy local
 

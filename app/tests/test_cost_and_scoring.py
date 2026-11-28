@@ -122,25 +122,29 @@ def test_milestone_penalty_seconds() -> None:
     assert calc_cost_penalty_seconds(14.0, bounded_rules) == 56.0
 
 
-def test_chamber_9_minute_subtraction_math() -> None:
+def test_chamber_10_minute_subtraction_math() -> None:
+    from app.schemas.ruleset import RuleSetConfig
+
     diffs, total = calc_chamber_scores(
         [
-            {"minutes": 8, "seconds": 30},  # 9:00 - 8:30 = 30s
-            {"minutes": 7, "seconds": 45},  # 9:00 - 7:45 = 75s
-            {"minutes": 9, "seconds": 0},   # 9:00 - 9:00 = 0s
+            {"minutes": 8, "seconds": 30},  # 10:00 - 8:30 = 90s
+            {"minutes": 7, "seconds": 45},  # 10:00 - 7:45 = 135s
+            {"minutes": 10, "seconds": 0},  # 10:00 - 10:00 = 0s
         ]
     )
-    assert diffs == [30, 75, 0]
-    assert total == 105
+    assert diffs == [90, 135, 0]
+    assert total == 225
 
     with pytest.raises(ValueError):
         calc_chamber_scores(
             [
-                {"minutes": 9, "seconds": 1},
+                {"minutes": 10, "seconds": 1},
                 {"minutes": 8, "seconds": 0},
                 {"minutes": 8, "seconds": 0},
             ]
         )
+
+    assert RuleSetConfig.model_validate({"chamberBaseSeconds": 540}).chamber_base_seconds == 600
 
 
 def test_custom_cost_rules_and_calculations() -> None:

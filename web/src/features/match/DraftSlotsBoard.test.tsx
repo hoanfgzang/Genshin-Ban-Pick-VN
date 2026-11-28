@@ -84,12 +84,14 @@ describe('features/match/DraftSlotsBoard', () => {
     expect(redSlots?.className).toContain('xl:order-1')
   })
 
-  it('hiển thị level, tổng cost (NV + VK) và thời gian cộng thêm khi ô Pick có vũ khí', () => {
+  it('hiển thị level, tổng cost (NV + VK) và thời gian cộng thêm khi ô Pick có vũ khí, dùng avatar cho cả Pick và Ban', () => {
     const state = buildBoardState()
     state.status = 'weapon_phase'
     state.sides.blue.ownedCharacters = {
       furina: { slug: 'furina', constellation: 1, level: 95 },
+      bennett: { slug: 'bennett', constellation: 6, level: 90 },
     }
+    state.sides.blue.bans = ['bennett']
     state.sides.blue.picks = [
       {
         slot: 0,
@@ -112,10 +114,16 @@ describe('features/match/DraftSlotsBoard', () => {
     const levelBadge = container.querySelector('[data-slot-level]')
     const costBadge = container.querySelector('[data-slot-cost]')
     const extraBadge = container.querySelector('[data-slot-extra]')
+    const pickImg = container.querySelector('img[alt="Furina"]')
+    const banImg = container.querySelector('img[alt="Bennett"]')
 
     expect(levelBadge?.textContent).toBe('Lv95')
     expect(costBadge?.textContent?.startsWith('3.5')).toBe(true)
     expect(extraBadge?.textContent).toBe('+10s')
+    expect(pickImg?.getAttribute('src')).toContain('/characters/')
+    expect(pickImg?.getAttribute('src')).not.toContain('/character_cards/')
+    expect(banImg?.getAttribute('src')).toContain('/characters/')
+    expect(banImg?.getAttribute('src')).not.toContain('/character_cards/')
   })
 
   it('hiển thị cost nhân vật và ẩn thời gian cộng thêm khi ô Pick chưa gắn vũ khí', () => {

@@ -222,14 +222,14 @@ def test_full_1v1_match_ws_flow(test_client: TestClient) -> None:
 
         assert state["status"] == "scoring"
 
-        # Đội Đỏ điền thời gian nhanh hơn (còn nhiều thời gian hơn -> trừ từ 9:00 ít hơn) & Cost thấp hơn (C0 vs C2)
+        # Đội Đỏ điền thời gian nhanh hơn (còn nhiều thời gian hơn -> trừ từ 10:00 ít hơn) & Cost thấp hơn (C0 vs C2)
         ws_a.send_json(
             {
                 "action": "submit_scores",
                 "chambers": [
-                    {"minutes": 7, "seconds": 30},  # 90s
-                    {"minutes": 7, "seconds": 0},   # 120s
-                    {"minutes": 7, "seconds": 30},  # 90s => tổng 300s
+                    {"minutes": 7, "seconds": 30},  # 150s
+                    {"minutes": 7, "seconds": 0},   # 180s
+                    {"minutes": 7, "seconds": 30},  # 150s => tổng 480s
                 ],
             }
         )
@@ -240,9 +240,9 @@ def test_full_1v1_match_ws_flow(test_client: TestClient) -> None:
             {
                 "action": "submit_scores",
                 "chambers": [
-                    {"minutes": 8, "seconds": 30},  # 30s
-                    {"minutes": 8, "seconds": 20},  # 40s
-                    {"minutes": 8, "seconds": 30},  # 30s => tổng 100s
+                    {"minutes": 8, "seconds": 30},  # 90s
+                    {"minutes": 8, "seconds": 20},  # 100s
+                    {"minutes": 8, "seconds": 30},  # 90s => tổng 280s
                 ],
             }
         )
@@ -813,7 +813,7 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
     assert state.turn_deadline_at is None
     assert state.status == "scoring"
 
-    chambers = [{"minutes": 8, "seconds": 0}] * 3  # 180s
+    chambers = [{"minutes": 8, "seconds": 0}] * 3  # 360s
     state = draft_engine.submit_chamber_times(state, user_id="u-blue", chambers=chambers)
     state = draft_engine.submit_chamber_times(state, user_id="u-red", chambers=chambers)
     assert state.status == "finished"
@@ -822,14 +822,14 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
         state.sides["blue"].cost_penalty_seconds
         + state.sides["blue"].weapon_refinement_seconds
         + 3.0
-        + 180,
+        + 360,
         2,
     )
     assert state.sides["red"].final_score == round(
         state.sides["red"].cost_penalty_seconds
         + state.sides["red"].weapon_refinement_seconds
         + 5.0
-        + 180,
+        + 360,
         2,
     )
 
@@ -851,7 +851,7 @@ def test_overtime_penalty_accumulation_and_scoring() -> None:
         updated_scoring.sides["red"].cost_penalty_seconds
         + updated_scoring.sides["red"].weapon_refinement_seconds
         + 5.0
-        + 180,
+        + 360,
         2,
     )
 
@@ -1770,17 +1770,17 @@ def test_submit_scores_admin_and_cross_side_ws(test_client: TestClient) -> None:
                     {"minutes": 8, "seconds": 30},
                     {"minutes": 8, "seconds": 30},
                     {"minutes": 8, "seconds": 30},
-                ],  # tổng 90s
+                ],  # tổng 270s
             }
         )
         msg_cross_red = recv_all()
         state = msg_cross_red["state"]
         assert state["status"] == "scoring"
         assert state["sides"]["red"]["scoreSubmitted"] is True
-        assert state["sides"]["red"]["chamberTotalSeconds"] == 90
+        assert state["sides"]["red"]["chamberTotalSeconds"] == 270
         assert msg_cross_red["notice"]["tone"] == "info"
 
-        # 4) Admin cập nhật lại thời gian cho Red (chậm hơn: 120s)
+        # 4) Admin cập nhật lại thời gian cho Red (chậm hơn: 300s)
         ws_admin.send_json(
             {
                 "action": "submit_scores",
@@ -1789,14 +1789,14 @@ def test_submit_scores_admin_and_cross_side_ws(test_client: TestClient) -> None:
                     {"minutes": 8, "seconds": 20},
                     {"minutes": 8, "seconds": 20},
                     {"minutes": 8, "seconds": 20},
-                ],  # tổng 120s
+                ],  # tổng 300s
             }
         )
         state = recv_all()["state"]
         assert state["status"] == "scoring"
-        assert state["sides"]["red"]["chamberTotalSeconds"] == 120
+        assert state["sides"]["red"]["chamberTotalSeconds"] == 300
 
-        # 5) Người chơi Red nhập hộ thời gian cho Blue (nhanh hơn: 60s) -> hoàn tất trận
+        # 5) Người chơi Red nhập hộ thời gian cho Blue (nhanh hơn: 240s) -> hoàn tất trận
         ws_b.send_json(
             {
                 "action": "submit_scores",
@@ -1805,13 +1805,13 @@ def test_submit_scores_admin_and_cross_side_ws(test_client: TestClient) -> None:
                     {"minutes": 8, "seconds": 40},
                     {"minutes": 8, "seconds": 40},
                     {"minutes": 8, "seconds": 40},
-                ],  # tổng 60s
+                ],  # tổng 240s
             }
         )
         state = recv_all()["state"]
         assert state["status"] == "finished"
         assert state["sides"]["blue"]["scoreSubmitted"] is True
-        assert state["sides"]["blue"]["chamberTotalSeconds"] == 60
+        assert state["sides"]["blue"]["chamberTotalSeconds"] == 240
         assert state["winnerSide"] == "blue"
 
 

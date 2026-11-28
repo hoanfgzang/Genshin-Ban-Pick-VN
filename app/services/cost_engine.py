@@ -6,7 +6,7 @@ from ..data_loader import get_character, get_weapon
 from ..schemas.ruleset import CostMilestone, CostRules
 from .traveler import TRAVELER_GENDER_SLUGS, is_traveler_element_slug
 
-CHAMBER_BASE_SECONDS = 540  # Cố định cứng 9:00 mỗi ải
+CHAMBER_BASE_SECONDS = 600  # Cố định cứng 10:00 mỗi ải
 
 
 def calc_character_cost(
@@ -115,17 +115,17 @@ def calc_cost_penalty_seconds(total_cost: float, cost_rules: CostRules) -> float
 
 
 def calc_chamber_scores(chambers: list[dict[str, int]]) -> tuple[list[int], int]:
-    """Mỗi ải cố định lấy 9:00 (540 giây) trừ đi thời gian hoàn thành người chơi nhập."""
+    """Mỗi ải cố định lấy 10:00 (600 giây) trừ đi thời gian hoàn thành người chơi nhập."""
     if len(chambers) != 3:
         raise ValueError("Phải nhập đủ thời gian cho đúng 3 ải.")
     diffs: list[int] = []
     for idx, ch in enumerate(chambers, start=1):
         m = int(ch["minutes"])
         s = int(ch["seconds"])
-        if m < 0 or m > 9 or s < 0 or s > 59:
+        if m < 0 or m > 10 or s < 0 or s > 59:
             raise ValueError(f"Thời gian ở ải {idx} không hợp lệ.")
         entered = m * 60 + s
         if entered > CHAMBER_BASE_SECONDS:
-            raise ValueError(f"Thời gian ở ải {idx} không được vượt quá 09:00.")
+            raise ValueError(f"Thời gian ở ải {idx} không được vượt quá 10:00.")
         diffs.append(CHAMBER_BASE_SECONDS - entered)
     return diffs, sum(diffs)

@@ -93,7 +93,7 @@ export function DraftSlotsBoard({
         aria-label={`Thông tin Cost và Thời gian đội ${isBlue ? 'Xanh' : 'Đỏ'}`}
         className={cn(
           !showMobileStats && 'hidden md:block',
-          'order-2 w-full rounded-lg border bg-bg/60 p-2.5 text-xs md:mt-auto md:max-xl:rounded-none md:max-xl:border-x-0 md:max-xl:border-b-0 md:max-xl:border-t md:max-xl:border-line/50 md:max-xl:bg-transparent md:max-xl:p-0 md:max-xl:pt-2 xl:mt-0 xl:flex-1 xl:min-w-[184px] xl:max-w-[232px] xl:rounded-xl xl:border xl:bg-bg/80 xl:p-3 2xl:max-w-[268px] 2xl:p-3.5 2xl:text-[13px]',
+          'order-2 w-full rounded-lg border bg-bg/60 p-2.5 text-xs md:mt-auto md:max-xl:rounded-none md:max-xl:border-x-0 md:max-xl:border-b-0 md:max-xl:border-t md:max-xl:border-line/50 md:max-xl:bg-transparent md:max-xl:p-0 md:max-xl:pt-2 xl:mt-0 xl:flex-1 xl:min-w-[176px] xl:max-w-[224px] xl:rounded-xl xl:border xl:bg-bg/80 xl:p-3 2xl:max-w-[252px] 2xl:p-3.5 2xl:text-[13px]',
           isBlue
             ? 'border-hydro/35 xl:order-1 xl:border-hydro/35 xl:mr-auto'
             : 'border-danger/35 xl:order-2 xl:border-danger/35 xl:ml-auto',
@@ -190,6 +190,35 @@ export function DraftSlotsBoard({
       ),
     [state.ruleset.draftSteps, state.sides, state.currentStepIndex, state.status],
   )
+
+  const { maxPickCols, maxBanCols } = useMemo(() => {
+    const pickLens = [
+      ...board.blue.pickRows.flatMap(chunkMaxFour).map((r) => r.length),
+      ...board.red.pickRows.flatMap(chunkMaxFour).map((r) => r.length),
+    ]
+    const banLens = [
+      ...board.blue.banRows.flatMap(chunkMaxFour).map((r) => r.length),
+      ...board.red.banRows.flatMap(chunkMaxFour).map((r) => r.length),
+    ]
+    return {
+      maxPickCols: Math.max(1, ...pickLens),
+      maxBanCols: Math.max(1, ...banLens),
+    }
+  }, [board])
+
+  const pickSlotSizeCls =
+    maxBanCols >= 3
+      ? '[--slot-w:2.75rem] md:[--slot-w:2.75rem] lg:[--slot-w:3.5rem] xl:[--slot-w:3.25rem] 2xl:[--slot-w:4rem] min-[1680px]:[--slot-w:4.75rem]'
+      : maxPickCols <= 3
+        ? '[--slot-w:3rem] md:[--slot-w:3.75rem] lg:[--slot-w:4.75rem] xl:[--slot-w:4.5rem] 2xl:[--slot-w:5.5rem] min-[1680px]:[--slot-w:6.25rem]'
+        : '[--slot-w:2.75rem] md:[--slot-w:3rem] lg:[--slot-w:4.25rem] xl:[--slot-w:3.75rem] 2xl:[--slot-w:4.75rem] min-[1680px]:[--slot-w:5.5rem]'
+
+  const banSlotSizeCls =
+    maxBanCols >= 3
+      ? 'md:[--slot-w:2.25rem] lg:[--slot-w:2.875rem] xl:[--slot-w:2.75rem] 2xl:[--slot-w:3.375rem] min-[1680px]:[--slot-w:3.875rem]'
+      : maxPickCols <= 3
+        ? 'md:[--slot-w:3.125rem] lg:[--slot-w:4rem] xl:[--slot-w:3.625rem] 2xl:[--slot-w:4.5rem] min-[1680px]:[--slot-w:5rem]'
+        : 'md:[--slot-w:2.625rem] lg:[--slot-w:3.5rem] xl:[--slot-w:3.25rem] 2xl:[--slot-w:4rem] min-[1680px]:[--slot-w:4.625rem]'
 
   const highlights = useMemo(
     () =>
@@ -304,7 +333,7 @@ export function DraftSlotsBoard({
       <div
         className={cn(
           'relative flex shrink-0 flex-col overflow-hidden border transition',
-          isBan ? 'aspect-[3/4]' : 'aspect-[3/4.75]',
+          isBan ? 'aspect-[3/4]' : 'aspect-[3/4.5]',
           fluidMobile ? 'w-full md:w-[var(--slot-w)]' : 'w-[var(--slot-w)]',
           roundingCls,
           isActive
@@ -347,17 +376,16 @@ export function DraftSlotsBoard({
               )}
             >
               <img
-                src={isBan ? char.icon : (char.card ?? char.icon)}
+                src={char.icon}
                 alt={char.name}
                 className={cn(
                   'size-full object-cover',
-                  !isBan && 'object-top',
                   isBan && 'opacity-75 grayscale contrast-125',
                   isActive && 'opacity-90',
                 )}
               />
               {isBan && (
-                <span className="absolute top-0.5 left-0.5 rounded bg-danger px-1 py-0.2 text-[8px] font-black uppercase text-white">
+                <span className="absolute top-0.5 left-0.5 rounded bg-danger px-1 py-0.5 text-[8px] font-black uppercase leading-none text-white lg:text-[9px] 2xl:text-[10px]">
                   BAN
                 </span>
               )}
@@ -365,13 +393,13 @@ export function DraftSlotsBoard({
                 <ElementIcon
                   element={char.element}
                   className={cn(
-                    'absolute size-3.5 drop-shadow',
+                    'absolute size-3.5 drop-shadow lg:size-4 2xl:size-4.5',
                     isBan ? 'bottom-0.5 left-0.5' : 'top-0.5 left-0.5',
                   )}
                 />
               )}
               {isActive && (
-                <span className="absolute top-0.5 right-0.5 rounded bg-gold-strong px-1 py-0.2 text-[8px] font-black uppercase text-black">
+                <span className="absolute top-0.5 right-0.5 rounded bg-gold-strong px-1 py-0.5 text-[8px] font-black uppercase leading-none text-black lg:text-[9px] 2xl:text-[10px]">
                   Chọn
                 </span>
               )}
@@ -379,7 +407,7 @@ export function DraftSlotsBoard({
                 <span
                   data-slot-level
                   className={cn(
-                    'absolute bottom-0.5 left-0.5 rounded px-1 py-0.2 font-mono text-[9px] font-extrabold leading-none lg:text-[10px]',
+                    'absolute bottom-1 left-1 rounded px-1 py-0.5 font-mono text-[9px] font-extrabold leading-none lg:text-[10px] 2xl:text-[11px]',
                     pickInfo.level === 100
                       ? 'bg-gradient-to-r from-gold-strong to-geo text-bg'
                       : pickInfo.level === 95
@@ -391,12 +419,7 @@ export function DraftSlotsBoard({
                 </span>
               )}
               {constellation !== null && (
-                <span
-                  className={cn(
-                    'absolute right-0.5 bottom-0.5 rounded bg-black/80 px-1 py-0.2 font-mono font-extrabold leading-none text-gold-strong',
-                    isBan ? 'text-[9px]' : 'text-[9px] lg:text-[10px]',
-                  )}
-                >
+                <span className="absolute right-1 bottom-1 rounded bg-black/80 px-1 py-0.5 font-mono text-[9px] font-extrabold leading-none text-gold-strong lg:text-[10px] 2xl:text-[11px]">
                   C{constellation}
                 </span>
               )}
@@ -406,28 +429,27 @@ export function DraftSlotsBoard({
                     src={pickInfo.weapon.icon}
                     alt={pickInfo.weapon.name}
                     title={`${pickInfo.weapon.name} R${pickInfo.refinement} · +${formatCost(pickInfo.weaponCost)} cost`}
-                    className="absolute top-0.5 right-0.5 size-4 rounded bg-black/60 object-contain ring-1 ring-black/60 lg:size-5"
+                    className="absolute top-0.5 right-0.5 size-4.5 rounded bg-black/60 object-contain ring-1 ring-black/60 lg:size-5 2xl:size-6"
                   />
                 ) : (
                   <span
                     title="Mặc định vũ khí 4★ (0 cost)"
-                    className="absolute top-1 right-1 size-2 rounded-full bg-gold ring-1 ring-black/60"
+                    className="absolute top-1 right-1 size-2 rounded-full bg-gold ring-1 ring-black/60 lg:size-2.5"
                   />
                 ))}
             </div>
-            <div
-              className={cn(
-                'truncate bg-white px-0.5 py-0.5 text-center font-bold leading-tight text-black',
-                isBan ? 'text-[9px]' : 'text-[9px] lg:text-[10px] 2xl:text-[11px]',
-              )}
-            >
+            <div className="truncate bg-white px-1 py-0.5 text-center text-[9px] font-bold leading-tight text-black lg:text-[10px] 2xl:py-1 2xl:text-xs">
               {char.name}
             </div>
             {pickInfo && (
-              <div className="flex flex-wrap items-center justify-center gap-x-1 bg-black/85 px-0.5 py-0.5 font-mono text-[9px] font-bold leading-tight lg:text-[10px] 2xl:text-[11px]">
+              <div className="flex flex-wrap items-center justify-center gap-x-1 bg-black/85 px-1 py-0.5 font-mono text-[9px] font-bold leading-tight lg:text-[10px] 2xl:py-1 2xl:text-xs">
                 <span data-slot-cost className="text-gold-strong">
                   {formatCost(pickInfo.totalCost)}
-                  <span className="hidden font-sans font-medium text-muted 2xl:inline"> cost</span>
+                  {pickInfo.extraSeconds > 0 ? (
+                    <span className="font-sans text-[0.9em] font-medium text-muted">c</span>
+                  ) : (
+                    <span className="hidden font-sans font-medium text-muted xl:inline"> cost</span>
+                  )}
                 </span>
                 {pickInfo.extraSeconds > 0 && (
                   <span data-slot-extra className="text-pyro">
@@ -441,7 +463,7 @@ export function DraftSlotsBoard({
           <div className="flex flex-1 flex-col items-center justify-center gap-0.5">
             <span
               className={cn(
-                'text-lg font-black leading-none',
+                'text-lg font-black leading-none lg:text-xl 2xl:text-2xl',
                 isActive || isInActiveGroup
                   ? 'text-gold-strong'
                   : isNextUp
@@ -453,7 +475,7 @@ export function DraftSlotsBoard({
             </span>
             <span
               className={cn(
-                'text-[9px] font-bold uppercase tracking-wider',
+                'text-[9px] font-bold uppercase tracking-wider lg:text-[10px] 2xl:text-xs',
                 isActive || isInActiveGroup
                   ? 'text-gold-strong'
                   : isNextUp
@@ -499,7 +521,10 @@ export function DraftSlotsBoard({
           key={rIdx}
           className={cn(
             spaced
-              ? 'grid w-full grid-cols-4 gap-1 sm:gap-1.5 md:flex md:w-auto md:flex-nowrap md:items-center md:gap-[calc(var(--slot-w)/5)]'
+              ? cn(
+                  'grid w-full gap-1 sm:gap-1.5 md:flex md:w-auto md:flex-nowrap md:items-center md:gap-1.5 lg:gap-2 2xl:gap-2.5',
+                  maxPickCols <= 3 ? 'grid-cols-3' : 'grid-cols-4',
+                )
               : 'flex flex-nowrap items-center justify-center gap-0',
             align === 'end' ? 'md:justify-end' : 'md:justify-start',
           )}
@@ -523,7 +548,7 @@ export function DraftSlotsBoard({
     const flatBans = rows.flat()
     if (flatBans.length === 0) return null
     return (
-      <div className="flex flex-wrap items-center justify-center gap-1 [--slot-w:2.1rem] sm:[--slot-w:2.5rem]">
+      <div className="flex flex-wrap items-center justify-center gap-1 [--slot-w:2.75rem] sm:[--slot-w:3.25rem]">
         {flatBans.map((cell) => renderCell(cell, 'single', false))}
       </div>
     )
@@ -604,7 +629,12 @@ export function DraftSlotsBoard({
           isPostDraft && !showFullBoardMobile && 'hidden xl:block',
         )}
       >
-        <div className="grid grid-cols-2 items-start gap-2.5 sm:gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch md:gap-2.5 md:[--slot-w:2.25rem] lg:gap-3 lg:[--slot-w:2.75rem] xl:items-center xl:[--slot-w:2.75rem] 2xl:[--slot-w:3.5rem]">
+        <div
+          className={cn(
+            'grid grid-cols-2 items-start gap-2.5 sm:gap-4 md:grid-cols-[1fr_auto_1fr] md:items-stretch md:gap-2.5 lg:gap-3 xl:items-center',
+            banSlotSizeCls,
+          )}
+        >
           {/* Blue: Thông tin Cost sát viền trái + khối Pick ở ngoài + khối Ban ở gần tâm */}
           <div className="flex min-w-0 flex-col items-stretch gap-2 md:items-end xl:flex-row xl:items-center xl:justify-end xl:gap-2.5 2xl:gap-4">
             {renderSideStats('blue')}
@@ -614,7 +644,10 @@ export function DraftSlotsBoard({
               className="order-1 flex w-full flex-col-reverse items-stretch gap-2 sm:gap-3 md:w-auto md:flex-row md:items-center md:justify-end md:gap-2.5 lg:gap-4 xl:order-2 xl:gap-3 2xl:gap-5"
             >
               <div
-                className="flex w-full flex-col items-center gap-1 [--slot-w:2.5rem] md:w-auto md:items-end md:gap-1.5 md:[--slot-w:3rem] lg:[--slot-w:3.75rem] xl:border xl:border-transparent xl:py-1.5 xl:[--slot-w:3.5rem] 2xl:[--slot-w:4.5rem]"
+                className={cn(
+                  'flex w-full flex-col items-center gap-1 md:w-auto md:items-end md:gap-1.5 xl:border xl:border-transparent xl:py-1.5',
+                  pickSlotSizeCls,
+                )}
               >
                 <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
                   PICK
@@ -625,7 +658,10 @@ export function DraftSlotsBoard({
               </div>
 
               {board.blue.banRows.length > 0 && (
-                <div className="flex flex-col items-center gap-1 md:items-end md:gap-1.5 xl:rounded-lg xl:border xl:border-danger/25 xl:bg-danger/5 xl:px-2 xl:py-1.5">
+                <div
+                  data-ban-slots="blue"
+                  className="flex flex-col items-center gap-1 md:items-end md:gap-1.5 xl:rounded-lg xl:border xl:border-danger/25 xl:bg-danger/5 xl:px-2 xl:py-1.5"
+                >
                   <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
                     BAN
                   </span>
@@ -652,7 +688,10 @@ export function DraftSlotsBoard({
               className="order-1 flex w-full flex-col items-stretch gap-2 sm:gap-3 md:w-auto md:flex-row md:items-center md:justify-start md:gap-2.5 lg:gap-4 xl:order-1 xl:gap-3 2xl:gap-5"
             >
               {board.red.banRows.length > 0 && (
-                <div className="flex flex-col items-center gap-1 md:items-start md:gap-1.5 xl:rounded-lg xl:border xl:border-danger/25 xl:bg-danger/5 xl:px-2 xl:py-1.5">
+                <div
+                  data-ban-slots="red"
+                  className="flex flex-col items-center gap-1 md:items-start md:gap-1.5 xl:rounded-lg xl:border xl:border-danger/25 xl:bg-danger/5 xl:px-2 xl:py-1.5"
+                >
                   <span className="text-[10px] font-bold tracking-widest text-danger/85 uppercase">
                     BAN
                   </span>
@@ -664,7 +703,10 @@ export function DraftSlotsBoard({
               )}
 
               <div
-                className="flex w-full flex-col items-center gap-1 [--slot-w:2.5rem] md:w-auto md:items-start md:gap-1.5 md:[--slot-w:3rem] lg:[--slot-w:3.75rem] xl:border xl:border-transparent xl:py-1.5 xl:[--slot-w:3.5rem] 2xl:[--slot-w:4.5rem]"
+                className={cn(
+                  'flex w-full flex-col items-center gap-1 md:w-auto md:items-start md:gap-1.5 xl:border xl:border-transparent xl:py-1.5',
+                  pickSlotSizeCls,
+                )}
               >
                 <span className="text-[10px] font-bold tracking-widest text-gold-strong/85 uppercase">
                   PICK

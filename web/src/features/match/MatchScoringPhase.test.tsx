@@ -171,4 +171,27 @@ describe('features/match/MatchScoringPhase', () => {
     expect(screen.queryByRole('region', { name: 'Nhập kết quả 3 phòng đội Xanh' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Nhập kết quả 3 phòng đội Đỏ' })).not.toBeInTheDocument()
   })
+
+  it('tính điểm mỗi phòng theo mốc 10:00 và tự khóa giây về 0 khi nhập 10 phút', () => {
+    const state = buildScoringState()
+    const onSubmitScores = vi.fn()
+    render(
+      <MemoryRouter>
+        <MatchScoringPhase state={state} mySide="blue" isAdmin={false} onSubmitScores={onSubmitScores} />
+      </MemoryRouter>,
+    )
+
+    const blueForm = screen.getByRole('region', { name: 'Nhập kết quả 3 phòng đội Xanh' })
+    expect(within(blueForm).getByText('+360s (3 phòng)')).toBeInTheDocument()
+
+    fireEvent.change(within(blueForm).getByLabelText('Giây phòng 1'), { target: { value: '45' } })
+    fireEvent.change(within(blueForm).getByLabelText('Phút phòng 1'), { target: { value: '10' } })
+    fireEvent.click(within(blueForm).getByRole('button', { name: 'Xác nhận Đội Xanh' }))
+
+    expect(onSubmitScores).toHaveBeenCalledWith('blue', [
+      { minutes: 10, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+      { minutes: 8, seconds: 0 },
+    ])
+  })
 })

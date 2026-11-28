@@ -62,17 +62,17 @@ function SideScoreForm({ side, state, isMySide, onSubmitScores }: SideScoreFormP
       prev.map((item, i) => {
         if (i !== idx) return item
         if (field === 'minutes') {
-          const m = Math.min(9, val)
-          return { minutes: m, seconds: m === 9 ? 0 : item.seconds }
+          const m = Math.min(10, val)
+          return { minutes: m, seconds: m === 10 ? 0 : item.seconds }
         }
-        return { minutes: item.minutes, seconds: item.minutes === 9 ? 0 : Math.min(59, val) }
+        return { minutes: item.minutes, seconds: item.minutes === 10 ? 0 : Math.min(59, val) }
       }),
     )
   }
 
   const handleSubmit = () => {
     if (!allValid) {
-      toast.error('Thời gian mỗi ải phải từ 00:00 đến tối đa 09:00.')
+      toast.error('Thời gian mỗi ải phải từ 00:00 đến tối đa 10:00.')
       return
     }
     onSubmitScores(side, chambers)
@@ -117,7 +117,7 @@ function SideScoreForm({ side, state, isMySide, onSubmitScores }: SideScoreFormP
           </span>
         </div>
         <p className="mt-1 text-xs text-muted">
-          Mốc 09:00 / phòng (tính <code className="text-text">09:00 − thời gian nhập</code>).
+          Mốc 10:00 / phòng (tính <code className="text-text">10:00 − thời gian nhập</code>).
         </p>
 
         <div className="mt-3 flex flex-col gap-2">
@@ -138,7 +138,7 @@ function SideScoreForm({ side, state, isMySide, onSubmitScores }: SideScoreFormP
                       type="number"
                       aria-label={`Phút phòng ${idx + 1}`}
                       min={0}
-                      max={9}
+                      max={10}
                       value={ch.minutes}
                       onChange={(e) => handleTimeChange(idx, 'minutes', e.target.value)}
                       className="h-10 w-14 rounded-lg border border-line bg-panel px-1.5 text-center font-mono text-base text-text focus:border-gold focus:outline-none sm:text-sm xl:h-8 xl:px-2"
@@ -338,7 +338,7 @@ export function MatchScoringPhase({ state, mySide, isAdmin = false, onSubmitScor
         {s.scoreSubmitted && s.chambers && s.chamberDiffs ? (
           <div className="rounded-lg border border-line bg-bg/60 p-3 text-xs">
             <div className="mb-1.5 font-semibold text-muted">
-              Chi tiết điểm 3 ải (09:00 − thời gian nhập)
+              Chi tiết điểm 3 ải (10:00 − thời gian nhập)
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               {s.chambers.map((ch, idx) => (

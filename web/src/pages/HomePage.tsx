@@ -29,7 +29,7 @@ const FEATURES = [
     status: 'Sẵn sàng',
     ready: true,
     to: '/lobby',
-    desc: 'Tạo phòng đấu 1v1 (Xanh Dương vs Đỏ), gắn vũ khí ngay lúc Pick hoặc pha chờ, nhập thời gian 3 ải (mốc 9:00) để phân định thắng thua.',
+    desc: 'Tạo phòng đấu 1v1 (Xanh Dương vs Đỏ), gắn vũ khí ngay lúc Pick hoặc pha chờ, nhập thời gian 3 ải (mốc 10:00) để phân định thắng thua.',
   },
 ]
 

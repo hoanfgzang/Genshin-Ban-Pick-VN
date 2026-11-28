@@ -50,7 +50,7 @@ describe('domain/cost', () => {
     expect(getWeapon('cool-steel')).toBeUndefined()
   })
 
-  it('nhân tổng cost theo mốc hiện tại và phép trừ 9:00', () => {
+  it('nhân tổng cost theo mốc hiện tại và phép trừ 10:00', () => {
     const { costRules } = createDefaultRuleSetConfig()
     costRules.baseSecondsPerCost = 5
     costRules.milestones = [
@@ -81,9 +81,10 @@ describe('domain/cost', () => {
     expect(calcCostPenaltySeconds(12, boundedRules)).toBe(106)
     expect(calcCostPenaltySeconds(14, boundedRules)).toBe(56)
 
-    expect(calcChamberDiff(8, 30)).toBe(30)
-    expect(calcChamberDiff(9, 0)).toBe(0)
-    expect(calcChamberDiff(9, 1)).toBeNull()
+    expect(calcChamberDiff(8, 30)).toBe(90)
+    expect(calcChamberDiff(9, 30)).toBe(30)
+    expect(calcChamberDiff(10, 0)).toBe(0)
+    expect(calcChamberDiff(10, 1)).toBeNull()
   })
 
   it('tính chính xác Custom Cost nhân vật và vũ khí theo customCostId', () => {

@@ -21,13 +21,13 @@ class CreateMatchRequest(CamelModel):
 
 
 class ChamberTimeInput(CamelModel):
-    minutes: int = Field(ge=0, le=9)
+    minutes: int = Field(ge=0, le=10)
     seconds: int = Field(ge=0, le=59)
 
     @model_validator(mode="after")
-    def check_max_9_min(self) -> ChamberTimeInput:
-        if self.minutes * 60 + self.seconds > 540:
-            raise ValueError("Thời gian hoàn thành tối đa là 09:00 (540 giây).")
+    def check_max_10_min(self) -> ChamberTimeInput:
+        if self.minutes * 60 + self.seconds > 600:
+            raise ValueError("Thời gian hoàn thành tối đa là 10:00 (600 giây).")
         return self
 
 

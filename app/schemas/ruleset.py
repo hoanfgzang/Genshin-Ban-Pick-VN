@@ -280,7 +280,7 @@ class RuleSetConfig(CamelModel):
     reserve_time_seconds: int = Field(default=120, ge=0, le=3600)
     max_overtime_seconds: int = Field(default=600, ge=0, le=3600)
     weapon_phase_seconds: int = Field(default=90, ge=0, le=900)
-    chamber_base_seconds: Literal[540] = 540
+    chamber_base_seconds: Literal[600] = 600
     cost_rules: CostRules = Field(default_factory=CostRules)
 
     @model_validator(mode="before")
@@ -298,6 +298,10 @@ class RuleSetConfig(CamelModel):
             d["reserveTimeSeconds"] = 120
         if "max_overtime_seconds" not in d and "maxOvertimeSeconds" not in d:
             d["maxOvertimeSeconds"] = 600
+        if d.get("chamberBaseSeconds") == 540:
+            d["chamberBaseSeconds"] = 600
+        if d.get("chamber_base_seconds") == 540:
+            d["chamber_base_seconds"] = 600
         return d
 
     @field_validator("draft_steps")
@@ -332,7 +336,7 @@ def default_ruleset_config() -> RuleSetConfig:
         reserve_time_seconds=120,
         max_overtime_seconds=600,
         weapon_phase_seconds=90,
-        chamber_base_seconds=540,
+        chamber_base_seconds=600,
         cost_rules=CostRules(
             milestones=[
                 CostMilestone(min_cost=0.0, max_cost=6.0, seconds_per_cost=5.0, bonus_seconds=0.0),

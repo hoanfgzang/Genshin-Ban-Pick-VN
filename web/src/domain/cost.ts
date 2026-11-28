@@ -3,7 +3,7 @@ import type { CharacterCustomCost, CostMilestone, CostRules, WeaponCustomCost } 
 import { isTravelerElementSlug, TRAVELER_GENDER_SLUGS } from './traveler'
 import { getWeapon } from './weapons'
 
-export const CHAMBER_BASE_SECONDS = 540
+export const CHAMBER_BASE_SECONDS = 600
 
 export function round2(n: number): number {
   return Math.round(n * 100) / 100
@@ -170,7 +170,7 @@ export function formatCostMilestoneSummary(
 
 export function calcChamberDiff(minutes: number, seconds: number): number | null {
   if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return null
-  if (minutes < 0 || minutes > 9 || seconds < 0 || seconds > 59) return null
+  if (minutes < 0 || minutes > 10 || seconds < 0 || seconds > 59) return null
   const entered = Math.trunc(minutes) * 60 + Math.trunc(seconds)
   if (entered > CHAMBER_BASE_SECONDS) return null
   return CHAMBER_BASE_SECONDS - entered
